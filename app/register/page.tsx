@@ -1,6 +1,6 @@
 "use client";
 
-import { LoginForm } from "@/components/login-form";
+import { SignUpForm } from "@/app/register/register-form";
 
 export default function Page() {
   return (
@@ -9,12 +9,12 @@ export default function Page() {
       <div
         className="absolute inset-0 bg-cover bg-center lg:relative lg:w-1/2 lg:h-full lg:block"
         style={{
-          backgroundImage: 'url("/login.png")',
+          backgroundImage: 'url("/register.png")',
         }}
       ></div>
 
       <div className="z-10 flex h-full w-full max-w-md items-center justify-center  p-6 shadow-lg lg:ml-auto lg:max-h-full lg:w-1/2 lg:max-w-none">
-        <LoginForm />
+        <SignUpForm />
       </div>
     </div>
   );

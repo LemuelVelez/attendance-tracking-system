@@ -35,7 +35,7 @@ const data = {
   },
   teams: [
     {
-      name: "Admin Dashboard",
+      name: "Student Dashboard",
       logo: GalleryVerticalEnd,
       plan: "Enterprise",
     },
