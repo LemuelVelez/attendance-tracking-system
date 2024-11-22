@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { useState } from "react";
-import { Sun, Moon } from "lucide-react";
+import { Sun, Moon, Eye, EyeOff } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -15,10 +15,20 @@ import { Label } from "@/components/ui/label";
 
 export function SignUpForm() {
   const [darkMode, setDarkMode] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
   const toggleTheme = () => {
     setDarkMode((prevMode) => !prevMode);
     document.documentElement.classList.toggle("dark", !darkMode);
+  };
+
+  const togglePasswordVisibility = () => {
+    setShowPassword((prev) => !prev);
+  };
+
+  const toggleConfirmPasswordVisibility = () => {
+    setShowConfirmPassword((prev) => !prev);
   };
 
   return (
@@ -46,14 +56,19 @@ export function SignUpForm() {
         <form className="space-y-4">
           <div className="grid gap-2">
             <Label htmlFor="name">Full Name</Label>
-            <Input id="name" type="text" placeholder="John Doe" required />
+            <Input
+              id="name"
+              type="text"
+              placeholder="e.g., John Doe"
+              required
+            />
           </div>
           <div className="grid gap-2">
             <Label htmlFor="student-id">Student ID</Label>
             <Input
               id="student-id"
               type="text"
-              placeholder="TC-24-A-12345"
+              placeholder="e.g., TC-24-A-12345"
               required
             />
           </div>
@@ -90,21 +105,49 @@ export function SignUpForm() {
           </div>
           <div className="grid gap-2">
             <Label htmlFor="password">Password</Label>
-            <Input
-              id="password"
-              type="password"
-              placeholder="Enter your Password"
-              required
-            />
+            <div className="relative">
+              <Input
+                id="password"
+                type={showPassword ? "text" : "password"}
+                placeholder="Enter your Password"
+                required
+              />
+              <button
+                type="button"
+                onClick={togglePasswordVisibility}
+                className="absolute right-3 top-1/2 transform -translate-y-1/2 p-2"
+                aria-label="Toggle Password Visibility"
+              >
+                {showPassword ? (
+                  <EyeOff className="h-4 w-4 text-gray-500" />
+                ) : (
+                  <Eye className="h-4 w-4 text-gray-500" />
+                )}
+              </button>
+            </div>
           </div>
           <div className="grid gap-2">
             <Label htmlFor="confirm-password">Confirm Password</Label>
-            <Input
-              id="confirm-password"
-              type="password"
-              placeholder="Re-enter your Password"
-              required
-            />
+            <div className="relative">
+              <Input
+                id="confirm-password"
+                type={showConfirmPassword ? "text" : "password"}
+                placeholder="Re-enter your Password"
+                required
+              />
+              <button
+                type="button"
+                onClick={toggleConfirmPasswordVisibility}
+                className="absolute right-3 top-1/2 transform -translate-y-1/2 p-2"
+                aria-label="Toggle Confirm Password Visibility"
+              >
+                {showConfirmPassword ? (
+                  <EyeOff className="h-4 w-4 text-gray-500" />
+                ) : (
+                  <Eye className="h-4 w-4 text-gray-500" />
+                )}
+              </button>
+            </div>
           </div>
           <Button type="submit" className="w-full">
             Sign Up
