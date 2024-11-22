@@ -22,7 +22,7 @@ export function LoginForm() {
   };
 
   return (
-    <Card className="mx-auto max-w-sm">
+    <Card className="mx-auto max-w-sm ">
       <CardHeader>
         <div className="flex items-center justify-between">
           <CardTitle className="text-2xl">Login</CardTitle>
@@ -39,17 +39,17 @@ export function LoginForm() {
           </button>
         </div>
         <CardDescription>
-          Enter your email below to login to your account
+          Enter your Student ID and password below to log in to your account
         </CardDescription>
       </CardHeader>
       <CardContent>
         <div className="grid gap-4">
           <div className="grid gap-2">
-            <Label htmlFor="email">Email</Label>
+            <Label htmlFor="student-id">Student ID</Label>
             <Input
-              id="email"
-              type="email"
-              placeholder="m@example.com"
+              id="student-id"
+              type="text"
+              placeholder="example:TC-24-A-12345"
               required
             />
           </div>
@@ -60,18 +60,20 @@ export function LoginForm() {
                 Forgot your password?
               </Link>
             </div>
-            <Input id="password" type="password" required />
+            <Input
+              id="password"
+              type="password"
+              placeholder="Enter your Password"
+              required
+            />
           </div>
           <Button type="submit" className="w-full">
             Login
           </Button>
-          <Button variant="outline" className="w-full">
-            Login with Google
-          </Button>
         </div>
         <div className="mt-4 text-center text-sm">
           Don&apos;t have an account?{" "}
-          <Link href="#" className="underline">
+          <Link href="/register" className="underline">
             Sign up
           </Link>
         </div>
