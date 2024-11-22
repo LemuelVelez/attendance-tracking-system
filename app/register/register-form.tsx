@@ -55,20 +55,33 @@ export function SignUpForm() {
       <CardContent className="overflow-auto max-h-[80vh] scrollbar-hidden">
         <form className="space-y-4">
           <div className="grid gap-2">
-            <Label htmlFor="name">Full Name</Label>
-            <Input
-              id="name"
-              type="text"
-              placeholder="e.g., John Doe"
-              required
-            />
-          </div>
-          <div className="grid gap-2">
             <Label htmlFor="student-id">Student ID</Label>
             <Input
               id="student-id"
               type="text"
               placeholder="e.g., TC-24-A-12345"
+              required
+            />
+          </div>
+          <div className="grid gap-2">
+            <Label htmlFor="first-name">First Name</Label>
+            <Input
+              id="first-name"
+              type="text"
+              placeholder="e.g., John"
+              required
+            />
+          </div>
+          <div className="grid gap-2">
+            <Label htmlFor="middle-name">Middle Name (Optional)</Label>
+            <Input id="middle-name" type="text" placeholder="e.g., Michael" />
+          </div>
+          <div className="grid gap-2">
+            <Label htmlFor="last-name">Last Name</Label>
+            <Input
+              id="last-name"
+              type="text"
+              placeholder="e.g., Doe"
               required
             />
           </div>
@@ -159,6 +172,10 @@ export function SignUpForm() {
             Log in
           </Link>
         </div>
+        <footer className="  py-4 text-center">
+          <p className="text-sm">JESUS BE ALL THE GLORY!</p>
+          <p className="text-xs mt-1">© SSG QR Attendance</p>
+        </footer>
       </CardContent>
     </Card>
   );
