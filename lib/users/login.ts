@@ -1,4 +1,4 @@
-import { Client, Account, Databases, Query } from "appwrite"; // Import the Query module
+import { Client, Account, Databases, Query } from "appwrite";
 
 // Initialize the Appwrite Client
 const client = new Client();
@@ -37,9 +37,7 @@ export const loginStudentUser = async (studentId: string, password: string) => {
     const userDocument = await databases.listDocuments(
       DATABASE_ID,
       USERS_COLLECTION_ID,
-      [
-        Query.equal("studentId", studentId), // Use Query.equal with imported Query module
-      ]
+      [Query.equal("studentId", studentId)] // Use Query.equal with imported Query module
     );
 
     // If no user is found with the provided studentId, throw an error
@@ -61,6 +59,28 @@ export const loginStudentUser = async (studentId: string, password: string) => {
   } catch (error) {
     console.error("Error in loginStudentUser:", error);
     throw error;
+  }
+};
+
+/**
+ * Check if the current session is active.
+ * @returns The current session if active, or null otherwise.
+ */
+export const getActiveSession = async () => {
+  try {
+    const session = await account.get();
+    const userId = session.$id;
+
+    // Fetch user data to determine role
+    const userDocument = await databases.getDocument(
+      DATABASE_ID,
+      USERS_COLLECTION_ID,
+      userId
+    );
+
+    return { session, user: userDocument };
+  } catch {
+    return null;
   }
 };
 

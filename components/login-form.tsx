@@ -1,6 +1,4 @@
 import { useEffect, useState } from "react";
-import Swal from "sweetalert2"; // Import SweetAlert
-import { useRouter } from "next/navigation"; // Import useRouter for redirection
 import { Sun, Moon, Eye, EyeOff } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -12,17 +10,19 @@ import {
 } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { loginStudentUser } from "@/lib/users/login"; // Import the login function
+import { loginStudentUser, getActiveSession } from "@/lib/users/login";
+import Swal from "sweetalert2";
+import { useRouter } from "next/navigation";
 import Link from "next/link";
 
 export function LoginForm() {
   const [darkMode, setDarkMode] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
-  const [studentId, setStudentId] = useState(""); // State for student ID
-  const [password, setPassword] = useState(""); // State for password
-  const [error, setError] = useState(""); // State for error messages
+  const [studentId, setStudentId] = useState("");
+  const [password, setPassword] = useState("");
+  const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
-  const router = useRouter(); // Initialize useRouter
+  const router = useRouter();
 
   const toggleTheme = () => {
     setDarkMode(!darkMode);
@@ -33,17 +33,35 @@ export function LoginForm() {
     setShowPassword(!showPassword);
   };
 
+  // Check active session and redirect based on role
+  useEffect(() => {
+    const checkActiveSession = async () => {
+      try {
+        const activeSession = await getActiveSession();
+        if (activeSession) {
+          const userRole = activeSession.user.role;
+
+          if (userRole === "student") {
+            router.push("/dashboard/student");
+          } else if (userRole === "admin") {
+            router.push("/dashboard/admin");
+          }
+        }
+      } catch (error) {
+        console.error("Error checking session:", error);
+      }
+    };
+
+    checkActiveSession();
+  }, [router]);
+
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError(""); // Clear previous error
-    setLoading(true); // Set loading to true when login starts
+    setError("");
+    setLoading(true);
 
     try {
-      // Call the login function
       const user = await loginStudentUser(studentId, password);
-      console.log("User logged in successfully:", user);
-
-      // Show success message with SweetAlert
       Swal.fire({
         title: "Success!",
         text: "Login successful. Welcome!",
@@ -51,20 +69,17 @@ export function LoginForm() {
         confirmButtonText: "Okay",
       });
 
-      // Redirect based on user role (admin or student)
+      // Redirect based on user role
       if (user.role === "student") {
-        router.push("/dashboard/student"); // Redirect to student dashboard
+        router.push("/dashboard/student");
       } else if (user.role === "admin") {
-        router.push("/dashboard/admin"); // Redirect to admin dashboard
+        router.push("/dashboard/admin");
       } else {
-        // Handle any other roles or errors
-        router.push("/dashboard");
+        router.push("/");
       }
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
     } catch (error) {
       setError("Invalid Student ID or Password. Please try again.");
-      console.error("Login error:", error);
-
-      // Show error message with SweetAlert
       Swal.fire({
         title: "Error!",
         text: "Invalid Student ID or Password. Please try again.",
@@ -72,38 +87,9 @@ export function LoginForm() {
         confirmButtonText: "Try Again",
       });
     } finally {
-      setLoading(false); // Set loading to false after the login process ends
+      setLoading(false);
     }
   };
-
-  useEffect(() => {
-    // Check if the URL contains the authError query parameter
-    const params = new URLSearchParams(window.location.search);
-    if (params.has("authError")) {
-      Swal.fire({
-        title: "Unauthorized Access!",
-        text: "You need to be logged in to access this page.",
-        icon: "warning",
-        confirmButtonText: "Okay",
-      });
-    }
-
-    // Check if user is accessing /dashboard/admin without admin role
-    if (window.location.pathname === "/dashboard/admin") {
-      // Add your logic to check if the user has an admin role
-      const userRole = localStorage.getItem("userRole"); // Replace with your role-checking logic
-      if (userRole !== "admin") {
-        Swal.fire({
-          title: "Access Denied!",
-          text: "You must be an admin to access this page.",
-          icon: "error",
-          confirmButtonText: "Okay",
-        }).then(() => {
-          router.push("/dashboard/student"); // Redirect to student dashboard or another page
-        });
-      }
-    }
-  }, [router]);
 
   return (
     <Card className="mx-auto max-w-sm">
@@ -127,7 +113,7 @@ export function LoginForm() {
         </CardDescription>
       </CardHeader>
       <CardContent>
-        <div className="grid gap-4">
+        <form onSubmit={handleLogin} className="grid gap-4">
           <div className="grid gap-2">
             <Label htmlFor="student-id">Student ID</Label>
             <Input
@@ -136,7 +122,7 @@ export function LoginForm() {
               placeholder="e.g., TC-24-A-12345"
               required
               value={studentId}
-              onChange={(e) => setStudentId(e.target.value)} // Bind input value
+              onChange={(e) => setStudentId(e.target.value)}
             />
           </div>
           <div className="grid gap-2">
@@ -156,7 +142,7 @@ export function LoginForm() {
                 placeholder="Enter your Password"
                 required
                 value={password}
-                onChange={(e) => setPassword(e.target.value)} // Bind input value
+                onChange={(e) => setPassword(e.target.value)}
               />
               <button
                 type="button"
@@ -172,21 +158,11 @@ export function LoginForm() {
               </button>
             </div>
           </div>
-          {error && <div className="text-red-500 text-sm">{error}</div>}{" "}
-          {/* Display error message */}
-          <Button
-            type="submit"
-            className="w-full"
-            onClick={handleLogin}
-            disabled={loading} // Disable the button while loading
-          >
-            {loading ? (
-              <span className="animate-spin">...</span> // Simple spinner while loading
-            ) : (
-              "Login"
-            )}
+          {error && <div className="text-red-500 text-sm">{error}</div>}
+          <Button type="submit" className="w-full" disabled={loading}>
+            {loading ? <span className="animate-spin">...</span> : "Login"}
           </Button>
-        </div>
+        </form>
         <div className="mt-4 text-center text-sm">
           Don&apos;t have an account?{" "}
           <Link
