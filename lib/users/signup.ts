@@ -1,4 +1,3 @@
-// lib/users/createStudent.ts
 import { Client, Account, Databases } from "appwrite";
 
 // Initialize the Appwrite Client

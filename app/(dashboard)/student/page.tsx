@@ -17,8 +17,9 @@ import {
   SidebarProvider,
   SidebarTrigger,
 } from "@/components/ui/sidebar";
+import withAuth from "@/components/hoc/withAuth"; // Import the withAuth HOC
 
-export default function Page() {
+const Page = () => {
   const [darkMode, setDarkMode] = useState(false);
 
   const toggleTheme = () => {
@@ -75,4 +76,6 @@ export default function Page() {
       </SidebarInset>
     </SidebarProvider>
   );
-}
+};
+
+export default withAuth(Page); // Wrap and export the Page component with `withAuth`

@@ -78,9 +78,61 @@ export const getActiveSession = async () => {
       userId
     );
 
+    console.log("Session:", session); // Log session
+    console.log("User Document:", userDocument); // Log user document
+
     return { session, user: userDocument };
-  } catch {
-    return null;
+  } catch (error) {
+    console.error("Error fetching session or user:", error);
+    return null; // Return null if session is not found or there's an error
+  }
+};
+
+/**
+ * Retrieve the session for accessing protected routes with HOC.
+ * @returns The session data if valid or null if not authenticated.
+ */
+export const getSessionForProtectedRoute = async () => {
+  try {
+    const session = await account.get();
+    console.log("Valid session for protected route:", session);
+    return session; // Return session if found
+  } catch (error) {
+    console.error("No valid session found for protected route:", error);
+    return null; // Return null if session is invalid or missing
+  }
+};
+
+/**
+ * Retrieve the session and check if the user has admin role.
+ * @returns true if the user has admin access, false otherwise.
+ */
+export const checkAdminRole = async () => {
+  try {
+    // Step 1: Get the active session
+    const session = await account.get();
+    const userId = session.$id;
+
+    // Step 2: Fetch user document to get the role
+    const userDocument = await databases.getDocument(
+      DATABASE_ID,
+      USERS_COLLECTION_ID,
+      userId
+    );
+
+    console.log("User Document:", userDocument); // Log user document
+
+    // Step 3: Check if the user's role is 'admin'
+    if (userDocument.role && userDocument.role === "admin") {
+      console.log("User is an admin.");
+      return true;
+    } else {
+      console.log("User is not an admin.");
+      return false;
+    }
+  } catch (error) {
+    console.error("Error fetching user or checking role:", error);
+    return false; // Return false if there's an error
   }
 };
 

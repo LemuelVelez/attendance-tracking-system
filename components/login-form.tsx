@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
-import { useEffect, useState } from "react";
-import { Sun, Moon, Eye, EyeOff } from "lucide-react";
+import { useEffect, useState, useRef } from "react";
+import { Sun, Moon, Eye, EyeOff, Loader } from "lucide-react"; // Add Loader here
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -22,6 +22,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { useTheme } from "next-themes";
+import { gsap } from "gsap";
 
 export function LoginForm() {
   const { setTheme } = useTheme();
@@ -32,9 +33,28 @@ export function LoginForm() {
   const [loading, setLoading] = useState(false);
   const router = useRouter();
 
+  // Refs for GSAP animations
+  const cardRef = useRef(null);
+  const formRef = useRef(null);
+
   const togglePasswordVisibility = () => {
     setShowPassword(!showPassword);
   };
+
+  // GSAP Animations
+  useEffect(() => {
+    gsap.fromTo(
+      cardRef.current,
+      { opacity: 0, y: -50 },
+      { opacity: 1, y: 0, duration: 1, ease: "power3.out" }
+    );
+
+    gsap.fromTo(
+      formRef.current,
+      { opacity: 0, y: 20 },
+      { opacity: 1, y: 0, duration: 1, delay: 0.3, ease: "power3.out" }
+    );
+  }, []);
 
   // Check active session and redirect based on role
   useEffect(() => {
@@ -94,7 +114,7 @@ export function LoginForm() {
   };
 
   return (
-    <Card className="mx-auto max-w-sm">
+    <Card ref={cardRef} className="mx-auto max-w-sm">
       <CardHeader>
         <div className="flex items-center justify-between">
           <CardTitle className="text-2xl">Login</CardTitle>
@@ -125,7 +145,7 @@ export function LoginForm() {
         </CardDescription>
       </CardHeader>
       <CardContent>
-        <form onSubmit={handleLogin} className="grid gap-4">
+        <form ref={formRef} onSubmit={handleLogin} className="grid gap-4">
           <div className="grid gap-2">
             <Label htmlFor="student-id">Student ID</Label>
             <Input
@@ -172,7 +192,11 @@ export function LoginForm() {
           </div>
           {error && <div className="text-red-500 text-sm">{error}</div>}
           <Button type="submit" className="w-full" disabled={loading}>
-            {loading ? <span className="animate-spin">...</span> : "Login"}
+            {loading ? (
+              <Loader className="animate-spin h-5 w-5 mx-auto" />
+            ) : (
+              "Login"
+            )}
           </Button>
         </form>
         <div className="mt-4 text-center text-sm">

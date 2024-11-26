@@ -1,4 +1,4 @@
-"use client";
+"use client"; // Ensure this is a client-side component
 
 import { useState } from "react";
 import { Sun, Moon } from "lucide-react";
@@ -17,8 +17,9 @@ import {
   SidebarProvider,
   SidebarTrigger,
 } from "@/components/ui/sidebar";
+import WithAuthAdmin from "@/components/hoc/WithAuthAdmin"; // Import the HOC
 
-export default function Page() {
+const Page = () => {
   const [darkMode, setDarkMode] = useState(false);
 
   const toggleTheme = () => {
@@ -74,4 +75,6 @@ export default function Page() {
       </SidebarInset>
     </SidebarProvider>
   );
-}
+};
+
+export default WithAuthAdmin(Page); // Protect the page with the HOC
