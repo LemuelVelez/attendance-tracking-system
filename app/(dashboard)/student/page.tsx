@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { Sun, Moon } from "lucide-react";
-import { AppSidebar } from "@/app/dashboard/student/app-sidebar";
+import { AppSidebar } from "@/app/(dashboard)/student/app-sidebar";
 import {
   Breadcrumb,
   BreadcrumbItem,

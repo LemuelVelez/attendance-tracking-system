@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 import { useEffect, useState } from "react";
 import { Sun, Moon, Eye, EyeOff } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -14,20 +15,22 @@ import { loginStudentUser, getActiveSession } from "@/lib/users/login";
 import Swal from "sweetalert2";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { useTheme } from "next-themes";
 
 export function LoginForm() {
-  const [darkMode, setDarkMode] = useState(false);
+  const { setTheme } = useTheme();
   const [showPassword, setShowPassword] = useState(false);
   const [studentId, setStudentId] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const router = useRouter();
-
-  const toggleTheme = () => {
-    setDarkMode(!darkMode);
-    document.documentElement.classList.toggle("dark", !darkMode);
-  };
 
   const togglePasswordVisibility = () => {
     setShowPassword(!showPassword);
@@ -42,9 +45,9 @@ export function LoginForm() {
           const userRole = activeSession.user.role;
 
           if (userRole === "student") {
-            router.push("/dashboard/student");
+            router.push("/student");
           } else if (userRole === "admin") {
-            router.push("/dashboard/admin");
+            router.push("/admin");
           }
         }
       } catch (error) {
@@ -71,13 +74,12 @@ export function LoginForm() {
 
       // Redirect based on user role
       if (user.role === "student") {
-        router.push("/dashboard/student");
+        router.push("/student");
       } else if (user.role === "admin") {
-        router.push("/dashboard/admin");
+        router.push("/admin");
       } else {
         router.push("/");
       }
-      // eslint-disable-next-line @typescript-eslint/no-unused-vars
     } catch (error) {
       setError("Invalid Student ID or Password. Please try again.");
       Swal.fire({
@@ -96,17 +98,27 @@ export function LoginForm() {
       <CardHeader>
         <div className="flex items-center justify-between">
           <CardTitle className="text-2xl">Login</CardTitle>
-          <button
-            onClick={toggleTheme}
-            aria-label="Toggle Theme"
-            className="p-2 rounded-md hover:bg-muted/50"
-          >
-            {darkMode ? (
-              <Sun className="h-5 w-5 text-yellow-500" />
-            ) : (
-              <Moon className="h-5 w-5 text-gray-500" />
-            )}
-          </button>
+          {/* Theme toggle dropdown */}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline" size="icon">
+                <Sun className="h-[1.2rem] w-[1.2rem] rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0" />
+                <Moon className="absolute h-[1.2rem] w-[1.2rem] rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100" />
+                <span className="sr-only">Toggle theme</span>
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem onClick={() => setTheme("light")}>
+                Light
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => setTheme("dark")}>
+                Dark
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => setTheme("system")}>
+                System
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
         <CardDescription>
           Enter your Student ID and password below to log in to your account.

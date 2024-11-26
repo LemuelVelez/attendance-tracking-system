@@ -7,7 +7,7 @@ import {
   Bot,
   Command,
   Frame,
-  GalleryVerticalEnd,
+  GraduationCap,
   Map,
   PieChart,
   Settings2,
@@ -36,8 +36,8 @@ const data = {
   teams: [
     {
       name: "Student Dashboard",
-      logo: GalleryVerticalEnd,
-      plan: "Enterprise",
+      logo: GraduationCap,
+      plan: "QR Code Attendance",
     },
     {
       name: "Acme Corp.",

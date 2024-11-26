@@ -2,16 +2,16 @@
 
 import * as React from "react";
 import {
-  AudioWaveform,
   BookOpen,
   Bot,
   Command,
   Frame,
-  GalleryVerticalEnd,
   Map,
   PieChart,
   Settings2,
   SquareTerminal,
+  GraduationCap,
+  ShieldCheck,
 } from "lucide-react";
 
 import { NavMain } from "@/components/nav-main";
@@ -36,12 +36,12 @@ const data = {
   teams: [
     {
       name: "Admin Dashboard",
-      logo: GalleryVerticalEnd,
+      logo: ShieldCheck,
       plan: "Enterprise",
     },
     {
       name: "Acme Corp.",
-      logo: AudioWaveform,
+      logo: GraduationCap,
       plan: "Startup",
     },
     {
