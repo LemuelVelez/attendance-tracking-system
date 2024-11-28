@@ -63,6 +63,20 @@ export const loginStudentUser = async (studentId: string, password: string) => {
 };
 
 /**
+ * Logout function to log the user out and delete the session.
+ */
+export const logoutStudentUser = async () => {
+  try {
+    // Delete the current session
+    await account.deleteSession("current");
+    console.log("User logged out successfully and session deleted.");
+  } catch (error) {
+    console.error("Error logging out the user:", error);
+    throw error;
+  }
+};
+
+/**
  * Check if the current session is active.
  * @returns The current session if active, or null otherwise.
  */

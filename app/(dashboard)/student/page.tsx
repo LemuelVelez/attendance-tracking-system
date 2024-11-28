@@ -1,8 +1,6 @@
-"use client";
-
-import { useState } from "react";
+"use client"; // Ensure this is a client-side component
 import { Sun, Moon } from "lucide-react";
-import { AppSidebar } from "@/app/(dashboard)/student/app-sidebar";
+import { AppSidebar } from "@/components/app-sidebar";
 import {
   Breadcrumb,
   BreadcrumbItem,
@@ -17,22 +15,25 @@ import {
   SidebarProvider,
   SidebarTrigger,
 } from "@/components/ui/sidebar";
-import withAuth from "@/components/hoc/withAuth"; // Import the withAuth HOC
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { useTheme } from "next-themes";
+import { Button } from "@/components/ui/button";
+import withAuth from "@/components/hoc/withAuth";
 
 const Page = () => {
-  const [darkMode, setDarkMode] = useState(false);
-
-  const toggleTheme = () => {
-    setDarkMode(!darkMode);
-    document.documentElement.classList.toggle("dark", !darkMode);
-  };
+  const { setTheme } = useTheme();
 
   return (
     <SidebarProvider>
       <AppSidebar />
       <SidebarInset>
-        <header className="flex h-16 shrink-0 items-center gap-2 transition-[width,height] ease-linear group-has-[[data-collapsible=icon]]/sidebar-wrapper:h-12">
-          <div className="flex items-center gap-2 px-4">
+        <header className="flex h-16 shrink-0 items-center justify-between px-4 transition-[width,height] ease-linear group-has-[[data-collapsible=icon]]/sidebar-wrapper:h-12">
+          <div className="flex items-center gap-2">
             <SidebarTrigger className="-ml-1" />
             <Separator orientation="vertical" className="mr-2 h-4" />
             <Breadcrumb>
@@ -49,20 +50,24 @@ const Page = () => {
               </BreadcrumbList>
             </Breadcrumb>
           </div>
-          <div></div>
-          <button
-            onClick={toggleTheme}
-            aria-label="Toggle Theme"
-            className="p-2 rounded-md hover:bg-muted/50 ml-auto"
-          >
-            {darkMode ? (
-              <Sun className="h-5 w-5 text-yellow-500" />
-            ) : (
-              <Moon className="h-5 w-5 text-gray-500" />
-            )}
-          </button>
-          <div></div>
-          <div></div>
+          {/* Theme toggle dropdown */}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline" size="icon">
+                <Sun className="h-[1.2rem] w-[1.2rem] rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0" />
+                <Moon className="absolute h-[1.2rem] w-[1.2rem] rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100" />
+                <span className="sr-only">Toggle theme</span>
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem onClick={() => setTheme("light")}>
+                Light
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => setTheme("dark")}>
+                Dark
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </header>
         <div></div>
         <div className="flex flex-1 flex-col gap-4 p-4 pt-0">
@@ -78,4 +83,4 @@ const Page = () => {
   );
 };
 
-export default withAuth(Page); // Wrap and export the Page component with `withAuth`
+export default withAuth(Page); // Protect the page with the HOC

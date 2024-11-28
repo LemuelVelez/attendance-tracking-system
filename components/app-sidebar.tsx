@@ -40,7 +40,7 @@ const data = {
       plan: "Enterprise",
     },
     {
-      name: "Acme Corp.",
+      name: "Student Dashboard",
       logo: GraduationCap,
       plan: "Startup",
     },

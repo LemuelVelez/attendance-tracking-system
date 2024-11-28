@@ -1,5 +1,7 @@
-"use client"
+"use client";
 
+import { useRouter } from "next/navigation";
+import Swal from "sweetalert2";
 import {
   BadgeCheck,
   Bell,
@@ -7,13 +9,9 @@ import {
   CreditCard,
   LogOut,
   Sparkles,
-} from "lucide-react"
+} from "lucide-react";
 
-import {
-  Avatar,
-  AvatarFallback,
-  AvatarImage,
-} from "@/components/ui/avatar"
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -22,24 +20,49 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
+} from "@/components/ui/dropdown-menu";
 import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
   useSidebar,
-} from "@/components/ui/sidebar"
+} from "@/components/ui/sidebar";
+
+import { logoutStudentUser } from "@/lib/auth/login";
 
 export function NavUser({
   user,
 }: {
   user: {
-    name: string
-    email: string
-    avatar: string
-  }
+    name: string;
+    email: string;
+    avatar: string;
+  };
 }) {
-  const { isMobile } = useSidebar()
+  const router = useRouter();
+  const { isMobile } = useSidebar();
+
+  const handleLogout = async () => {
+    try {
+      await logoutStudentUser();
+      Swal.fire({
+        icon: "success",
+        title: "Logged out successfully!",
+        text: "You have been logged out.",
+        confirmButtonText: "OK",
+      }).then(() => {
+        router.push("/"); // Redirect to login page
+      });
+    } catch (error) {
+      console.error("Error logging out:", error);
+      Swal.fire({
+        icon: "error",
+        title: "Logout Failed",
+        text: "An error occurred while logging out. Please try again.",
+        confirmButtonText: "OK",
+      });
+    }
+  };
 
   return (
     <SidebarMenu>
@@ -102,7 +125,7 @@ export function NavUser({
               </DropdownMenuItem>
             </DropdownMenuGroup>
             <DropdownMenuSeparator />
-            <DropdownMenuItem>
+            <DropdownMenuItem onClick={handleLogout}>
               <LogOut />
               Log out
             </DropdownMenuItem>
@@ -110,5 +133,5 @@ export function NavUser({
         </DropdownMenu>
       </SidebarMenuItem>
     </SidebarMenu>
-  )
+  );
 }
