@@ -11,7 +11,7 @@ import {
 } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { loginStudentUser, getActiveSession } from "@/lib/users/login";
+import { loginStudentUser, getActiveSession } from "@/lib/auth/login";
 import Swal from "sweetalert2";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
@@ -133,9 +133,6 @@ export function LoginForm() {
               </DropdownMenuItem>
               <DropdownMenuItem onClick={() => setTheme("dark")}>
                 Dark
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => setTheme("system")}>
-                System
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>

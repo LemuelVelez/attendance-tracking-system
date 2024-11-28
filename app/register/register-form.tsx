@@ -13,7 +13,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
 // Import createStudentUser from appwrite.ts
-import { createStudentUser } from "@/lib/users/signup";
+import { createStudentUser } from "@/lib/auth/signup";
 import Link from "next/link";
 import {
   DropdownMenu,
@@ -143,9 +143,6 @@ export function SignUpForm() {
               </DropdownMenuItem>
               <DropdownMenuItem onClick={() => setTheme("dark")}>
                 Dark
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => setTheme("system")}>
-                System
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>

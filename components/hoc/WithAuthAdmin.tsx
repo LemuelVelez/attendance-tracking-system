@@ -2,8 +2,8 @@
 
 import { useRouter } from "next/navigation"; // Use next/navigation for client-side routing
 import { useState, useEffect } from "react";
-import { getSessionForProtectedRoute } from "@/lib/users/login"; // Import the session retrieval function
-import { checkAdminRole } from "@/lib/users/login"; // Import the checkAdminRole function
+import { getSessionForProtectedRoute } from "@/lib/auth/login"; // Import the session retrieval function
+import { checkAdminRole } from "@/lib/auth/login"; // Import the checkAdminRole function
 import LoadingSpinner from "./LoadingSpinner"; // Import the 3D Loading Spinner
 import Swal from "sweetalert2"; // Import SweetAlert2 for error notifications
 
