@@ -7,10 +7,8 @@ import { checkAdminRole } from "@/lib/auth/login"; // Import the checkAdminRole 
 import LoadingSpinner from "./LoadingSpinner"; // Import the 3D Loading Spinner
 import Swal from "sweetalert2"; // Import SweetAlert2 for error notifications
 
-// Generic interface for the props of the wrapped component
 interface ProtectedComponentProps {
-  children?: React.ReactNode; // Optional children prop
-  [key: string]: unknown; // Allow additional properties if necessary
+  [key: string]: unknown; // Define the type of props you expect to pass to the WrappedComponent
 }
 
 // Higher-Order Component (HOC) for route protection
@@ -18,71 +16,66 @@ const WithAuthAdmin = <T extends ProtectedComponentProps>(
   WrappedComponent: React.ComponentType<T>
 ) => {
   return function ProtectedComponent(props: T) {
-    const [loading, setLoading] = useState(true); // State for managing loading spinner
-    const [authenticated, setAuthenticated] = useState(false); // State to track authentication status
-    const [isAdmin, setIsAdmin] = useState(false); // State to track admin role
-    const router = useRouter(); // Next.js router for client-side navigation
+    const [loading, setLoading] = useState(true); // Loading state to prevent rendering before auth check
+    const [authenticated, setAuthenticated] = useState(false); // State to track if the user is authenticated
+    const [isAdmin, setIsAdmin] = useState(false); // State to track if the user is an admin
+    const router = useRouter(); // useRouter from next/navigation
 
     useEffect(() => {
       const checkAuth = async () => {
         try {
           // Fetch the session for protected routes
           const session = await getSessionForProtectedRoute();
-          console.log("Session for Protected Route:", session); // Log session for debugging
+          console.log("Session for Protected Route:", session); // Log the session
 
           if (session) {
             // Check if the user has admin role
             const isAdminRole = await checkAdminRole();
             if (isAdminRole) {
               setIsAdmin(true);
-              setAuthenticated(true); // Allow access for admins
+              setAuthenticated(true); // If the user is an admin, allow access
             } else {
-              // Show error and redirect for unauthorized access
+              // Show SweetAlert error for unauthorized access and redirect
               Swal.fire({
                 icon: "error",
                 title: "Unauthorized",
                 text: "You do not have access to this page.",
                 confirmButtonText: "OK",
               }).then(() => {
-                router.replace("/"); // Redirect to home page after alert
+                router.replace("/"); // Redirect to home page after closing alert
               });
             }
           } else {
-            // Show error and redirect for unauthenticated users
+            // Show SweetAlert error if the user is not authenticated
             Swal.fire({
               icon: "error",
               title: "Access Denied",
               text: "You need to be logged in to access this page.",
               confirmButtonText: "OK",
             }).then(() => {
-              router.replace("/"); // Redirect to login page after alert
+              router.replace("/"); // Redirect to login page after closing alert
             });
           }
         } catch (error) {
           console.error("Authentication check failed:", error);
-          // Redirect to login on error or if session is invalid
-          router.replace("/");
+          router.replace("/"); // Redirect to login on error or if session is invalid
         } finally {
-          // Ensure loading state ends even if there's an error
-          setLoading(false);
+          setTimeout(() => setLoading(false), 1500); // Simulated delay for loading state
         }
       };
 
       checkAuth();
-    }, [router]); // Ensure router is stable for the effect
+    }, [router]); // Ensure router is available
 
-    // Show loading spinner while checking authentication
     if (loading) {
-      return <LoadingSpinner />;
+      return <LoadingSpinner />; // Render the 3D loading spinner while loading
     }
 
-    // Render the protected component if authenticated and admin
     if (authenticated && isAdmin) {
-      return <WrappedComponent {...props} />;
+      return <WrappedComponent {...props} />; // Render the protected component if authenticated and admin
     }
 
-    // Render nothing if not authenticated or not admin
-    return null;
+    return null; // Render nothing if not authenticated or not admin (prevents flashing of protected content)
   };
 };
 

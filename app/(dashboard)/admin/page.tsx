@@ -19,8 +19,7 @@ import {
 } from "@/components/ui/sidebar";
 import WithAuthAdmin from "@/components/hoc/WithAuthAdmin"; // Import the HOC
 
-// Define the page component
-const StudentPage = () => {
+const Page = () => {
   const [darkMode, setDarkMode] = useState(false);
 
   const toggleTheme = () => {
@@ -78,4 +77,4 @@ const StudentPage = () => {
   );
 };
 
-export default WithAuthAdmin(StudentPage); // Protect the page with the HOC
+export default WithAuthAdmin(Page); // Protect the page with the HOC
