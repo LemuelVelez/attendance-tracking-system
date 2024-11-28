@@ -1,5 +1,6 @@
 "use client"; // Ensure this is a client-side component
 
+import { useState } from "react";
 import { Sun, Moon } from "lucide-react";
 import { AppSidebar } from "@/components/app-sidebar";
 import {
@@ -16,20 +17,16 @@ import {
   SidebarProvider,
   SidebarTrigger,
 } from "@/components/ui/sidebar";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-
-import { useTheme } from "next-themes";
 import WithAuthAdmin from "@/components/hoc/WithAuthAdmin"; // Import the HOC
-import { Button } from "@/components/ui/button";
-import { FC } from "react";
 
-const AdminDashboard: FC = () => {
-  const { setTheme } = useTheme();
+// Define the page component
+const StudentPage = () => {
+  const [darkMode, setDarkMode] = useState(false);
+
+  const toggleTheme = () => {
+    setDarkMode(!darkMode);
+    document.documentElement.classList.toggle("dark", !darkMode);
+  };
 
   return (
     <SidebarProvider>
@@ -53,24 +50,17 @@ const AdminDashboard: FC = () => {
               </BreadcrumbList>
             </Breadcrumb>
           </div>
-          {/* Theme toggle dropdown */}
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="outline" size="icon">
-                <Sun className="h-[1.2rem] w-[1.2rem] rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0" />
-                <Moon className="absolute h-[1.2rem] w-[1.2rem] rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100" />
-                <span className="sr-only">Toggle theme</span>
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              <DropdownMenuItem onClick={() => setTheme("light")}>
-                Light
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => setTheme("dark")}>
-                Dark
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
+          <button
+            onClick={toggleTheme}
+            aria-label="Toggle Theme"
+            className="p-2 rounded-md hover:bg-muted/50 ml-auto"
+          >
+            {darkMode ? (
+              <Sun className="h-5 w-5 text-yellow-500" />
+            ) : (
+              <Moon className="h-5 w-5 text-gray-500" />
+            )}
+          </button>
           <div></div>
           <div></div>
         </header>
@@ -88,4 +78,4 @@ const AdminDashboard: FC = () => {
   );
 };
 
-export default WithAuthAdmin(AdminDashboard);
+export default WithAuthAdmin(StudentPage); // Protect the page with the HOC
