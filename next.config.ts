@@ -1,23 +1,12 @@
-import withPWA from "next-pwa"; // Corrected to use 'next-pwa' instead of '@next/pwa'
 import { NextConfig } from "next"; // Importing NextConfig type for TypeScript
 
-// Next.js configuration with type annotation
+// Define the Next.js configuration
 const nextConfig: NextConfig = {
-  reactStrictMode: true,
+  reactStrictMode: true, // Ensure React Strict Mode is enabled
   images: {
-    domains: ['example.com'], // Add any required domains for images
+    domains: ["example.com"], // Specify allowed image domains
   },
 };
 
-// Apply withPWA to the configuration
-const config = withPWA({
-  ...nextConfig,
-  pwa: {
-    dest: 'public',
-    register: true,
-    skipWaiting: true,
-  },
-});
-
-// Export the final config
-export default config;
+// Export the configuration
+export default nextConfig;
