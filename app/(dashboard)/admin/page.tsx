@@ -26,8 +26,9 @@ import {
 import { useTheme } from "next-themes";
 import WithAuthAdmin from "@/components/hoc/WithAuthAdmin"; // Import the HOC
 import { Button } from "@/components/ui/button";
+import { FC } from "react";
 
-const Page = () => {
+const AdminDashboard: FC = () => {
   const { setTheme } = useTheme();
 
   return (
@@ -87,4 +88,4 @@ const Page = () => {
   );
 };
 
-export default WithAuthAdmin(Page); // Protect the page with the HOC
+export default WithAuthAdmin(AdminDashboard);
