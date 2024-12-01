@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { Sun, Moon } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -22,6 +22,7 @@ import { useTheme } from "next-themes";
 
 // Import the sendPasswordRecovery function
 import { sendPasswordRecovery } from "@/lib/auth/passwordrecovery";
+import { gsap } from "gsap";
 
 export function PasswordRecoveryForm() {
   const { setTheme } = useTheme();
@@ -52,8 +53,27 @@ export function PasswordRecoveryForm() {
     }
   };
 
+  // Refs for GSAP animations
+  const cardRef = useRef(null);
+  const formRef = useRef(null);
+
+  // GSAP Animations
+  useEffect(() => {
+    gsap.fromTo(
+      cardRef.current,
+      { opacity: 0, y: -50 },
+      { opacity: 1, y: 0, duration: 1, ease: "power3.out" }
+    );
+
+    gsap.fromTo(
+      formRef.current,
+      { opacity: 0, y: 20 },
+      { opacity: 1, y: 0, duration: 1, delay: 0.3, ease: "power3.out" }
+    );
+  }, []);
+
   return (
-    <Card className="mx-auto max-w-sm">
+    <Card ref={cardRef} className="mx-auto max-w-sm">
       <CardHeader>
         <div className="flex items-center justify-between">
           <CardTitle className="text-2xl">Password Recovery</CardTitle>
@@ -80,7 +100,7 @@ export function PasswordRecoveryForm() {
           Enter your email address to receive a password reset link.
         </CardDescription>
       </CardHeader>
-      <CardContent>
+      <CardContent ref={formRef}>
         <form className="grid gap-4" onSubmit={handleSubmit}>
           <div className="grid gap-2">
             <Label htmlFor="email">Email Address</Label>

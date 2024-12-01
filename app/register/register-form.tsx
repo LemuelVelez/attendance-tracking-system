@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Eye, EyeOff } from "lucide-react";
 import Swal from "sweetalert2";
 import { useRouter } from "next/navigation"; // Use useRouter from Next.js
@@ -24,6 +24,7 @@ import {
 import { useTheme } from "next-themes";
 import { Button } from "@/components/ui/button";
 import { Moon, Sun } from "lucide-react";
+import { gsap } from "gsap";
 
 export function SignUpForm() {
   const { setTheme } = useTheme();
@@ -46,7 +47,25 @@ export function SignUpForm() {
 
   const [loading, setLoading] = useState(false);
 
-  const router = useRouter(); // Use the Next.js router
+  const router = useRouter();
+
+  const cardRef = useRef(null);
+  const formRef = useRef(null);
+
+  useEffect(() => {
+    // GSAP animation for card and form appearance
+    gsap.fromTo(
+      cardRef.current,
+      { opacity: 0, scale: 0.95 },
+      { opacity: 1, scale: 1, duration: 0.8, ease: "power3.out" }
+    );
+
+    gsap.fromTo(
+      formRef.current,
+      { y: 30, opacity: 0 },
+      { y: 0, opacity: 1, duration: 0.8, ease: "power3.out", delay: 0.3 }
+    );
+  }, []);
 
   const togglePasswordVisibility = () => setShowPassword((prev) => !prev);
   const toggleConfirmPasswordVisibility = () =>
@@ -124,7 +143,7 @@ export function SignUpForm() {
   };
 
   return (
-    <Card className="mx-auto w-full max-w-sm">
+    <Card ref={cardRef} className="mx-auto w-full max-w-sm">
       <CardHeader>
         <div className="flex items-center justify-between">
           <CardTitle className="text-2xl">Sign Up</CardTitle>
@@ -151,7 +170,10 @@ export function SignUpForm() {
           Create a new account by filling in the details below.
         </CardDescription>
       </CardHeader>
-      <CardContent className="overflow-auto max-h-[80vh] scrollbar-hidden">
+      <CardContent
+        ref={formRef}
+        className="overflow-auto max-h-[80vh] scrollbar-hidden"
+      >
         <form className="space-y-4" onSubmit={handleSubmit}>
           <div className="grid gap-2">
             <Label htmlFor="studentId">Student ID</Label>

@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { Sun, Moon, Eye, EyeOff } from "lucide-react";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import Swal from "sweetalert2";
 import { Button } from "@/components/ui/button";
 import {
@@ -20,6 +20,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { useTheme } from "next-themes";
 import { completePasswordRecovery } from "@/lib/auth/passwordrecovery";
+import { gsap } from "gsap";
 
 export function PasswordResetForm() {
   const { setTheme } = useTheme();
@@ -92,8 +93,27 @@ export function PasswordResetForm() {
     }
   };
 
+  // Refs for GSAP animations
+  const cardRef = useRef(null);
+  const formRef = useRef(null);
+
+  // GSAP Animations
+  useEffect(() => {
+    gsap.fromTo(
+      cardRef.current,
+      { opacity: 0, y: -50 },
+      { opacity: 1, y: 0, duration: 1, ease: "power3.out" }
+    );
+
+    gsap.fromTo(
+      formRef.current,
+      { opacity: 0, y: 20 },
+      { opacity: 1, y: 0, duration: 1, delay: 0.3, ease: "power3.out" }
+    );
+  }, []);
+
   return (
-    <Card className="mx-auto max-w-sm">
+    <Card ref={cardRef} className="mx-auto max-w-sm">
       <CardHeader>
         <div className="flex items-center justify-between gap-4">
           <CardTitle className="text-2xl">Reset Password</CardTitle>
@@ -117,7 +137,7 @@ export function PasswordResetForm() {
         </div>
         <CardDescription>Enter your new password below.</CardDescription>
       </CardHeader>
-      <CardContent>
+      <CardContent ref={formRef}>
         <form className="grid gap-4" onSubmit={handleSubmit}>
           <div className="grid gap-2">
             <Label htmlFor="newPassword">New Password</Label>

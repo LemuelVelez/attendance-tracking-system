@@ -22,6 +22,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { useTheme } from "next-themes";
+import { gsap } from "gsap";
 
 export function LoginForm() {
   const { setTheme } = useTheme();
@@ -39,6 +40,21 @@ export function LoginForm() {
   const togglePasswordVisibility = () => {
     setShowPassword(!showPassword);
   };
+
+  // GSAP Animations
+  useEffect(() => {
+    gsap.fromTo(
+      cardRef.current,
+      { opacity: 0, y: -50 },
+      { opacity: 1, y: 0, duration: 1, ease: "power3.out" }
+    );
+
+    gsap.fromTo(
+      formRef.current,
+      { opacity: 0, y: 20 },
+      { opacity: 1, y: 0, duration: 1, delay: 0.3, ease: "power3.out" }
+    );
+  }, []);
 
   // Check active session and redirect based on role
   useEffect(() => {
