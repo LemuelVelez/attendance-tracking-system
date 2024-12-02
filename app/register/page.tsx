@@ -9,7 +9,7 @@ export default function Page() {
       <div
         className="absolute inset-0 bg-cover bg-center lg:relative lg:w-1/2 lg:h-full lg:block"
         style={{
-          backgroundImage: 'url("/register.png")',
+          backgroundImage: 'url("/register.webp")',
         }}
       ></div>
 
