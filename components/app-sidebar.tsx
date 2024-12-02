@@ -2,20 +2,16 @@
 
 import * as React from "react";
 import {
-  BookOpen,
-  Bot,
-  Command,
-  Frame,
-  Map,
-  PieChart,
-  Settings2,
-  SquareTerminal,
-  GraduationCap,
   ShieldCheck,
+  QrCode,
+  UserPlus,
+  FileText,
+  DollarSign,
+  Bell,
+  Settings2,
 } from "lucide-react";
 
 import { NavMain } from "@/components/nav-main";
-import { NavProjects } from "@/components/nav-projects";
 import { NavUser } from "@/components/nav-user";
 import { TeamSwitcher } from "@/components/team-switcher";
 import {
@@ -26,12 +22,12 @@ import {
   SidebarRail,
 } from "@/components/ui/sidebar";
 
-// This is sample data.
+// Sample data
 const data = {
   user: {
-    name: "shadcn",
-    email: "m@example.com",
-    avatar: "/avatars/shadcn.jpg",
+    name: "Admin",
+    email: "admin@example.com",
+    avatar: "/avatars/admin.jpg",
   },
   teams: [
     {
@@ -39,77 +35,80 @@ const data = {
       logo: ShieldCheck,
       plan: "Enterprise",
     },
-    {
-      name: "Student Dashboard",
-      logo: GraduationCap,
-      plan: "Startup",
-    },
-    {
-      name: "Evil Corp.",
-      logo: Command,
-      plan: "Free",
-    },
   ],
   navMain: [
     {
-      title: "Playground",
+      title: "Event Management",
       url: "#",
-      icon: SquareTerminal,
-      isActive: true,
+      icon: QrCode,
       items: [
         {
-          title: "History",
-          url: "#",
+          title: "Create Events",
+          url: "/admin/create-event",
         },
         {
-          title: "Starred",
-          url: "#",
+          title: "Generate Event QR Codes",
+          url: "/admin/generate-qr",
         },
         {
-          title: "Settings",
-          url: "#",
+          title: "View Event Attendance",
+          url: "/admin/event-attendance",
         },
       ],
     },
     {
-      title: "Models",
+      title: "Student Management",
       url: "#",
-      icon: Bot,
+      icon: UserPlus,
       items: [
         {
-          title: "Genesis",
-          url: "#",
+          title: "Register Students",
+          url: "/admin/register-student",
         },
         {
-          title: "Explorer",
-          url: "#",
-        },
-        {
-          title: "Quantum",
-          url: "#",
+          title: "View Student Profiles",
+          url: "/admin/student-profiles",
         },
       ],
     },
     {
-      title: "Documentation",
+      title: "Attendance Reports",
       url: "#",
-      icon: BookOpen,
+      icon: FileText,
       items: [
         {
-          title: "Introduction",
-          url: "#",
+          title: "Generate Attendance Reports",
+          url: "/admin/reports",
         },
         {
-          title: "Get Started",
-          url: "#",
+          title: "Export Reports (PDF/CSV)",
+          url: "/admin/export-reports",
+        },
+      ],
+    },
+    {
+      title: "Fine Management",
+      url: "#",
+      icon: DollarSign,
+      items: [
+        {
+          title: "Set Absence Fines",
+          url: "/admin/set-fines",
         },
         {
-          title: "Tutorials",
-          url: "#",
+          title: "View Fine Reports",
+          url: "/admin/fine-reports",
         },
+      ],
+    },
+    {
+      title: "Notifications",
+      url: "#",
+      icon: Bell,
+      items: [
         {
-          title: "Changelog",
-          url: "#",
+          title: "Send Notifications",
+          url: "/admin/send-notifications",
         },
       ],
     },
@@ -119,44 +118,17 @@ const data = {
       icon: Settings2,
       items: [
         {
-          title: "General",
-          url: "#",
-        },
-        {
-          title: "Team",
-          url: "#",
-        },
-        {
-          title: "Billing",
-          url: "#",
-        },
-        {
-          title: "Limits",
-          url: "#",
+          title: "General Settings",
+          url: "/admin/settings",
         },
       ],
     },
   ],
-  projects: [
-    {
-      name: "Design Engineering",
-      url: "#",
-      icon: Frame,
-    },
-    {
-      name: "Sales & Marketing",
-      url: "#",
-      icon: PieChart,
-    },
-    {
-      name: "Travel",
-      url: "#",
-      icon: Map,
-    },
-  ],
 };
 
-export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
+export function AdminSidebar({
+  ...props
+}: React.ComponentProps<typeof Sidebar>) {
   return (
     <Sidebar collapsible="icon" {...props}>
       <SidebarHeader>
@@ -164,7 +136,6 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       </SidebarHeader>
       <SidebarContent>
         <NavMain items={data.navMain} />
-        <NavProjects projects={data.projects} />
       </SidebarContent>
       <SidebarFooter>
         <NavUser user={data.user} />

@@ -2,20 +2,14 @@
 
 import * as React from "react";
 import {
-  AudioWaveform,
-  BookOpen,
-  Bot,
-  Command,
-  Frame,
+  CheckSquare,
   GraduationCap,
-  Map,
-  PieChart,
+  History,
   Settings2,
-  SquareTerminal,
+  Timer,
 } from "lucide-react";
 
 import { NavMain } from "@/components/nav-main";
-import { NavProjects } from "@/components/nav-projects";
 import { NavUser } from "@/components/nav-user";
 import { TeamSwitcher } from "@/components/team-switcher";
 import {
@@ -26,89 +20,78 @@ import {
   SidebarRail,
 } from "@/components/ui/sidebar";
 
-// This is sample data.
+// Updated data for the Student Dashboard
 const data = {
   user: {
-    name: "shadcn",
-    email: "m@example.com",
-    avatar: "/avatars/shadcn.jpg",
+    name: "John Doe", // Example student name
+    email: "john.doe@example.com", // Example email
+    avatar: "/avatars/student-avatar.jpg", // Example avatar
   },
   teams: [
     {
       name: "Student Dashboard",
       logo: GraduationCap,
-      plan: "QR Code Attendance",
-    },
-    {
-      name: "Acme Corp.",
-      logo: AudioWaveform,
-      plan: "Startup",
-    },
-    {
-      name: "Evil Corp.",
-      logo: Command,
-      plan: "Free",
+      plan: "Attendance Tracker",
     },
   ],
   navMain: [
     {
-      title: "Playground",
+      title: "Dashboard",
       url: "#",
-      icon: SquareTerminal,
+      icon: GraduationCap,
       isActive: true,
       items: [
         {
-          title: "History",
+          title: "Event Attendance",
           url: "#",
         },
         {
-          title: "Starred",
-          url: "#",
-        },
-        {
-          title: "Settings",
+          title: "Upcoming Events",
           url: "#",
         },
       ],
     },
     {
-      title: "Models",
+      title: "Attendance History",
       url: "#",
-      icon: Bot,
+      icon: History,
       items: [
         {
-          title: "Genesis",
+          title: "Past Events",
           url: "#",
         },
         {
-          title: "Explorer",
-          url: "#",
-        },
-        {
-          title: "Quantum",
+          title: "Export Report",
           url: "#",
         },
       ],
     },
     {
-      title: "Documentation",
+      title: "QR Code",
       url: "#",
-      icon: BookOpen,
+      icon: CheckSquare,
       items: [
         {
-          title: "Introduction",
+          title: "My QR Code",
           url: "#",
         },
         {
-          title: "Get Started",
+          title: "Scan QR Code",
+          url: "#",
+        },
+      ],
+    },
+    {
+      title: "Notifications",
+      url: "#",
+      icon: Timer,
+      items: [
+        {
+          title: "Reminders",
           url: "#",
         },
         {
-          title: "Tutorials",
-          url: "#",
-        },
-        {
-          title: "Changelog",
+          title: "Event Alerts",
           url: "#",
         },
       ],
@@ -119,39 +102,14 @@ const data = {
       icon: Settings2,
       items: [
         {
-          title: "General",
+          title: "Profile",
           url: "#",
         },
         {
-          title: "Team",
-          url: "#",
-        },
-        {
-          title: "Billing",
-          url: "#",
-        },
-        {
-          title: "Limits",
+          title: "Account Security",
           url: "#",
         },
       ],
-    },
-  ],
-  projects: [
-    {
-      name: "Design Engineering",
-      url: "#",
-      icon: Frame,
-    },
-    {
-      name: "Sales & Marketing",
-      url: "#",
-      icon: PieChart,
-    },
-    {
-      name: "Travel",
-      url: "#",
-      icon: Map,
     },
   ],
 };
@@ -164,7 +122,6 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       </SidebarHeader>
       <SidebarContent>
         <NavMain items={data.navMain} />
-        <NavProjects projects={data.projects} />
       </SidebarContent>
       <SidebarFooter>
         <NavUser user={data.user} />

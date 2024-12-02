@@ -19,26 +19,23 @@ Design and implement a web application for the Supreme Student Government (SSG) 
   Admins can generate unique QR codes for each event, which students can scan to check in.
 
 - **Personal QR Code Generation:**  
-  Each student gets a unique QR code that is used for event check-ins, helping with attendance tracking.
+  Each student can opt to generate a unique QR code that is used for event check-ins, helping with attendance tracking.
 
 - **QR Code Scanning:**  
-  Students can scan the event QR code and their personal QR code to check in. This ensures easy access and authentication.
+  Students can scan the event QR code or the admins scan their personal QR code to check in. This ensures easy access and authentication.
 
 - **Attendance Reports:**  
   Generate automatic attendance reports, listing attendees with check-in timestamps, and allowing export in PDF or CSV format.
-
-- **Offline Functionality:**  
-  Students can check in without an internet connection. Data is stored locally and synced with the server once the connection is restored.
 
 - **Time-Limited Access:**  
   Implement a time limit for event check-ins to ensure students are marked absent if they fail to check in on time.
 
 ### 2. Anti-Cheating Measures
 - **Kiosk Scanning:**  
-  Dedicated kiosks are available for students to scan their personal QR codes for event check-ins to prevent cheating.
+  Dedicated kiosks are available for students to scan QR codes for event check-ins.
 
 - **Single Scan Per Student:**  
-  Each student can only scan once per event. Multiple scans are prevented.
+  Each student can only scan once or twice per event. Multiple scans are prevented.
 
 - **Physical Presence Verification:**  
   Using Geolocation API, the system verifies that the student is physically present at the event location when they scan the QR code.
