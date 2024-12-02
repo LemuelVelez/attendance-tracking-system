@@ -9,6 +9,7 @@ import {
   DollarSign,
   Bell,
   Settings2,
+  CheckSquare,
 } from "lucide-react";
 
 import { NavMain } from "@/components/nav-main";
@@ -62,12 +63,27 @@ const data = {
       icon: UserPlus,
       items: [
         {
-          title: "Register Students",
+          title: "Register Student",
           url: "/admin/register-student",
         },
         {
           title: "View Student Profiles",
           url: "/admin/student-profiles",
+        },
+      ],
+    },
+    {
+      title: "QR Code",
+      url: "#",
+      icon: CheckSquare,
+      items: [
+        {
+          title: "My QR Code",
+          url: "#",
+        },
+        {
+          title: "Scan QR Code",
+          url: "#",
         },
       ],
     },
