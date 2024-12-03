@@ -34,7 +34,7 @@ const data = {
     {
       name: "Admin Dashboard",
       logo: ShieldCheck,
-      plan: "Enterprise",
+      plan: "Access to all features",
     },
   ],
   navMain: [
