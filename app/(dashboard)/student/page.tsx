@@ -1,4 +1,6 @@
-"use client"; // Ensure this is a client-side component
+"use client";
+
+import { useState, useEffect } from "react";
 import { Sun, Moon } from "lucide-react";
 import { AppSidebar } from "@/app/(dashboard)/student/app-sidebar";
 import { Separator } from "@/components/ui/separator";
@@ -16,9 +18,28 @@ import {
 import { useTheme } from "next-themes";
 import { Button } from "@/components/ui/button";
 import withAuth from "@/components/hoc/withAuth";
+import { getCurrentUserFirstname } from "@/lib/users/getFirstname";
 
 const Page = () => {
   const { setTheme } = useTheme();
+  const [firstname, setFirstname] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchFirstname = async () => {
+      try {
+        const name = await getCurrentUserFirstname();
+        setFirstname(name);
+      } catch (error) {
+        console.error("Failed to fetch user's firstname:", error);
+        setFirstname("User"); // Default to "User" if fetch fails
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchFirstname();
+  }, []);
 
   return (
     <SidebarProvider>
@@ -29,8 +50,8 @@ const Page = () => {
             <SidebarTrigger className="-ml-1" />
             <Separator orientation="vertical" className="mr-2 h-4" />
           </div>
-          <div className="text-lg font-semibold">
-            Welcome to your dashboard!
+          <div className="text-base sm:text-lg md:text-xl lg:text-2xl font-semibold">
+            {loading ? "Loading..." : `Welcome ${firstname}!`}
           </div>
 
           {/* Theme toggle dropdown */}

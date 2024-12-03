@@ -49,9 +49,10 @@ export function NavUser({
         icon: "success",
         title: "Logged out successfully!",
         text: "You have been logged out.",
-        confirmButtonText: "OK",
+        showConfirmButton: false,
+        timer: 3500,
       }).then(() => {
-        router.push("/"); // Redirect to login page
+        router.push("/"); // Redirect to the login page
       });
     } catch (error) {
       console.error("Error logging out:", error);
