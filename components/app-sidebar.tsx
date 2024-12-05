@@ -45,7 +45,7 @@ const data = {
       items: [
         {
           title: "Create Events",
-          url: "/admin/create-event",
+          url: "/admin",
         },
         {
           title: "Generate Event QR Codes",
