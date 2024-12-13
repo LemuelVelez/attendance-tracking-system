@@ -51,7 +51,7 @@ const Page = () => {
             <Separator orientation="vertical" className="mr-2 h-4" />
           </div>
           <div className="text-base sm:text-lg md:text-xl lg:text-2xl font-semibold">
-            {loading ? "Loading..." : `Welcome ${firstname}!`}
+            {loading ? "Loading..." : `Welcome, ${firstname}!`}
           </div>
 
           {/* Theme toggle dropdown */}

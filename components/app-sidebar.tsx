@@ -134,8 +134,8 @@ const data = {
       icon: Settings2,
       items: [
         {
-          title: "General Settings",
-          url: "/admin/settings",
+          title: "Profile Settings",
+          url: "/admin/profile-settings",
         },
       ],
     },
