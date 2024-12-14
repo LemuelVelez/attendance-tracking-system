@@ -106,7 +106,7 @@ export const setUserAvatar = async (avatarFile: File) => {
     );
 
     // Step 5: Construct the correct avatar URL with required query parameters
-    const avatarUrl = `${client.config.endpoint}/storage/buckets/${AVATAR_BUCKET_ID}/files/${uploadedFile.$id}/view?project=${client.config.project}&mode=admin`;
+    const avatarUrl = `${client.config.endpoint}/storage/buckets/${AVATAR_BUCKET_ID}/files/${uploadedFile.$id}/view?project=${client.config.project}`;
 
     // Step 6: Update the user's document with the new avatar URL
     const updatedDocument = await databases.updateDocument(
