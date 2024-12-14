@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import Swal from "sweetalert2";
 import {
   Card,
   CardHeader,
@@ -13,6 +14,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
   getCurrentSessionUser,
   changePassword,
+  editUserData,
   getUserAvatar,
   setUserAvatar,
 } from "@/lib/profile/profile";
@@ -30,7 +32,7 @@ interface UserData {
 
 export default function Profile() {
   const [userData, setUserData] = useState<UserData | null>(null);
-  const [avatarUrl, setAvatarUrl] = useState("");
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -51,47 +53,75 @@ export default function Profile() {
           yearLevel: user.yearLevel,
           section: user.section,
         };
-
         setUserData(userData);
+
         const avatar = await getUserAvatar();
         setAvatarUrl(avatar);
       } catch (error) {
+        Swal.fire("Error", "Failed to fetch user data or avatar.", "error");
         console.error("Error fetching user data or avatar:", error);
       }
     }
     fetchUserData();
   }, []);
 
-  // Handle avatar upload
+  // Handle updating user data
+  const handleEditUserData = async () => {
+    if (!userData) return;
+
+    try {
+      await editUserData(userData);
+      Swal.fire("Success", "Profile updated successfully.", "success");
+    } catch (error) {
+      console.error("Error updating profile:", error);
+      Swal.fire(
+        "Error",
+        "Failed to update profile. Please try again.",
+        "error"
+      );
+    }
+  };
+
+  // Handle uploading and setting a new avatar
   const handleAvatarUpload = async (
     event: React.ChangeEvent<HTMLInputElement>
   ) => {
     const file = event.target.files?.[0];
-    if (file) {
-      try {
-        const avatar = await setUserAvatar(file);
-        setAvatarUrl(avatar);
-      } catch (error) {
-        console.error("Error uploading avatar:", error);
-      }
+    if (!file) return;
+
+    try {
+      const newAvatarUrl = await setUserAvatar(file);
+      setAvatarUrl(newAvatarUrl);
+      Swal.fire("Success", "Avatar updated successfully.", "success");
+    } catch (error) {
+      console.error("Error updating avatar:", error);
+      Swal.fire("Error", "Failed to update avatar. Please try again.", "error");
     }
   };
 
   // Handle password change
   const handleChangePassword = async () => {
     if (newPassword !== confirmPassword) {
-      alert("New password and confirm password do not match.");
+      Swal.fire(
+        "Error",
+        "New password and confirm password do not match.",
+        "error"
+      );
       return;
     }
     try {
       await changePassword(currentPassword, newPassword);
-      alert("Password changed successfully.");
+      Swal.fire("Success", "Password changed successfully.", "success");
       setCurrentPassword("");
       setNewPassword("");
       setConfirmPassword("");
     } catch (error) {
       console.error("Error changing password:", error);
-      alert("Failed to change password. Please try again.");
+      Swal.fire(
+        "Error",
+        "Failed to change password. Please try again.",
+        "error"
+      );
     }
   };
 
@@ -110,10 +140,11 @@ export default function Profile() {
           <CardContent className="space-y-4">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Avatar>
-                  <AvatarImage src={avatarUrl} alt="User Avatar" />
+                <Avatar className="w-auto h-auto">
+                  <AvatarImage src={avatarUrl || undefined} alt="User Avatar" />
                   <AvatarFallback>NA</AvatarFallback>
                 </Avatar>
+
                 <div>
                   <Label htmlFor="avatar-upload" className="cursor-pointer">
                     <div className="flex items-center space-x-2 bg-primary text-primary-foreground hover:bg-primary/90 h-10 px-4 py-2 rounded-md">
@@ -133,7 +164,13 @@ export default function Profile() {
               <div></div>
               <div className="space-y-2">
                 <Label htmlFor="name">Name</Label>
-                <Input id="name" defaultValue={userData?.name || ""} />
+                <Input
+                  id="name"
+                  defaultValue={userData?.name || ""}
+                  onChange={(e) =>
+                    setUserData({ ...userData, name: e.target.value })
+                  }
+                />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="email">Email</Label>
@@ -141,6 +178,9 @@ export default function Profile() {
                   id="email"
                   type="email"
                   defaultValue={userData?.email || ""}
+                  onChange={(e) =>
+                    setUserData({ ...userData, email: e.target.value })
+                  }
                 />
               </div>
               <div className="space-y-2">
@@ -148,6 +188,9 @@ export default function Profile() {
                 <Input
                   id="studentId"
                   defaultValue={userData?.studentId || ""}
+                  onChange={(e) =>
+                    setUserData({ ...userData, studentId: e.target.value })
+                  }
                 />
               </div>
               <div className="space-y-2">
@@ -155,6 +198,9 @@ export default function Profile() {
                 <Input
                   id="degreeProgram"
                   defaultValue={userData?.degreeProgram || ""}
+                  onChange={(e) =>
+                    setUserData({ ...userData, degreeProgram: e.target.value })
+                  }
                 />
               </div>
               <div className="space-y-2">
@@ -162,14 +208,25 @@ export default function Profile() {
                 <Input
                   id="yearLevel"
                   defaultValue={userData?.yearLevel || ""}
+                  onChange={(e) =>
+                    setUserData({ ...userData, yearLevel: e.target.value })
+                  }
                 />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="section">Section</Label>
-                <Input id="section" defaultValue={userData?.section || ""} />
+                <Input
+                  id="section"
+                  defaultValue={userData?.section || ""}
+                  onChange={(e) =>
+                    setUserData({ ...userData, section: e.target.value })
+                  }
+                />
               </div>
             </div>
-            <Button className="w-full">Save Changes</Button>
+            <Button className="w-full" onClick={handleEditUserData}>
+              Save Changes
+            </Button>
           </CardContent>
         </Card>
 
