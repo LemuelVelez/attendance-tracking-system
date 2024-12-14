@@ -19,7 +19,7 @@ import { useTheme } from "next-themes";
 import WithAuthAdmin from "@/components/hoc/WithAuthAdmin"; // Import the HOC
 import { Button } from "@/components/ui/button";
 import { getCurrentUserFirstname } from "@/lib/users/getFirstname";
-import Profile from "./profile";
+import CreateEvent from "./create-event";
 
 const Page = () => {
   const { setTheme } = useTheme();
@@ -75,7 +75,7 @@ const Page = () => {
           </DropdownMenu>
         </header>
         <div></div>
-        <Profile />
+        <CreateEvent />
       </SidebarInset>
     </SidebarProvider>
   );

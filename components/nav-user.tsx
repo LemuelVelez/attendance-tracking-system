@@ -24,7 +24,11 @@ import {
 import { logoutStudentUser } from "@/lib/auth/login";
 import { getUserAvatar, getCurrentSessionUser } from "@/lib/profile/profile";
 
-export function NavUser() {
+export function NavUser({
+  user: userProp, // Renaming the prop to avoid conflict
+}: {
+  user: { name: string; email: string; avatar: string };
+}) {
   const router = useRouter();
   const { isMobile } = useSidebar();
 
@@ -43,9 +47,9 @@ export function NavUser() {
         const avatarUrl = await getUserAvatar();
 
         setUser({
-          name: currentUser.name || "Unknown User",
-          email: currentUser.email || "Unknown Email",
-          avatar: avatarUrl || "",
+          name: currentUser.name || userProp.name || "Unknown User",
+          email: currentUser.email || userProp.email || "Unknown Email",
+          avatar: avatarUrl || userProp.avatar || "",
         });
       } catch (error) {
         console.error("Error fetching user data:", error);
@@ -59,7 +63,7 @@ export function NavUser() {
     };
 
     fetchUserData();
-  }, []);
+  }, [userProp]); // Include `userProp` as a dependency
 
   const handleLogout = async () => {
     try {
@@ -83,7 +87,6 @@ export function NavUser() {
       });
     }
   };
-
   return (
     <SidebarMenu>
       <SidebarMenuItem>

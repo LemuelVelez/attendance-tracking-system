@@ -10,6 +10,7 @@ import {
   Bell,
   Settings2,
   CheckSquare,
+  Layout,
 } from "lucide-react";
 
 import { NavMain } from "@/components/nav-main";
@@ -28,7 +29,7 @@ const data = {
   user: {
     name: "Admin",
     email: "admin@example.com",
-    avatar: "/avatars/admin.jpg",
+    avatar: "https://github.com/shadcn.png",
   },
   teams: [
     {
@@ -39,13 +40,24 @@ const data = {
   ],
   navMain: [
     {
+      title: "Dashboard",
+      url: "#",
+      icon: Layout,
+      items: [
+        {
+          title: "Overview",
+          url: "/admin",
+        },
+      ],
+    },
+    {
       title: "Event Management",
       url: "#",
       icon: QrCode,
       items: [
         {
           title: "Create Events",
-          url: "/admin",
+          url: "/admin/create-event",
         },
         {
           title: "Generate Event QR Codes",
