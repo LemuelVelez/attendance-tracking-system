@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Swal from "sweetalert2";
 import { ChevronsUpDown, LogOut } from "lucide-react";
@@ -21,18 +22,44 @@ import {
 } from "@/components/ui/sidebar";
 
 import { logoutStudentUser } from "@/lib/auth/login";
+import { getUserAvatar, getCurrentSessionUser } from "@/lib/profile/profile";
 
-export function NavUser({
-  user,
-}: {
-  user: {
-    name: string;
-    email: string;
-    avatar: string;
-  };
-}) {
+export function NavUser() {
   const router = useRouter();
   const { isMobile } = useSidebar();
+
+  const [user, setUser] = useState({
+    name: "",
+    email: "",
+    avatar: "",
+  });
+
+  // Fetch user data on component mount
+  useEffect(() => {
+    const fetchUserData = async () => {
+      try {
+        // Fetch current session user data
+        const currentUser = await getCurrentSessionUser();
+        const avatarUrl = await getUserAvatar();
+
+        setUser({
+          name: currentUser.name || "Unknown User",
+          email: currentUser.email || "Unknown Email",
+          avatar: avatarUrl || "",
+        });
+      } catch (error) {
+        console.error("Error fetching user data:", error);
+        Swal.fire({
+          icon: "error",
+          title: "Failed to fetch user data",
+          text: "Unable to retrieve user information. Please try again.",
+          confirmButtonText: "OK",
+        });
+      }
+    };
+
+    fetchUserData();
+  }, []);
 
   const handleLogout = async () => {
     try {

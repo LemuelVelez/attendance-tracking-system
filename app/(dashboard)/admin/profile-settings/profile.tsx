@@ -142,7 +142,9 @@ export default function Profile() {
               <div className="space-y-2">
                 <Avatar className="w-auto h-auto">
                   <AvatarImage src={avatarUrl || undefined} alt="User Avatar" />
-                  <AvatarFallback>NA</AvatarFallback>
+                  <AvatarFallback className="rounded-lg w-auto h-auto">
+                    CN
+                  </AvatarFallback>
                 </Avatar>
 
                 <div>

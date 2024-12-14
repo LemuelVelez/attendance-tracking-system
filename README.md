@@ -91,13 +91,10 @@ Design and implement a web application for the Supreme Student Government (SSG) 
 4. **Event Check-in:**  
    Students scan both the event QR code and their personal QR code to check in. The system validates the QR code and logs attendance.
 
-5. **Offline Mode:**  
-   If there’s no internet connection, check-ins are stored locally using IndexedDB. Data is synced with the server once a connection is available.
-
-6. **Reports and Fines:**  
+5. **Reports and Fines:**  
    Attendance reports are automatically generated and can be exported. Fines are tracked based on absences.
 
-7. **Admin Dashboard:**  
+6. **Admin Dashboard:**  
    Admins can manage events, view attendance reports, and monitor attendance fines.
 
 ## Deployment
