@@ -233,7 +233,7 @@ export default function Profile() {
         </Card>
 
         {/* Change Password Card */}
-        <Card>
+        <Card className="max-h-fit">
           <CardHeader>
             <CardTitle>Change Password</CardTitle>
             <CardDescription>Update your account password.</CardDescription>
