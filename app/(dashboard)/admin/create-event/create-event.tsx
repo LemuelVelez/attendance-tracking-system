@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { CalendarIcon, Clock, MapPin, ImageIcon, QrCode } from "lucide-react";
+import { CalendarIcon, Clock, MapPin, QrCode } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -128,19 +128,6 @@ export default function CreateEvent() {
               id="description"
               placeholder="Provide a brief description of the event"
             />
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="image">Event Image</Label>
-            <div className="flex items-center space-x-2">
-              <Button variant="outline" className="w-full">
-                <ImageIcon className="mr-2 h-4 w-4" />
-                Upload Image
-              </Button>
-              <span className="text-sm text-muted-foreground">
-                No file chosen
-              </span>
-            </div>
           </div>
 
           <div className="space-y-2">
