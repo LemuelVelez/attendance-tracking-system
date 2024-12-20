@@ -56,12 +56,12 @@ const data = {
       icon: QrCode,
       items: [
         {
-          title: "Create Events",
+          title: "Create Event",
           url: "/admin/create-event",
         },
         {
-          title: "Generate Event QR Codes",
-          url: "/admin/generate-qr",
+          title: "Events",
+          url: "/admin/events",
         },
         {
           title: "View Event Attendance",

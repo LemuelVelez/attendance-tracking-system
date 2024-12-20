@@ -1,20 +1,20 @@
 "use client";
 
 import { useState } from "react";
-import { CalendarIcon, Clock, MapPin, QrCode } from "lucide-react";
+import { CalendarIcon, Clock, MapPin, Loader2 } from "lucide-react";
+import { createEvent } from "@/lib/events/eventService";
 
 import { Button } from "@/components/ui/button";
 import {
   Card,
   CardContent,
   CardDescription,
-  CardFooter,
   CardHeader,
   CardTitle,
+  CardFooter,
 } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
 import { Calendar } from "@/components/ui/calendar";
 import {
   Popover,
@@ -28,9 +28,126 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { cn } from "@/lib/utils";
+
+interface FormField {
+  value: string;
+  error: string | null;
+}
 
 export default function CreateEvent() {
-  const [date, setDate] = useState<Date>();
+  const [date, setDate] = useState<Date | undefined>(undefined);
+  const [alertDialog, setAlertDialog] = useState<{
+    isOpen: boolean;
+    title: string;
+    description: string;
+  } | null>(null);
+  const [formFields, setFormFields] = useState<{ [key: string]: FormField }>({
+    eventName: { value: "", error: null },
+    eventTime: { value: "", error: null },
+    location: { value: "", error: null },
+    description: { value: "", error: null },
+  });
+  const [isLoading, setIsLoading] = useState(false);
+
+  const updateField = (field: string, value: string) => {
+    setFormFields((prev) => ({
+      ...prev,
+      [field]: { ...prev[field], value, error: null },
+    }));
+  };
+
+  const validateForm = () => {
+    let isValid = true;
+    const newFormFields = { ...formFields };
+
+    if (!formFields.eventName.value) {
+      newFormFields.eventName.error = "Event name is required";
+      isValid = false;
+    }
+
+    if (!date) {
+      isValid = false;
+      setAlertDialog({
+        isOpen: true,
+        title: "Error",
+        description: "Please select a date for the event.",
+      });
+    }
+
+    if (!formFields.eventTime.value) {
+      newFormFields.eventTime.error = "Event time is required";
+      isValid = false;
+    }
+
+    if (!formFields.location.value) {
+      newFormFields.location.error = "Location is required";
+      isValid = false;
+    }
+
+    setFormFields(newFormFields);
+    return isValid;
+  };
+
+  const handleCreateEvent = async () => {
+    if (validateForm()) {
+      setIsLoading(true);
+      try {
+        if (!date) {
+          throw new Error("Date is required");
+        }
+
+        const eventData = {
+          eventName: formFields.eventName.value,
+          date: date.toISOString().split("T")[0], // Format date as YYYY-MM-DD
+          time: formFields.eventTime.value,
+          day: date.toLocaleDateString("en-US", { weekday: "long" }), // Add this line
+          location: formFields.location.value,
+          description: formFields.description.value,
+        };
+
+        const createdEvent = await createEvent(eventData);
+
+        setAlertDialog({
+          isOpen: true,
+          title: "Success",
+          description: `Event "${createdEvent.eventName}" created successfully for ${eventData.date} at ${eventData.time}!`,
+        });
+
+        console.log("Created event:", createdEvent);
+
+        // Reset form after successful creation
+        setDate(undefined);
+        setFormFields({
+          eventName: { value: "", error: null },
+          eventTime: { value: "", error: null },
+          location: { value: "", error: null },
+          description: { value: "", error: null },
+        });
+      } catch (error) {
+        console.error("Error creating event:", error);
+        setAlertDialog({
+          isOpen: true,
+          title: "Error",
+          description:
+            error instanceof Error
+              ? error.message
+              : "Failed to create event. Please try again.",
+        });
+      } finally {
+        setIsLoading(false);
+      }
+    }
+  };
 
   return (
     <div className="container mx-auto py-10">
@@ -43,18 +160,38 @@ export default function CreateEvent() {
         </CardHeader>
         <CardContent className="space-y-6">
           <div className="space-y-2">
-            <Label htmlFor="event-name">Event Name</Label>
-            <Input id="event-name" placeholder="Enter event name" />
+            <Label htmlFor="event-name" className="flex items-center">
+              Event Name
+              <span className="text-destructive ml-1">*</span>
+            </Label>
+            <Input
+              id="event-name"
+              placeholder="Enter event name"
+              value={formFields.eventName.value}
+              onChange={(e) => updateField("eventName", e.target.value)}
+              className={cn(formFields.eventName.error && "border-destructive")}
+            />
+            {formFields.eventName.error && (
+              <p className="text-sm text-destructive">
+                {formFields.eventName.error}
+              </p>
+            )}
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label>Date</Label>
+              <Label className="flex items-center">
+                Date
+                <span className="text-destructive ml-1">*</span>
+              </Label>
               <Popover>
                 <PopoverTrigger asChild>
                   <Button
                     variant="outline"
-                    className="w-full justify-start text-left font-normal"
+                    className={cn(
+                      "w-full justify-start text-left font-normal",
+                      !date && "text-muted-foreground"
+                    )}
                   >
                     <CalendarIcon className="mr-2 h-4 w-4" />
                     {date ? date.toDateString() : <span>Pick a date</span>}
@@ -72,18 +209,27 @@ export default function CreateEvent() {
             </div>
 
             <div className="space-y-2">
-              <Label>Time</Label>
-              <Select>
-                <SelectTrigger>
+              <Label className="flex items-center">
+                Time
+                <span className="text-destructive ml-1">*</span>
+              </Label>
+              <Select
+                value={formFields.eventTime.value}
+                onValueChange={(value) => updateField("eventTime", value)}
+              >
+                <SelectTrigger
+                  className={cn(
+                    formFields.eventTime.error && "border-destructive"
+                  )}
+                >
                   <Clock className="mr-2 h-4 w-4" />
                   <SelectValue placeholder="Select time" />
                 </SelectTrigger>
                 <SelectContent>
                   {Array.from({ length: 24 }, (_, i) => i).map((hour) => {
-                    const formattedHour = hour % 12 === 0 ? 12 : hour % 12; // Convert to 12-hour format
-                    const suffix = hour < 12 ? "AM" : "PM"; // AM/PM suffix
+                    const formattedHour = hour % 12 === 0 ? 12 : hour % 12;
+                    const suffix = hour < 12 ? "AM" : "PM";
 
-                    // Create options for both 00 and 30 minutes for each hour
                     return (
                       <>
                         <SelectItem
@@ -107,51 +253,76 @@ export default function CreateEvent() {
                   })}
                 </SelectContent>
               </Select>
+              {formFields.eventTime.error && (
+                <p className="text-sm text-destructive">
+                  {formFields.eventTime.error}
+                </p>
+              )}
             </div>
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="location">Location</Label>
+            <Label htmlFor="location" className="flex items-center">
+              Location
+              <span className="text-destructive ml-1">*</span>
+            </Label>
             <div className="relative">
               <MapPin className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
               <Input
                 id="location"
                 placeholder="Event location"
-                className="pl-8"
+                className={cn(
+                  "pl-8",
+                  formFields.location.error && "border-destructive"
+                )}
+                value={formFields.location.value}
+                onChange={(e) => updateField("location", e.target.value)}
               />
             </div>
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="description">Description</Label>
-            <Textarea
-              id="description"
-              placeholder="Provide a brief description of the event"
-            />
-          </div>
-
-          <div className="space-y-2">
-            <Label>QR Code Expiration</Label>
-            <Select>
-              <SelectTrigger>
-                <SelectValue placeholder="Select expiration time" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="15">15 minutes</SelectItem>
-                <SelectItem value="30">30 minutes</SelectItem>
-                <SelectItem value="60">1 hour</SelectItem>
-                <SelectItem value="120">2 hours</SelectItem>
-              </SelectContent>
-            </Select>
+            {formFields.location.error && (
+              <p className="text-sm text-destructive">
+                {formFields.location.error}
+              </p>
+            )}
           </div>
         </CardContent>
         <CardFooter>
-          <Button className="w-full">
-            <QrCode className="mr-2 h-4 w-4" />
-            Create Event and Generate QR Code
+          <Button
+            className="w-full"
+            onClick={handleCreateEvent}
+            disabled={isLoading}
+          >
+            {isLoading ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Creating...
+              </>
+            ) : (
+              <>
+                <CalendarIcon className="mr-2 h-4 w-4" />
+                Create Event
+              </>
+            )}
           </Button>
         </CardFooter>
       </Card>
+
+      <AlertDialog
+        open={alertDialog?.isOpen}
+        onOpenChange={() => setAlertDialog(null)}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>{alertDialog?.title}</AlertDialogTitle>
+            <AlertDialogDescription>
+              {alertDialog?.description}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogAction>OK</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
