@@ -1,4 +1,4 @@
-import { Client, Databases } from "appwrite";
+import { Client, Databases, ID } from "appwrite";
 
 // Initialize the Appwrite Client
 const client = new Client();
@@ -34,7 +34,6 @@ export const createEvent = async (data: {
   time: string;
   day: string;
   location: string;
-  description: string;
 }) => {
   try {
     validateEnvVariables();
@@ -42,14 +41,13 @@ export const createEvent = async (data: {
     const eventDocument = await databases.createDocument(
       DATABASE_ID,
       EVENTS_COLLECTION_ID,
-      "unique()", // Appwrite will generate a unique ID
+      ID.unique(), // Appwrite will generate a unique ID
       {
         eventName: data.eventName,
         date: data.date,
         time: data.time,
         day: data.day,
         location: data.location,
-        description: data.description,
       }
     );
 
@@ -57,6 +55,96 @@ export const createEvent = async (data: {
     return eventDocument;
   } catch (error) {
     console.error("Error in createEvent:", error);
+    throw error;
+  }
+};
+
+export interface Event {
+  $id: string;
+  eventName: string;
+  date: string;
+  time: string;
+  day: string;
+  location: string;
+  description: string;
+}
+
+/**
+ * Fetch all events from the events collection.
+ */
+export const getAllEvents = async (): Promise<Event[]> => {
+  try {
+    validateEnvVariables();
+
+    const response = await databases.listDocuments(
+      DATABASE_ID,
+      EVENTS_COLLECTION_ID
+    );
+
+    const events: Event[] = response.documents.map((doc) => ({
+      $id: doc.$id,
+      eventName: doc.eventName,
+      date: doc.date,
+      time: doc.time,
+      day: doc.day,
+      location: doc.location,
+      description: doc.description,
+    }));
+
+    console.log("All events fetched:", events);
+    return events;
+  } catch (error) {
+    console.error("Error in getAllEvents:", error);
+    throw error;
+  }
+};
+
+export const editEvent = async (
+  eventId: string,
+  data: Partial<Event>
+): Promise<Event> => {
+  try {
+    validateEnvVariables();
+
+    const eventDocument = await databases.updateDocument(
+      DATABASE_ID,
+      EVENTS_COLLECTION_ID,
+      eventId,
+      data
+    );
+
+    const updatedEvent: Event = {
+      $id: eventDocument.$id,
+      eventName: eventDocument.eventName,
+      date: eventDocument.date,
+      time: eventDocument.time,
+      day: eventDocument.day,
+      location: eventDocument.location,
+      description: eventDocument.description,
+    };
+
+    console.log("Event document updated:", updatedEvent);
+    return updatedEvent;
+  } catch (error) {
+    console.error("Error in editEvent:", error);
+    throw error;
+  }
+};
+
+/**
+ * Delete an event from the events collection.
+ * @param eventId - The ID of the event to delete
+ */
+export const deleteEvent = async (eventId: string): Promise<boolean> => {
+  try {
+    validateEnvVariables();
+
+    await databases.deleteDocument(DATABASE_ID, EVENTS_COLLECTION_ID, eventId);
+
+    console.log("Event document deleted:", eventId);
+    return true;
+  } catch (error) {
+    console.error("Error in deleteEvent:", error);
     throw error;
   }
 };

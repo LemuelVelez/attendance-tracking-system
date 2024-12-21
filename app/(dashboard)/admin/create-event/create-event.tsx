@@ -109,8 +109,8 @@ export default function CreateEvent() {
         const eventData = {
           eventName: formFields.eventName.value,
           date: date.toISOString().split("T")[0], // Format date as YYYY-MM-DD
-          time: formFields.eventTime.value,
-          day: date.toLocaleDateString("en-US", { weekday: "long" }), // Add this line
+          time: formFields.eventTime.value, // This is now in 24-hour format
+          day: date.toLocaleDateString("en-US", { weekday: "long" }),
           location: formFields.location.value,
           description: formFields.description.value,
         };
@@ -120,7 +120,11 @@ export default function CreateEvent() {
         setAlertDialog({
           isOpen: true,
           title: "Success",
-          description: `Event "${createdEvent.eventName}" created successfully for ${eventData.date} at ${eventData.time}!`,
+          description: `Event "${
+            createdEvent.eventName
+          }" created successfully for ${eventData.date} at ${formatTime(
+            eventData.time
+          )}!`,
         });
 
         console.log("Created event:", createdEvent);
@@ -147,6 +151,14 @@ export default function CreateEvent() {
         setIsLoading(false);
       }
     }
+  };
+
+  const formatTime = (time: string): string => {
+    const [hours, minutes] = time.split(":");
+    const hour = parseInt(hours, 10);
+    const ampm = hour >= 12 ? "PM" : "AM";
+    const formattedHour = hour % 12 || 12;
+    return `${formattedHour}:${minutes} ${ampm}`;
   };
 
   return (
@@ -225,30 +237,19 @@ export default function CreateEvent() {
                   <Clock className="mr-2 h-4 w-4" />
                   <SelectValue placeholder="Select time" />
                 </SelectTrigger>
-                <SelectContent>
-                  {Array.from({ length: 24 }, (_, i) => i).map((hour) => {
-                    const formattedHour = hour % 12 === 0 ? 12 : hour % 12;
-                    const suffix = hour < 12 ? "AM" : "PM";
+                <SelectContent className="max-h-60 overflow-y-auto">
+                  {Array.from({ length: 48 }, (_, i) => {
+                    const hour = Math.floor(i / 2);
+                    const minute = i % 2 === 0 ? "00" : "30";
+                    const time24 = `${hour
+                      .toString()
+                      .padStart(2, "0")}:${minute}`;
+                    const time12 = formatTime(time24);
 
                     return (
-                      <>
-                        <SelectItem
-                          key={`${hour}-00`}
-                          value={`${formattedHour}:00 ${suffix}`}
-                        >
-                          {`${formattedHour
-                            .toString()
-                            .padStart(2, "0")}:00 ${suffix}`}
-                        </SelectItem>
-                        <SelectItem
-                          key={`${hour}-30`}
-                          value={`${formattedHour}:30 ${suffix}`}
-                        >
-                          {`${formattedHour
-                            .toString()
-                            .padStart(2, "0")}:30 ${suffix}`}
-                        </SelectItem>
-                      </>
+                      <SelectItem key={time24} value={time24}>
+                        {time12}
+                      </SelectItem>
                     );
                   })}
                 </SelectContent>
