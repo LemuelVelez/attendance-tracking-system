@@ -64,8 +64,8 @@ const data = {
           url: "/admin/events",
         },
         {
-          title: "View Event Attendance",
-          url: "/admin/event-attendance",
+          title: "General Attendance",
+          url: "/admin/general-attendance",
         },
       ],
     },
