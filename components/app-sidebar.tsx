@@ -63,10 +63,6 @@ const data = {
           title: "Events",
           url: "/admin/events",
         },
-        {
-          title: "General Attendance",
-          url: "/admin/general-attendance",
-        },
       ],
     },
     {
@@ -95,7 +91,7 @@ const data = {
         },
         {
           title: "Scan QR Code",
-          url: "#",
+          url: "/admin/qr-code-scanner",
         },
       ],
     },
@@ -105,8 +101,8 @@ const data = {
       icon: FileText,
       items: [
         {
-          title: "Generate Attendance Reports",
-          url: "/admin/reports",
+          title: "General Attendance",
+          url: "/admin/general-attendance",
         },
         {
           title: "Export Reports (PDF/CSV)",
