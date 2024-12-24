@@ -1,4 +1,6 @@
-import React, { useState } from "react";
+"use client";
+
+import React, { useState, useEffect } from "react";
 import Swal from "sweetalert2";
 import {
   Card,
@@ -20,7 +22,6 @@ import {
 } from "@/lib/profile/profile";
 import { Upload, Eye, EyeOff } from "lucide-react";
 
-// Define the structure of userData
 interface UserData {
   name?: string;
   email?: string;
@@ -40,8 +41,7 @@ export default function Profile() {
   const [showNewPassword, setShowNewPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
-  // Fetch user data and avatar on component mount
-  React.useEffect(() => {
+  useEffect(() => {
     async function fetchUserData() {
       try {
         const user = await getCurrentSessionUser();
@@ -58,14 +58,13 @@ export default function Profile() {
         const avatar = await getUserAvatar();
         setAvatarUrl(avatar);
       } catch (error) {
-        Swal.fire("Error", "Failed to fetch user data or avatar.", "error");
         console.error("Error fetching user data or avatar:", error);
+        Swal.fire("Error", "Failed to fetch user data or avatar.", "error");
       }
     }
     fetchUserData();
   }, []);
 
-  // Handle updating user data
   const handleEditUserData = async () => {
     if (!userData) return;
 
@@ -82,7 +81,6 @@ export default function Profile() {
     }
   };
 
-  // Handle uploading and setting a new avatar
   const handleAvatarUpload = async (
     event: React.ChangeEvent<HTMLInputElement>
   ) => {
@@ -99,7 +97,6 @@ export default function Profile() {
     }
   };
 
-  // Handle password change
   const handleChangePassword = async () => {
     if (newPassword !== confirmPassword) {
       Swal.fire(
@@ -126,51 +123,47 @@ export default function Profile() {
   };
 
   return (
-    <div className="w-full max-w-4xl mx-auto px-4 py-12 md:py-16">
+    <div className="container mx-auto px-4 py-8 md:py-12 lg:py-16">
       <header className="mb-8">
         <h1 className="text-3xl font-bold">Profile Settings</h1>
       </header>
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+      <div className="grid gap-8 md:grid-cols-2">
         {/* Personal Information Card */}
         <Card>
           <CardHeader>
             <CardTitle>Personal Information</CardTitle>
             <CardDescription>Update your profile details.</CardDescription>
           </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Avatar className="w-auto h-auto">
-                  <AvatarImage src={avatarUrl || undefined} alt="User Avatar" />
-                  <AvatarFallback className="rounded-lg w-auto h-auto">
-                    CN
-                  </AvatarFallback>
-                </Avatar>
-
-                <div>
-                  <Label htmlFor="avatar-upload" className="cursor-pointer">
-                    <div className="flex items-center space-x-2 bg-primary text-primary-foreground hover:bg-primary/90 h-10 px-4 py-2 rounded-md">
-                      <Upload className="w-5 h-5" />
-                      <span>Upload New Profile Picture</span>
-                    </div>
-                    <Input
-                      id="avatar-upload"
-                      type="file"
-                      className="hidden"
-                      accept="image/*"
-                      onChange={handleAvatarUpload}
-                    />
-                  </Label>
+          <CardContent className="space-y-6">
+            <div className="flex flex-col items-center space-y-4">
+              <Avatar className="w-24 h-24">
+                <AvatarImage src={avatarUrl || undefined} alt="User Avatar" />
+                <AvatarFallback className="text-2xl">
+                  {userData?.name?.charAt(0) || "U"}
+                </AvatarFallback>
+              </Avatar>
+              <Label htmlFor="avatar-upload" className="cursor-pointer">
+                <div className="flex items-center space-x-2 bg-primary text-primary-foreground hover:bg-primary/90 h-10 px-4 py-2 rounded-md">
+                  <Upload className="w-5 h-5" />
+                  <span>Upload New Picture</span>
                 </div>
-              </div>
-              <div></div>
+                <Input
+                  id="avatar-upload"
+                  type="file"
+                  className="hidden"
+                  accept="image/*"
+                  onChange={handleAvatarUpload}
+                />
+              </Label>
+            </div>
+            <div className="grid gap-4 sm:grid-cols-2">
               <div className="space-y-2">
                 <Label htmlFor="name">Name</Label>
                 <Input
                   id="name"
-                  defaultValue={userData?.name || ""}
+                  value={userData?.name || ""}
                   onChange={(e) =>
-                    setUserData({ ...userData, name: e.target.value })
+                    setUserData((prev) => ({ ...prev, name: e.target.value }))
                   }
                 />
               </div>
@@ -179,9 +172,9 @@ export default function Profile() {
                 <Input
                   id="email"
                   type="email"
-                  defaultValue={userData?.email || ""}
+                  value={userData?.email || ""}
                   onChange={(e) =>
-                    setUserData({ ...userData, email: e.target.value })
+                    setUserData((prev) => ({ ...prev, email: e.target.value }))
                   }
                 />
               </div>
@@ -189,9 +182,12 @@ export default function Profile() {
                 <Label htmlFor="studentId">Student ID</Label>
                 <Input
                   id="studentId"
-                  defaultValue={userData?.studentId || ""}
+                  value={userData?.studentId || ""}
                   onChange={(e) =>
-                    setUserData({ ...userData, studentId: e.target.value })
+                    setUserData((prev) => ({
+                      ...prev,
+                      studentId: e.target.value,
+                    }))
                   }
                 />
               </div>
@@ -199,9 +195,12 @@ export default function Profile() {
                 <Label htmlFor="degreeProgram">Degree Program</Label>
                 <Input
                   id="degreeProgram"
-                  defaultValue={userData?.degreeProgram || ""}
+                  value={userData?.degreeProgram || ""}
                   onChange={(e) =>
-                    setUserData({ ...userData, degreeProgram: e.target.value })
+                    setUserData((prev) => ({
+                      ...prev,
+                      degreeProgram: e.target.value,
+                    }))
                   }
                 />
               </div>
@@ -209,9 +208,12 @@ export default function Profile() {
                 <Label htmlFor="yearLevel">Year Level</Label>
                 <Input
                   id="yearLevel"
-                  defaultValue={userData?.yearLevel || ""}
+                  value={userData?.yearLevel || ""}
                   onChange={(e) =>
-                    setUserData({ ...userData, yearLevel: e.target.value })
+                    setUserData((prev) => ({
+                      ...prev,
+                      yearLevel: e.target.value,
+                    }))
                   }
                 />
               </div>
@@ -219,9 +221,12 @@ export default function Profile() {
                 <Label htmlFor="section">Section</Label>
                 <Input
                   id="section"
-                  defaultValue={userData?.section || ""}
+                  value={userData?.section || ""}
                   onChange={(e) =>
-                    setUserData({ ...userData, section: e.target.value })
+                    setUserData((prev) => ({
+                      ...prev,
+                      section: e.target.value,
+                    }))
                   }
                 />
               </div>
@@ -233,7 +238,7 @@ export default function Profile() {
         </Card>
 
         {/* Change Password Card */}
-        <Card className="max-h-fit">
+        <Card className="h-fit">
           <CardHeader>
             <CardTitle>Change Password</CardTitle>
             <CardDescription>Update your account password.</CardDescription>
@@ -248,16 +253,19 @@ export default function Profile() {
                   value={currentPassword}
                   onChange={(e) => setCurrentPassword(e.target.value)}
                 />
-                <span
-                  className="absolute inset-y-0 right-3 flex items-center cursor-pointer"
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  className="absolute inset-y-0 right-0"
                   onClick={() => setShowCurrentPassword(!showCurrentPassword)}
                 >
                   {showCurrentPassword ? (
-                    <EyeOff className="h-4 w-4 sm:h-5 sm:w-5" />
+                    <EyeOff className="h-4 w-4" />
                   ) : (
-                    <Eye className="h-4 w-4 sm:h-5 sm:w-5" />
+                    <Eye className="h-4 w-4" />
                   )}
-                </span>
+                </Button>
               </div>
             </div>
             <div className="space-y-2">
@@ -269,16 +277,19 @@ export default function Profile() {
                   value={newPassword}
                   onChange={(e) => setNewPassword(e.target.value)}
                 />
-                <span
-                  className="absolute inset-y-0 right-3 flex items-center cursor-pointer"
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  className="absolute inset-y-0 right-0"
                   onClick={() => setShowNewPassword(!showNewPassword)}
                 >
                   {showNewPassword ? (
-                    <EyeOff className="h-4 w-4 sm:h-5 sm:w-5" />
+                    <EyeOff className="h-4 w-4" />
                   ) : (
-                    <Eye className="h-4 w-4 sm:h-5 sm:w-5" />
+                    <Eye className="h-4 w-4" />
                   )}
-                </span>
+                </Button>
               </div>
             </div>
             <div className="space-y-2">
@@ -290,16 +301,19 @@ export default function Profile() {
                   value={confirmPassword}
                   onChange={(e) => setConfirmPassword(e.target.value)}
                 />
-                <span
-                  className="absolute inset-y-0 right-3 flex items-center cursor-pointer"
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  className="absolute inset-y-0 right-0"
                   onClick={() => setShowConfirmPassword(!showConfirmPassword)}
                 >
                   {showConfirmPassword ? (
-                    <EyeOff className="h-4 w-4 sm:h-5 sm:w-5" />
+                    <EyeOff className="h-4 w-4" />
                   ) : (
-                    <Eye className="h-4 w-4 sm:h-5 sm:w-5" />
+                    <Eye className="h-4 w-4" />
                   )}
-                </span>
+                </Button>
               </div>
             </div>
             <Button className="w-full" onClick={handleChangePassword}>
