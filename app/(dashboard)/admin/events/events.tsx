@@ -167,20 +167,17 @@ export default function EventDisplay() {
     const svg = document.getElementById(`qr-code-${event.$id}`);
     if (svg) {
       const svgData = new XMLSerializer().serializeToString(svg);
-      const canvas = document.createElement("canvas");
-      const ctx = canvas.getContext("2d");
-      const img = new Image();
-      img.onload = () => {
-        canvas.width = img.width;
-        canvas.height = img.height;
-        ctx?.drawImage(img, 0, 0);
-        const pngFile = canvas.toDataURL("image/png");
-        const downloadLink = document.createElement("a");
-        downloadLink.download = `${event.eventName}-QR.png`;
-        downloadLink.href = pngFile;
-        downloadLink.click();
-      };
-      img.src = "data:image/svg+xml;base64," + btoa(svgData);
+      const svgBlob = new Blob([svgData], {
+        type: "image/svg+xml;charset=utf-8",
+      });
+      const svgUrl = URL.createObjectURL(svgBlob);
+      const downloadLink = document.createElement("a");
+      downloadLink.href = svgUrl;
+      downloadLink.download = `${event.eventName}-QR.svg`;
+      document.body.appendChild(downloadLink);
+      downloadLink.click();
+      document.body.removeChild(downloadLink);
+      URL.revokeObjectURL(svgUrl);
     }
   };
 
@@ -310,7 +307,7 @@ export default function EventDisplay() {
                             className="flex-1"
                           >
                             <Download className="mr-2 h-4 w-4" />
-                            Download
+                            Download SVG
                           </Button>
                           <Button
                             onClick={() => printQRCode(event)}
