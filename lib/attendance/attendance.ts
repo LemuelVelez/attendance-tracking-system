@@ -1,4 +1,12 @@
-import { Client, Databases, Query, Account, Permission, Role } from "appwrite";
+import {
+  Client,
+  Databases,
+  Query,
+  Account,
+  ID,
+  Permission,
+  Role,
+} from "appwrite";
 
 const client = new Client();
 client
@@ -113,11 +121,11 @@ export const createGeneralAttendance = async (
       return null;
     }
 
-    // Create the document with permissions, using user.userId as the document ID
+    // Create the document with permissions
     const result = await databases.createDocument(
       DATABASE_ID,
       GENERAL_ATTENDANCE_COLLECTION_ID,
-      user.userId, // Use user.userId as the document ID
+      ID.unique(),
       {
         ...user,
         ...eventData,

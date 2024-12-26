@@ -7,7 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { motion, AnimatePresence } from "framer-motion";
-import { Loader2, Upload, Camera } from "lucide-react";
+import { Loader2, Upload, Camera, CheckCircle } from "lucide-react";
 import {
   createGeneralAttendance,
   EventData,
@@ -16,6 +16,18 @@ import jsQR from "jsqr";
 import { ResultDialog } from "./SuccessDialog";
 
 type ScanMode = "camera" | "image" | null;
+
+const SuccessOverlay = () => (
+  <div className="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center z-10">
+    <div className="bg-white p-4 rounded-lg shadow-lg text-center">
+      <CheckCircle className="mx-auto mb-2 text-green-500 h-12 w-12" />
+      <p className="text-lg font-semibold">QR Code Scanned Successfully!</p>
+      <p className="text-sm text-gray-600">
+        Please wait while we process the result...
+      </p>
+    </div>
+  </div>
+);
 
 export default function QRCodeScanner() {
   const [error, setError] = useState<string | null>(null);
@@ -33,6 +45,8 @@ export default function QRCodeScanner() {
     type: "success",
     message: "",
   });
+  const [isScanningAllowed, setIsScanningAllowed] = useState(true);
+  const [showSuccessOverlay, setShowSuccessOverlay] = useState(false);
 
   useEffect(() => {
     setError(null);
@@ -40,7 +54,9 @@ export default function QRCodeScanner() {
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const handleScan = async (result: any) => {
-    if (result) {
+    if (result && isScanningAllowed) {
+      setIsScanningAllowed(false);
+      setShowSuccessOverlay(true);
       await processQRCode(result.text);
     }
   };
@@ -102,6 +118,7 @@ export default function QRCodeScanner() {
       }
     } finally {
       setIsLoading(false);
+      setShowSuccessOverlay(false);
     }
   };
 
@@ -138,6 +155,7 @@ export default function QRCodeScanner() {
               imageData.height
             );
             if (code) {
+              setShowSuccessOverlay(true);
               await processQRCode(code.data);
             } else {
               setError(
@@ -165,6 +183,8 @@ export default function QRCodeScanner() {
     setIsLoading(false);
     setUploadedImage(null);
     setIsScanning(false);
+    setIsScanningAllowed(true);
+    setShowSuccessOverlay(false);
     if (fileInputRef.current) {
       fileInputRef.current.value = "";
     }
@@ -202,31 +222,33 @@ export default function QRCodeScanner() {
                 transition={{ duration: 0.3 }}
                 className="mb-4"
               >
-                {scanMode === "camera" ? (
-                  <div className="relative">
+                <div className="relative">
+                  {scanMode === "camera" ? (
                     <QrReader
                       onResult={handleScan}
                       constraints={{ facingMode: "environment" }}
                       videoId="qr-reader-video"
-                      scanDelay={300}
+                      scanDelay={isScanningAllowed ? 300 : undefined}
                       containerStyle={{ width: "100%" }}
                       videoStyle={{ width: "100%" }}
                     />
-                    <ScanningAnimation />
-                  </div>
-                ) : uploadedImage ? (
-                  <div className="relative">
+                  ) : uploadedImage ? (
                     <img
                       src={uploadedImage}
                       alt="Uploaded QR Code"
                       className="w-full"
                     />
-                    {isScanning && <ScanningAnimation />}
-                  </div>
-                ) : null}
+                  ) : null}
+                  {isScanningAllowed && !showSuccessOverlay && (
+                    <ScanningAnimation />
+                  )}
+                  {showSuccessOverlay && <SuccessOverlay />}
+                </div>
                 <p className="text-center mt-2 text-sm text-gray-600">
                   {scanMode === "camera"
-                    ? "Align QR code within the frame"
+                    ? isScanningAllowed
+                      ? "Align QR code within the frame"
+                      : "QR code scanned. Please wait..."
                     : isScanning
                     ? "Scanning uploaded image..."
                     : "Processing uploaded image..."}
