@@ -1,3 +1,4 @@
+/* eslint-disable @next/next/no-img-element */
 "use client";
 
 import React, { useState, useRef, useEffect } from "react";
@@ -67,14 +68,22 @@ export default function QRCodeScanner() {
       }
 
       // Create the general attendance record
-      await createGeneralAttendance(eventData);
+      const result = await createGeneralAttendance(eventData);
 
-      setDialogState({
-        isOpen: true,
-        type: "success",
-        message:
-          "Your attendance has been recorded for this event. Thank you for participating!",
-      });
+      if (result === null) {
+        setDialogState({
+          isOpen: true,
+          type: "error",
+          message: "You have already recorded attendance for this event.",
+        });
+      } else {
+        setDialogState({
+          isOpen: true,
+          type: "success",
+          message:
+            "Your attendance has been recorded for this event. Thank you for participating!",
+        });
+      }
       setScanMode(null);
     } catch (err) {
       console.error("Error processing QR code:", err);
@@ -85,16 +94,6 @@ export default function QRCodeScanner() {
           );
         } else if (err.message.includes("No active session found")) {
           setError("No active session found. Please log in and try again.");
-        } else if (
-          err.message.includes(
-            "You have already recorded attendance for this event"
-          )
-        ) {
-          setDialogState({
-            isOpen: true,
-            type: "error",
-            message: "You have already recorded attendance for this event.",
-          });
         } else {
           setError(err.message);
         }

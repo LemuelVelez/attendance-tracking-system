@@ -88,7 +88,7 @@ const getCurrentUser = async (): Promise<User | null> => {
 
 export const createGeneralAttendance = async (
   eventData: EventData
-): Promise<GeneralAttendance> => {
+): Promise<GeneralAttendance | null> => {
   try {
     validateEnvVariables();
 
@@ -104,11 +104,13 @@ export const createGeneralAttendance = async (
       [
         Query.equal("userId", user.userId),
         Query.equal("eventName", eventData.eventName),
+        Query.equal("date", eventData.date),
       ]
     );
 
     if (existingRecords.documents.length > 0) {
-      throw new Error("You have already recorded attendance for this event.");
+      console.log("Attendance already recorded for this event.");
+      return null; // Return null to indicate that no new record was created
     }
 
     const attendanceData: GeneralAttendance = {
