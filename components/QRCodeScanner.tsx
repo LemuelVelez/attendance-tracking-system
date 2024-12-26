@@ -7,17 +7,12 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { motion, AnimatePresence } from "framer-motion";
 import { Loader2, Upload, Camera } from "lucide-react";
-import { createGeneralAttendance } from "@/lib/attendance/attendance";
-import { SuccessDialog } from "./SuccessDialog";
+import {
+  createGeneralAttendance,
+  EventData,
+} from "@/lib/attendance/attendance";
 import jsQR from "jsqr";
-
-interface EventData {
-  eventName: string;
-  location: string;
-  date: string;
-  day: string;
-  time: string;
-}
+import { ResultDialog } from "./SuccessDialog";
 
 type ScanMode = "camera" | "image" | null;
 
@@ -28,7 +23,15 @@ export default function QRCodeScanner() {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [uploadedImage, setUploadedImage] = useState<string | null>(null);
   const [isScanning, setIsScanning] = useState(false);
-  const [isSuccessDialogOpen, setIsSuccessDialogOpen] = useState(false);
+  const [dialogState, setDialogState] = useState<{
+    isOpen: boolean;
+    type: "success" | "error";
+    message: string;
+  }>({
+    isOpen: false,
+    type: "success",
+    message: "",
+  });
 
   useEffect(() => {
     setError(null);
@@ -66,7 +69,12 @@ export default function QRCodeScanner() {
       // Create the general attendance record
       await createGeneralAttendance(eventData);
 
-      setIsSuccessDialogOpen(true);
+      setDialogState({
+        isOpen: true,
+        type: "success",
+        message:
+          "Your attendance has been recorded for this event. Thank you for participating!",
+      });
       setScanMode(null);
     } catch (err) {
       console.error("Error processing QR code:", err);
@@ -77,6 +85,16 @@ export default function QRCodeScanner() {
           );
         } else if (err.message.includes("No active session found")) {
           setError("No active session found. Please log in and try again.");
+        } else if (
+          err.message.includes(
+            "You have already recorded attendance for this event"
+          )
+        ) {
+          setDialogState({
+            isOpen: true,
+            type: "error",
+            message: "You have already recorded attendance for this event.",
+          });
         } else {
           setError(err.message);
         }
@@ -284,9 +302,11 @@ export default function QRCodeScanner() {
           </AnimatePresence>
         </CardContent>
       </Card>
-      <SuccessDialog
-        isOpen={isSuccessDialogOpen}
-        onClose={() => setIsSuccessDialogOpen(false)}
+      <ResultDialog
+        isOpen={dialogState.isOpen}
+        onClose={() => setDialogState((prev) => ({ ...prev, isOpen: false }))}
+        type={dialogState.type}
+        message={dialogState.message}
       />
     </>
   );

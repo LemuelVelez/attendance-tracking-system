@@ -35,7 +35,7 @@ interface User {
   section: string;
 }
 
-interface EventData {
+export interface EventData {
   eventName: string;
   location: string;
   date: string;
@@ -95,6 +95,20 @@ export const createGeneralAttendance = async (
     const user = await getCurrentUser();
     if (!user) {
       throw new Error("Failed to retrieve current user data.");
+    }
+
+    // Check for existing attendance record for this user and event
+    const existingRecords = await databases.listDocuments(
+      DATABASE_ID,
+      GENERAL_ATTENDANCE_COLLECTION_ID,
+      [
+        Query.equal("userId", user.userId),
+        Query.equal("eventName", eventData.eventName),
+      ]
+    );
+
+    if (existingRecords.documents.length > 0) {
+      throw new Error("You have already recorded attendance for this event.");
     }
 
     const attendanceData: GeneralAttendance = {

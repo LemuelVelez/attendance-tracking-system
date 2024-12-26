@@ -9,21 +9,24 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 
-interface SuccessDialogProps {
+interface DialogProps {
   isOpen: boolean;
   onClose: () => void;
+  type: "success" | "error";
+  message: string;
 }
 
-export function SuccessDialog({ isOpen, onClose }: SuccessDialogProps) {
+export function ResultDialog({ isOpen, onClose, type, message }: DialogProps) {
   return (
     <AlertDialog open={isOpen}>
       <AlertDialogContent>
         <AlertDialogHeader>
-          <AlertDialogTitle>Attendance Recorded Successfully</AlertDialogTitle>
-          <AlertDialogDescription>
-            Your attendance has been recorded for this event. Thank you for
-            participating!
-          </AlertDialogDescription>
+          <AlertDialogTitle>
+            {type === "success"
+              ? "Attendance Recorded Successfully"
+              : "Error Recording Attendance"}
+          </AlertDialogTitle>
+          <AlertDialogDescription>{message}</AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
           <AlertDialogAction onClick={onClose}>OK</AlertDialogAction>

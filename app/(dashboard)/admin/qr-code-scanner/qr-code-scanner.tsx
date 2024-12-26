@@ -9,7 +9,8 @@ export default function Scanner() {
         </h1>
         <p className="text-center text-gray-600 mb-8">
           Quickly scan QR codes to record event attendance. Simply click
-          &quot;Start Scanning&quot; and align the QR code within the frame.
+          &quot;Scan with camera or Upload the QR code image&quot; and align the
+          QR code within the frame.
         </p>
         <QRCodeScanner />
         <div className="mt-8 text-center text-sm text-gray-500">
