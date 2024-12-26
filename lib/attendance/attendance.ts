@@ -1,4 +1,4 @@
-import { Client, Databases, Query, Account } from "appwrite";
+import { Client, Databases, Query, Account, Permission, Role } from "appwrite";
 
 const client = new Client();
 client
@@ -97,7 +97,7 @@ export const createGeneralAttendance = async (
       throw new Error("Failed to retrieve current user data.");
     }
 
-    // Check for existing attendance record for this user and event
+    // Check for existing attendance record
     const existingRecords = await databases.listDocuments(
       DATABASE_ID,
       GENERAL_ATTENDANCE_COLLECTION_ID,
@@ -110,22 +110,27 @@ export const createGeneralAttendance = async (
 
     if (existingRecords.documents.length > 0) {
       console.log("Attendance already recorded for this event.");
-      return null; // Return null to indicate that no new record was created
+      return null;
     }
 
-    const attendanceData: GeneralAttendance = {
-      ...user,
-      ...eventData,
-    };
-
-    const response = await databases.createDocument(
+    // Create the document with permissions, using user.userId as the document ID
+    const result = await databases.createDocument(
       DATABASE_ID,
       GENERAL_ATTENDANCE_COLLECTION_ID,
-      "unique()",
-      attendanceData
+      user.userId, // Use user.userId as the document ID
+      {
+        ...user,
+        ...eventData,
+      },
+      [
+        Permission.read(Role.any()),
+        Permission.write(Role.user(user.userId)),
+        Permission.delete(Role.user(user.userId)),
+      ]
     );
 
-    return (response as unknown) as GeneralAttendance;
+    console.log("Attendance record created successfully:", result);
+    return (result as unknown) as GeneralAttendance;
   } catch (error) {
     console.error("Error creating general attendance record:", error);
     throw error;
