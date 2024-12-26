@@ -1,5 +1,4 @@
-"use client";
-
+/* eslint-disable @next/next/no-img-element */
 import React, { useState, useEffect, useCallback } from "react";
 import {
   Card,
@@ -28,6 +27,7 @@ import {
   Trash,
   Loader2,
   Calendar,
+  UserPlus,
 } from "lucide-react";
 import QRCode from "qrcode";
 import {
@@ -40,13 +40,18 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { format, parseISO } from "date-fns";
+import Link from "next/link";
 import {
   editEvent,
   deleteEvent,
   getAllEvents,
   Event,
 } from "@/lib/events/eventService";
-import Link from "next/link";
+import {
+  createGeneralAttendance,
+  EventData,
+} from "@/lib/attendance/attendance";
+import QRCodeScanner from "./QRCodeScanner";
 
 interface AlertState {
   isOpen: boolean;
@@ -116,6 +121,8 @@ export default function EventDisplay() {
   const [loadingActions, setLoadingActions] = useState<{
     [key: string]: "save" | "delete" | null;
   }>({});
+  const [isQRScannerOpen, setIsQRScannerOpen] = useState(false);
+  const [currentEvent, setCurrentEvent] = useState<Event | null>(null);
 
   useEffect(() => {
     const fetchEvents = async () => {
@@ -243,6 +250,60 @@ export default function EventDisplay() {
     }
   };
 
+  const resetScanner = useCallback(() => {
+    setIsQRScannerOpen(false);
+    setCurrentEvent(null);
+  }, []);
+
+  const handleQRCodeScan = async (result: string) => {
+    try {
+      const scannedData = JSON.parse(result) as EventData;
+
+      if (!currentEvent) {
+        throw new Error("No event selected for attendance");
+      }
+
+      const attendanceData = {
+        ...scannedData,
+        eventName: currentEvent.eventName,
+        location: currentEvent.location,
+        date: currentEvent.date,
+        day: currentEvent.day,
+        time: currentEvent.time,
+      };
+
+      const attendanceResult = await createGeneralAttendance(attendanceData);
+
+      if (attendanceResult === null) {
+        setAlertState({
+          isOpen: true,
+          title: "Attendance Already Recorded",
+          description:
+            "This user has already recorded attendance for this event.",
+          type: "error",
+        });
+      } else {
+        setAlertState({
+          isOpen: true,
+          title: "Attendance Recorded",
+          description:
+            "Attendance has been successfully recorded for this event.",
+          type: "success",
+        });
+      }
+    } catch (error) {
+      console.error("Error processing QR code:", error);
+      setAlertState({
+        isOpen: true,
+        title: "Error",
+        description: "Failed to process the QR code. Please try again.",
+        type: "error",
+      });
+    } finally {
+      resetScanner();
+    }
+  };
+
   return (
     <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-8">
       <h1 className="text-2xl sm:text-3xl font-bold mb-6 text-center">
@@ -295,7 +356,7 @@ export default function EventDisplay() {
                     <span className="text-sm">{event.location}</span>
                   </div>
                 </div>
-                <div className="mt-4">
+                <div className="mt-4 space-y-2">
                   <Dialog>
                     <DialogTrigger asChild>
                       <Button variant="outline" className="w-full">
@@ -345,6 +406,17 @@ export default function EventDisplay() {
                       </div>
                     </DialogContent>
                   </Dialog>
+                  <Button
+                    variant="outline"
+                    className="w-full"
+                    onClick={() => {
+                      setCurrentEvent(event);
+                      setIsQRScannerOpen(true);
+                    }}
+                  >
+                    <UserPlus className="mr-2 h-4 w-4" />
+                    Record Attendance
+                  </Button>
                 </div>
               </CardContent>
               <CardFooter className="flex flex-col sm:flex-row justify-between space-y-2 sm:space-y-0 sm:space-x-2">
@@ -458,6 +530,19 @@ export default function EventDisplay() {
           </DialogContent>
         </Dialog>
       )}
+
+      <Dialog open={isQRScannerOpen} onOpenChange={setIsQRScannerOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Scan Attendance QR Code</DialogTitle>
+          </DialogHeader>
+          <QRCodeScanner
+            onScan={handleQRCodeScan}
+            onCancel={resetScanner}
+            resetScanner={resetScanner}
+          />
+        </DialogContent>
+      </Dialog>
 
       <AlertDialog
         open={alertState.isOpen}

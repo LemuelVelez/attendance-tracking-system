@@ -45,7 +45,7 @@ export default function QRCodeScanner() {
     type: "success",
     message: "",
   });
-  const [isScanningAllowed, setIsScanningAllowed] = useState(true);
+  const [isCameraEnabled, setIsCameraEnabled] = useState(true);
   const [showSuccessOverlay, setShowSuccessOverlay] = useState(false);
 
   useEffect(() => {
@@ -54,8 +54,8 @@ export default function QRCodeScanner() {
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const handleScan = async (result: any) => {
-    if (result && isScanningAllowed) {
-      setIsScanningAllowed(false);
+    if (result && isCameraEnabled) {
+      setIsCameraEnabled(false);
       setShowSuccessOverlay(true);
       await processQRCode(result.text);
     }
@@ -183,7 +183,7 @@ export default function QRCodeScanner() {
     setIsLoading(false);
     setUploadedImage(null);
     setIsScanning(false);
-    setIsScanningAllowed(true);
+    setIsCameraEnabled(true);
     setShowSuccessOverlay(false);
     if (fileInputRef.current) {
       fileInputRef.current.value = "";
@@ -224,14 +224,22 @@ export default function QRCodeScanner() {
               >
                 <div className="relative">
                   {scanMode === "camera" ? (
-                    <QrReader
-                      onResult={handleScan}
-                      constraints={{ facingMode: "environment" }}
-                      videoId="qr-reader-video"
-                      scanDelay={isScanningAllowed ? 300 : undefined}
-                      containerStyle={{ width: "100%" }}
-                      videoStyle={{ width: "100%" }}
-                    />
+                    isCameraEnabled ? (
+                      <QrReader
+                        onResult={handleScan}
+                        constraints={{ facingMode: "environment" }}
+                        videoId="qr-reader-video"
+                        scanDelay={300}
+                        containerStyle={{ width: "100%" }}
+                        videoStyle={{ width: "100%" }}
+                      />
+                    ) : (
+                      <div className="aspect-video bg-gray-200 flex items-center justify-center">
+                        <p className="text-gray-500">
+                          Camera disabled after successful scan
+                        </p>
+                      </div>
+                    )
                   ) : uploadedImage ? (
                     <img
                       src={uploadedImage}
@@ -239,16 +247,16 @@ export default function QRCodeScanner() {
                       className="w-full"
                     />
                   ) : null}
-                  {isScanningAllowed && !showSuccessOverlay && (
+                  {isCameraEnabled && !showSuccessOverlay && (
                     <ScanningAnimation />
                   )}
                   {showSuccessOverlay && <SuccessOverlay />}
                 </div>
                 <p className="text-center mt-2 text-sm text-gray-600">
                   {scanMode === "camera"
-                    ? isScanningAllowed
+                    ? isCameraEnabled
                       ? "Align QR code within the frame"
-                      : "QR code scanned. Please wait..."
+                      : "QR code scanned. Camera disabled."
                     : isScanning
                     ? "Scanning uploaded image..."
                     : "Processing uploaded image..."}
@@ -257,7 +265,7 @@ export default function QRCodeScanner() {
                   onClick={resetScanner}
                   className="w-full mt-4 bg-secondary hover:bg-secondary/90 transition-all duration-300"
                 >
-                  Cancel
+                  {isCameraEnabled ? "Cancel" : "Scan Again"}
                 </Button>
               </motion.div>
             ) : (
