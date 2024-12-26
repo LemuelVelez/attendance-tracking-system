@@ -50,6 +50,8 @@ import {
 import {
   createGeneralAttendance,
   EventData,
+  getCurrentUser,
+  User,
 } from "@/lib/attendance/attendance";
 import QRCodeScanner from "./QRCodeScanner";
 
@@ -123,6 +125,7 @@ export default function EventDisplay() {
   }>({});
   const [isQRScannerOpen, setIsQRScannerOpen] = useState(false);
   const [currentEvent, setCurrentEvent] = useState<Event | null>(null);
+  const [currentUser, setCurrentUser] = useState<User | null>(null);
 
   useEffect(() => {
     const fetchEvents = async () => {
@@ -141,6 +144,25 @@ export default function EventDisplay() {
     };
 
     fetchEvents();
+  }, []);
+
+  useEffect(() => {
+    const fetchCurrentUser = async () => {
+      try {
+        const user = await getCurrentUser();
+        setCurrentUser(user);
+      } catch (error) {
+        console.error("Error fetching current user:", error);
+        setAlertState({
+          isOpen: true,
+          title: "Error",
+          description: "Failed to fetch user data. Please try again later.",
+          type: "error",
+        });
+      }
+    };
+
+    fetchCurrentUser();
   }, []);
 
   const handleEdit = (event: Event) => {
@@ -209,29 +231,90 @@ export default function EventDisplay() {
     }
   };
 
-  const downloadQRCode = async (event: Event) => {
-    const qrCodeDataURL = await generateQRCode(event);
-    if (qrCodeDataURL) {
+  const downloadQRCode = async (event: Event | User) => {
+    let qrData;
+    if ("eventName" in event) {
+      qrData = JSON.stringify({
+        eventName: event.eventName,
+        date: event.date,
+        time: event.time,
+        day: event.day,
+        location: event.location,
+      });
+    } else {
+      qrData = JSON.stringify({
+        name: event.name,
+        studentId: event.studentId,
+        degreeProgram: event.degreeProgram,
+        yearLevel: event.yearLevel,
+        section: event.section,
+      });
+    }
+
+    try {
+      const qrCodeDataURL = await QRCode.toDataURL(qrData, {
+        errorCorrectionLevel: "H",
+        margin: 4,
+        width: 200,
+        color: {
+          dark: "#000000",
+          light: "#ffffff",
+        },
+      });
       const downloadLink = document.createElement("a");
       downloadLink.href = qrCodeDataURL;
-      downloadLink.download = `${event.eventName}-QR.png`;
+      downloadLink.download = `QR.png`;
       document.body.appendChild(downloadLink);
       downloadLink.click();
       document.body.removeChild(downloadLink);
+    } catch (error) {
+      console.error("Error generating QR code:", error);
     }
   };
 
-  const printQRCode = async (event: Event) => {
-    const qrCodeDataURL = await generateQRCode(event);
-    const printWindow = window.open("", "", "height=400,width=800");
-    printWindow?.document.write(
-      "<html><head><title>Print QR Code</title></head><body>"
-    );
-    printWindow?.document.write(`<h1>${event.eventName} QR Code</h1>`);
-    printWindow?.document.write(`<img src="${qrCodeDataURL}" alt="QR Code" />`);
-    printWindow?.document.write("</body></html>");
-    printWindow?.document.close();
-    printWindow?.print();
+  const printQRCode = async (event: Event | User) => {
+    let qrData;
+    if ("eventName" in event) {
+      qrData = JSON.stringify({
+        eventName: event.eventName,
+        date: event.date,
+        time: event.time,
+        day: event.day,
+        location: event.location,
+      });
+    } else {
+      qrData = JSON.stringify({
+        name: event.name,
+        studentId: event.studentId,
+        degreeProgram: event.degreeProgram,
+        yearLevel: event.yearLevel,
+        section: event.section,
+      });
+    }
+    try {
+      const qrCodeDataURL = await QRCode.toDataURL(qrData, {
+        errorCorrectionLevel: "H",
+        margin: 4,
+        width: 200,
+        color: {
+          dark: "#000000",
+          light: "#ffffff",
+        },
+      });
+      const printWindow = window.open("", "", "height=400,width=800");
+      printWindow?.document.write(
+        "<html><head><title>Print QR Code</title></head><body>"
+      );
+      printWindow?.document.write(`<h1>QR Code</h1>`);
+      printWindow?.document.write(
+        `<img src="${qrCodeDataURL}" alt="QR Code" />`
+      );
+      printWindow?.document.write("</body></html>");
+      printWindow?.document.close();
+      printWindow?.print();
+    } catch (error) {
+      console.error("Error generating QR code:", error);
+    }
   };
 
   const formatEventDate = (date: string) => {
@@ -366,37 +449,45 @@ export default function EventDisplay() {
                     <DialogContent className="sm:max-w-md">
                       <DialogHeader>
                         <DialogTitle className="text-center">
-                          Event QR Code
+                          User QR Code
                         </DialogTitle>
                       </DialogHeader>
                       <div className="flex flex-col items-center p-6 bg-white rounded-lg shadow-inner">
                         <div className="bg-white p-4 rounded-lg shadow-md">
-                          <QRCodeDisplay event={event} />
+                          {currentUser && <QRCodeDisplay event={event} />}
                         </div>
                         <div className="mt-6 text-center">
-                          <h3 className="font-semibold text-lg mb-2">
-                            {event.eventName}
-                          </h3>
-                          <p className="text-sm text-gray-600 mb-1">
-                            {event.day}, {formatEventDate(event.date)}
-                          </p>
-                          <p className="text-sm text-gray-600 mb-1">
-                            {formatEventTime(event.time)}
-                          </p>
-                          <p className="text-sm text-gray-600">
-                            {event.location}
-                          </p>
+                          {currentUser && (
+                            <>
+                              <h3 className="font-semibold text-lg mb-2">
+                                {currentUser.name}
+                              </h3>
+                              <p className="text-sm text-gray-600 mb-1">
+                                ID: {currentUser.studentId}
+                              </p>
+                              <p className="text-sm text-gray-600 mb-1">
+                                {currentUser.degreeProgram}
+                              </p>
+                              <p className="text-sm text-gray-600">
+                                {currentUser.yearLevel} - {currentUser.section}
+                              </p>
+                            </>
+                          )}
                         </div>
                         <div className="flex mt-6 space-x-4">
                           <Button
-                            onClick={() => downloadQRCode(event)}
+                            onClick={() =>
+                              currentUser && downloadQRCode(currentUser)
+                            }
                             className="flex-1"
                           >
                             <Download className="mr-2 h-4 w-4" />
                             Download PNG
                           </Button>
                           <Button
-                            onClick={() => printQRCode(event)}
+                            onClick={() =>
+                              currentUser && printQRCode(currentUser)
+                            }
                             className="flex-1"
                           >
                             <Printer className="mr-2 h-4 w-4" />

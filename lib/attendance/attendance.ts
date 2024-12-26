@@ -34,7 +34,7 @@ const validateEnvVariables = () => {
   }
 };
 
-interface User {
+export interface User {
   userId: string;
   studentId: string;
   name: string;
