@@ -96,12 +96,12 @@ const QRCodeScanner: React.FC<QRCodeScannerProps> = ({
 
   const ScanningAnimation = () => (
     <div className="absolute inset-0 flex items-center justify-center">
-      <div className="w-full h-1 bg-primary/20 overflow-hidden">
+      <div className="w-full h-full relative overflow-hidden">
         <motion.div
-          className="h-full bg-primary"
-          initial={{ x: "-100%" }}
-          animate={{ x: "100%" }}
-          transition={{ repeat: Infinity, duration: 1, ease: "linear" }}
+          className="w-full h-1 bg-primary absolute left-0"
+          initial={{ top: "0%" }}
+          animate={{ top: "100%" }}
+          transition={{ repeat: Infinity, duration: 2, ease: "linear" }}
         />
       </div>
     </div>

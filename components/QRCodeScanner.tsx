@@ -29,6 +29,19 @@ const SuccessOverlay = () => (
   </div>
 );
 
+const ScanningAnimation = () => (
+  <div className="absolute inset-0 flex items-center justify-center">
+    <div className="w-full h-full relative overflow-hidden">
+      <motion.div
+        className="w-full h-1 bg-primary absolute left-0"
+        initial={{ top: "0%" }}
+        animate={{ top: "100%" }}
+        transition={{ repeat: Infinity, duration: 2, ease: "linear" }}
+      />
+    </div>
+  </div>
+);
+
 export default function QRCodeScanner() {
   const [error, setError] = useState<string | null>(null);
   const [scanMode, setScanMode] = useState<ScanMode>(null);
@@ -190,19 +203,6 @@ export default function QRCodeScanner() {
     }
   };
 
-  const ScanningAnimation = () => (
-    <div className="absolute inset-0 flex items-center justify-center">
-      <div className="w-full h-1 bg-primary/20 overflow-hidden">
-        <motion.div
-          className="h-full bg-primary"
-          initial={{ x: "-100%" }}
-          animate={{ x: "100%" }}
-          transition={{ repeat: Infinity, duration: 1, ease: "linear" }}
-        />
-      </div>
-    </div>
-  );
-
   return (
     <>
       <Card className="w-full max-w-md mx-auto shadow-lg">
@@ -225,14 +225,19 @@ export default function QRCodeScanner() {
                 <div className="relative">
                   {scanMode === "camera" ? (
                     isCameraEnabled ? (
-                      <QrReader
-                        onResult={handleScan}
-                        constraints={{ facingMode: "environment" }}
-                        videoId="qr-reader-video"
-                        scanDelay={300}
-                        containerStyle={{ width: "100%" }}
-                        videoStyle={{ width: "100%" }}
-                      />
+                      <div className="relative">
+                        <QrReader
+                          onResult={handleScan}
+                          constraints={{ facingMode: "environment" }}
+                          videoId="qr-reader-video"
+                          scanDelay={300}
+                          containerStyle={{ width: "100%" }}
+                          videoStyle={{ width: "100%" }}
+                        />
+                        {isCameraEnabled && !showSuccessOverlay && (
+                          <ScanningAnimation />
+                        )}
+                      </div>
                     ) : (
                       <div className="aspect-video bg-gray-200 flex items-center justify-center">
                         <p className="text-gray-500">
@@ -247,9 +252,6 @@ export default function QRCodeScanner() {
                       className="w-full"
                     />
                   ) : null}
-                  {isCameraEnabled && !showSuccessOverlay && (
-                    <ScanningAnimation />
-                  )}
                   {showSuccessOverlay && <SuccessOverlay />}
                 </div>
                 <p className="text-center mt-2 text-sm text-gray-600">
