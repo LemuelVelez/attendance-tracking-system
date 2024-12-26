@@ -87,7 +87,7 @@ const data = {
       items: [
         {
           title: "My QR Code",
-          url: "#",
+          url: "/admin/my-qr-code",
         },
         {
           title: "Scan QR Code",
