@@ -1,50 +1,38 @@
-"use client";
+"use client"
 
-import React, { useState, useEffect } from "react";
-import Swal from "sweetalert2";
-import {
-  Card,
-  CardHeader,
-  CardTitle,
-  CardDescription,
-  CardContent,
-} from "@/components/ui/card";
-import { Label } from "@/components/ui/label";
-import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { useState, useEffect } from "react"
+import Swal from "sweetalert2"
+import { Upload, Eye, EyeOff } from 'lucide-react'
+
+import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card"
+import { Label } from "@/components/ui/label"
+import { Input } from "@/components/ui/input"
+import { Button } from "@/components/ui/button"
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+
 import {
   getCurrentSessionUser,
   changePassword,
   editUserData,
   getUserAvatar,
   setUserAvatar,
-} from "@/lib/profile/profile";
-import { Upload, Eye, EyeOff } from "lucide-react";
-
-interface UserData {
-  name?: string;
-  email?: string;
-  studentId?: string;
-  degreeProgram?: string;
-  yearLevel?: string;
-  section?: string;
-}
+  type UserData,
+} from "@/lib/profile/profile"
 
 export default function Profile() {
-  const [userData, setUserData] = useState<UserData | null>(null);
-  const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
-  const [currentPassword, setCurrentPassword] = useState("");
-  const [newPassword, setNewPassword] = useState("");
-  const [confirmPassword, setConfirmPassword] = useState("");
-  const [showCurrentPassword, setShowCurrentPassword] = useState(false);
-  const [showNewPassword, setShowNewPassword] = useState(false);
-  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [userData, setUserData] = useState<UserData | null>(null)
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(null)
+  const [currentPassword, setCurrentPassword] = useState("")
+  const [newPassword, setNewPassword] = useState("")
+  const [confirmPassword, setConfirmPassword] = useState("")
+  const [showCurrentPassword, setShowCurrentPassword] = useState(false)
+  const [showNewPassword, setShowNewPassword] = useState(false)
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false)
 
   useEffect(() => {
     async function fetchUserData() {
       try {
-        const user = await getCurrentSessionUser();
+        const user = await getCurrentSessionUser()
         const userData: UserData = {
           name: user.name,
           email: user.email,
@@ -52,75 +40,61 @@ export default function Profile() {
           degreeProgram: user.degreeProgram,
           yearLevel: user.yearLevel,
           section: user.section,
-        };
-        setUserData(userData);
+        }
+        setUserData(userData)
 
-        const avatar = await getUserAvatar();
-        setAvatarUrl(avatar);
+        const avatar = await getUserAvatar()
+        setAvatarUrl(avatar)
       } catch (error) {
-        console.error("Error fetching user data or avatar:", error);
-        Swal.fire("Error", "Failed to fetch user data or avatar.", "error");
+        console.error("Error fetching user data or avatar:", error)
+        Swal.fire("Error", "Failed to fetch user data or avatar.", "error")
       }
     }
-    fetchUserData();
-  }, []);
+    fetchUserData()
+  }, [])
 
   const handleEditUserData = async () => {
-    if (!userData) return;
+    if (!userData) return
 
     try {
-      await editUserData(userData);
-      Swal.fire("Success", "Profile updated successfully.", "success");
+      await editUserData(userData)
+      Swal.fire("Success", "Profile updated successfully.", "success")
     } catch (error) {
-      console.error("Error updating profile:", error);
-      Swal.fire(
-        "Error",
-        "Failed to update profile. Please try again.",
-        "error"
-      );
+      console.error("Error updating profile:", error)
+      Swal.fire("Error", "Failed to update profile. Please try again.", "error")
     }
-  };
+  }
 
-  const handleAvatarUpload = async (
-    event: React.ChangeEvent<HTMLInputElement>
-  ) => {
-    const file = event.target.files?.[0];
-    if (!file) return;
+  const handleAvatarUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0]
+    if (!file) return
 
     try {
-      const newAvatarUrl = await setUserAvatar(file);
-      setAvatarUrl(newAvatarUrl);
-      Swal.fire("Success", "Avatar updated successfully.", "success");
+      const newAvatarUrl = await setUserAvatar(file)
+      setAvatarUrl(newAvatarUrl)
+      Swal.fire("Success", "Avatar updated successfully.", "success")
     } catch (error) {
-      console.error("Error updating avatar:", error);
-      Swal.fire("Error", "Failed to update avatar. Please try again.", "error");
+      console.error("Error updating avatar:", error)
+      Swal.fire("Error", "Failed to update avatar. Please try again.", "error")
     }
-  };
+  }
 
   const handleChangePassword = async () => {
     if (newPassword !== confirmPassword) {
-      Swal.fire(
-        "Error",
-        "New password and confirm password do not match.",
-        "error"
-      );
-      return;
+      Swal.fire("Error", "New password and confirm password do not match.", "error")
+      return
     }
     try {
-      await changePassword(currentPassword, newPassword);
-      Swal.fire("Success", "Password changed successfully.", "success");
-      setCurrentPassword("");
-      setNewPassword("");
-      setConfirmPassword("");
+      await changePassword(currentPassword, newPassword)
+      Swal.fire("Success", "Password changed successfully.", "success")
+      setCurrentPassword("")
+      setNewPassword("")
+      setConfirmPassword("")
     } catch (error) {
-      console.error("Error changing password:", error);
-      Swal.fire(
-        "Error",
-        "Failed to change password. Please try again.",
-        "error"
-      );
+      console.error("Error changing password:", error)
+      Swal.fire("Error", "Failed to change password. Please try again.", "error")
     }
-  };
+  }
 
   return (
     <div className="container mx-auto px-4 py-8 md:py-12 lg:py-16">
@@ -136,15 +110,15 @@ export default function Profile() {
           </CardHeader>
           <CardContent className="space-y-6">
             <div className="flex flex-col items-center space-y-4">
-              <Avatar className="w-24 h-24">
+              <Avatar className="h-24 w-24">
                 <AvatarImage src={avatarUrl || undefined} alt="User Avatar" />
                 <AvatarFallback className="text-2xl">
                   {userData?.name?.charAt(0) || "U"}
                 </AvatarFallback>
               </Avatar>
               <Label htmlFor="avatar-upload" className="cursor-pointer">
-                <div className="flex items-center space-x-2 bg-primary text-primary-foreground hover:bg-primary/90 h-10 px-4 py-2 rounded-md">
-                  <Upload className="w-5 h-5" />
+                <div className="flex h-10 items-center space-x-2 rounded-md bg-primary px-4 py-2 text-primary-foreground hover:bg-primary/90">
+                  <Upload className="h-5 w-5" />
                   <span>Upload New Picture</span>
                 </div>
                 <Input
@@ -323,5 +297,6 @@ export default function Profile() {
         </Card>
       </div>
     </div>
-  );
+  )
 }
+

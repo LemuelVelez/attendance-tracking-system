@@ -32,18 +32,22 @@ import {
 import { logoutStudentUser } from "@/lib/auth/login";
 import { getUserAvatar, getCurrentSessionUser } from "@/lib/profile/profile";
 
-export function NavUser({
-  user: userProp, // Renaming the prop to avoid conflict
-}: {
-  user: { name: string; email: string; avatar: string };
-}) {
+interface NavUserProps {
+  user: {
+    name: string;
+    email: string;
+    avatar: string;
+  };
+}
+
+export function NavUser({ user: userProp }: NavUserProps) {
   const router = useRouter();
   const { isMobile } = useSidebar();
 
   const [user, setUser] = useState({
     name: "",
     email: "",
-    avatar: "",
+    avatar: "https://github.com/shadcn.png",
   });
 
   const [alertState, setAlertState] = useState({
@@ -53,21 +57,23 @@ export function NavUser({
     onConfirm: () => {},
   });
 
-  // Fetch user data on component mount
   useEffect(() => {
     const fetchUserData = async () => {
       try {
-        // Fetch current session user data
         const currentUser = await getCurrentSessionUser();
         const avatarUrl = await getUserAvatar();
 
         setUser({
           name: currentUser.name || userProp.name || "Unknown User",
           email: currentUser.email || userProp.email || "Unknown Email",
-          avatar: avatarUrl || userProp.avatar || "",
+          avatar: avatarUrl || "https://github.com/shadcn.png",
         });
       } catch (error) {
         console.error("Error fetching user data:", error);
+        setUser((prev) => ({
+          ...prev,
+          avatar: "https://github.com/shadcn.png",
+        }));
         setAlertState({
           isOpen: true,
           title: "Failed to fetch user data",
@@ -79,7 +85,7 @@ export function NavUser({
     };
 
     fetchUserData();
-  }, [userProp]); // Include `userProp` as a dependency
+  }, [userProp]);
 
   const handleLogout = async () => {
     try {
@@ -90,7 +96,7 @@ export function NavUser({
         description: "You have been logged out.",
         onConfirm: () => {
           setAlertState((prev) => ({ ...prev, isOpen: false }));
-          router.push("/"); // Redirect to the login page
+          router.push("/");
         },
       });
     } catch (error) {
@@ -116,7 +122,9 @@ export function NavUser({
               >
                 <Avatar className="h-8 w-8 rounded-lg">
                   <AvatarImage src={user.avatar} alt={user.name} />
-                  <AvatarFallback className="rounded-lg">CN</AvatarFallback>
+                  <AvatarFallback className="rounded-lg">
+                    {user.name?.charAt(0) || "U"}
+                  </AvatarFallback>
                 </Avatar>
                 <div className="grid flex-1 text-left text-sm leading-tight">
                   <span className="truncate font-semibold">{user.name}</span>
@@ -135,7 +143,9 @@ export function NavUser({
                 <div className="flex items-center gap-2 px-1 py-1.5 text-left text-sm">
                   <Avatar className="h-8 w-8 rounded-lg">
                     <AvatarImage src={user.avatar} alt={user.name} />
-                    <AvatarFallback className="rounded-lg">CN</AvatarFallback>
+                    <AvatarFallback className="rounded-lg">
+                      {user.name?.charAt(0) || "U"}
+                    </AvatarFallback>
                   </Avatar>
                   <div className="grid flex-1 text-left text-sm leading-tight">
                     <span className="truncate font-semibold">{user.name}</span>
@@ -143,10 +153,9 @@ export function NavUser({
                   </div>
                 </div>
               </DropdownMenuLabel>
-
               <DropdownMenuSeparator />
               <DropdownMenuItem onClick={handleLogout}>
-                <LogOut />
+                <LogOut className="mr-2 h-4 w-4" />
                 Log out
               </DropdownMenuItem>
             </DropdownMenuContent>

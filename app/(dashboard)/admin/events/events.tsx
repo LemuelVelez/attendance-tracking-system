@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import {
   Card,
   CardContent,
@@ -29,7 +29,7 @@ import {
   Loader2,
   Calendar,
 } from "lucide-react";
-import { QRCodeSVG } from "qrcode.react";
+import QRCode from "qrcode";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -54,6 +54,55 @@ interface AlertState {
   description: string;
   type: "success" | "error";
 }
+
+const generateQRCode = async (event: Event): Promise<string> => {
+  const qrData = JSON.stringify({
+    eventName: event.eventName,
+    date: event.date,
+    time: event.time,
+    day: event.day,
+    location: event.location,
+  });
+
+  try {
+    const qrCodeDataURL = await QRCode.toDataURL(qrData, {
+      errorCorrectionLevel: "H",
+      margin: 4,
+      width: 200,
+      color: {
+        dark: "#000000",
+        light: "#ffffff",
+      },
+    });
+    return qrCodeDataURL;
+  } catch (error) {
+    console.error("Error generating QR code:", error);
+    return "";
+  }
+};
+
+const QRCodeDisplay: React.FC<{ event: Event }> = ({ event }) => {
+  const [qrCodeSrc, setQrCodeSrc] = useState<string>("");
+
+  const generateAndSetQRCode = useCallback(async () => {
+    const qrCodeDataURL = await generateQRCode(event);
+    setQrCodeSrc(qrCodeDataURL);
+  }, [event]);
+
+  useEffect(() => {
+    generateAndSetQRCode();
+  }, [generateAndSetQRCode]);
+
+  return (
+    <img
+      src={qrCodeSrc}
+      alt={`QR Code for ${event.eventName}`}
+      width={200}
+      height={200}
+      className="rounded"
+    />
+  );
+};
 
 export default function EventDisplay() {
   const [events, setEvents] = useState<Event[]>([]);
@@ -153,43 +202,26 @@ export default function EventDisplay() {
     }
   };
 
-  const generateQRCode = (event: Event) => {
-    return JSON.stringify({
-      eventName: event.eventName,
-      date: event.date,
-      time: event.time,
-      day: event.day,
-      location: event.location,
-    });
-  };
-
-  const downloadQRCode = (event: Event) => {
-    const svg = document.getElementById(`qr-code-${event.$id}`);
-    if (svg) {
-      const svgData = new XMLSerializer().serializeToString(svg);
-      const svgBlob = new Blob([svgData], {
-        type: "image/svg+xml;charset=utf-8",
-      });
-      const svgUrl = URL.createObjectURL(svgBlob);
+  const downloadQRCode = async (event: Event) => {
+    const qrCodeDataURL = await generateQRCode(event);
+    if (qrCodeDataURL) {
       const downloadLink = document.createElement("a");
-      downloadLink.href = svgUrl;
-      downloadLink.download = `${event.eventName}-QR.svg`;
+      downloadLink.href = qrCodeDataURL;
+      downloadLink.download = `${event.eventName}-QR.png`;
       document.body.appendChild(downloadLink);
       downloadLink.click();
       document.body.removeChild(downloadLink);
-      URL.revokeObjectURL(svgUrl);
     }
   };
 
-  const printQRCode = (event: Event) => {
+  const printQRCode = async (event: Event) => {
+    const qrCodeDataURL = await generateQRCode(event);
     const printWindow = window.open("", "", "height=400,width=800");
     printWindow?.document.write(
       "<html><head><title>Print QR Code</title></head><body>"
     );
     printWindow?.document.write(`<h1>${event.eventName} QR Code</h1>`);
-    printWindow?.document.write(
-      document.getElementById(`qr-code-${event.$id}`)?.outerHTML || ""
-    );
+    printWindow?.document.write(`<img src="${qrCodeDataURL}" alt="QR Code" />`);
     printWindow?.document.write("</body></html>");
     printWindow?.document.close();
     printWindow?.print();
@@ -278,14 +310,7 @@ export default function EventDisplay() {
                       </DialogHeader>
                       <div className="flex flex-col items-center p-6 bg-white rounded-lg shadow-inner">
                         <div className="bg-white p-4 rounded-lg shadow-md">
-                          <QRCodeSVG
-                            id={`qr-code-${event.$id}`}
-                            value={generateQRCode(event)}
-                            size={200}
-                            level="H"
-                            includeMargin={true}
-                            className="rounded"
-                          />
+                          <QRCodeDisplay event={event} />
                         </div>
                         <div className="mt-6 text-center">
                           <h3 className="font-semibold text-lg mb-2">
@@ -307,7 +332,7 @@ export default function EventDisplay() {
                             className="flex-1"
                           >
                             <Download className="mr-2 h-4 w-4" />
-                            Download SVG
+                            Download PNG
                           </Button>
                           <Button
                             onClick={() => printQRCode(event)}
