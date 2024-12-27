@@ -1,32 +1,66 @@
 /* eslint-disable @next/next/no-img-element */
-import React, { useState, useEffect, useRef } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+"use client";
+
+import React, { useState, useRef, useEffect } from "react";
 import { QrReader } from "react-qr-reader";
-import jsQR from "jsqr";
-import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { Camera, Upload, Loader2 } from "lucide-react";
-
-interface QRCodeScannerProps {
-  onScan: (result: string) => void;
-  onCancel: () => void;
-  resetScanner: () => void;
-}
+import { Button } from "@/components/ui/button";
+import { motion, AnimatePresence } from "framer-motion";
+import { Loader2, Upload, Camera, CheckCircle } from "lucide-react";
+import {
+  createUserAttendance,
+  User as UserData,
+} from "@/lib/attendance/attendance";
+import jsQR from "jsqr";
+import { ResultDialog } from "@/components/SuccessDialog";
 
 type ScanMode = "camera" | "image" | null;
 
-const QRCodeScanner: React.FC<QRCodeScannerProps> = ({
-  onScan,
-  onCancel,
-  resetScanner,
-}) => {
+const SuccessOverlay = ({ name }: { name: string }) => (
+  <div className="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center z-10">
+    <div className="bg-white p-4 rounded-lg shadow-lg text-center">
+      <CheckCircle className="mx-auto mb-2 text-green-500 h-12 w-12" />
+      <p className="text-lg font-semibold">QR Code Scanned Successfully!</p>
+      <p className="text-sm text-gray-600">
+        Welcome, {name}! Processing your attendance...
+      </p>
+    </div>
+  </div>
+);
+
+const ScanningAnimation = () => (
+  <div className="absolute inset-0 flex items-center justify-center">
+    <div className="w-full h-full relative overflow-hidden">
+      <motion.div
+        className="w-full h-1 bg-primary absolute left-0"
+        initial={{ top: "0%" }}
+        animate={{ top: "100%" }}
+        transition={{ repeat: Infinity, duration: 2, ease: "linear" }}
+      />
+    </div>
+  </div>
+);
+
+export default function QRCodeScanner() {
   const [error, setError] = useState<string | null>(null);
   const [scanMode, setScanMode] = useState<ScanMode>(null);
   const [isLoading, setIsLoading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [uploadedImage, setUploadedImage] = useState<string | null>(null);
   const [isScanning, setIsScanning] = useState(false);
+  const [dialogState, setDialogState] = useState<{
+    isOpen: boolean;
+    type: "success" | "error";
+    message: string;
+  }>({
+    isOpen: false,
+    type: "success",
+    message: "",
+  });
+  const [isCameraEnabled, setIsCameraEnabled] = useState(true);
+  const [showSuccessOverlay, setShowSuccessOverlay] = useState(false);
+  const [scannedUserData, setScannedUserData] = useState<UserData | null>(null);
 
   useEffect(() => {
     setError(null);
@@ -34,15 +68,76 @@ const QRCodeScanner: React.FC<QRCodeScannerProps> = ({
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const handleScan = async (result: any) => {
-    if (result) {
-      onScan(result.text);
+    if (result && isCameraEnabled) {
+      setIsCameraEnabled(false);
+      setShowSuccessOverlay(true);
+      await processQRCode(result.text);
+    }
+  };
+
+  const processQRCode = async (data: string) => {
+    try {
+      setIsLoading(true);
+
+      let userData: UserData;
+      try {
+        userData = JSON.parse(data);
+        if (
+          !userData.userId ||
+          !userData.studentId ||
+          !userData.name ||
+          !userData.degreeProgram ||
+          !userData.yearLevel ||
+          !userData.section
+        ) {
+          throw new Error("Invalid QR code data: missing required fields");
+        }
+        setScannedUserData(userData);
+      } catch (parseError) {
+        console.error("Error parsing QR code data:", parseError);
+        throw new Error("Invalid QR code format. Please scan a valid QR code.");
+      }
+
+      const result = await createUserAttendance(userData);
+
+      if (result === null) {
+        setDialogState({
+          isOpen: true,
+          type: "error",
+          message: `${userData.name}, you have already recorded attendance for today.`,
+        });
+      } else {
+        setDialogState({
+          isOpen: true,
+          type: "success",
+          message: `Attendance recorded for ${userData.name}. Thank you for participating!`,
+        });
+      }
+      setScanMode(null);
+    } catch (err) {
+      console.error("Error processing QR code:", err);
+      if (err instanceof Error) {
+        if (err.message.includes("User not found")) {
+          setError(
+            "User not found. Please ensure you are logged in and your account is properly set up."
+          );
+        } else if (err.message.includes("No active session found")) {
+          setError("No active session found. Please log in and try again.");
+        } else {
+          setError(err.message);
+        }
+      } else {
+        setError("An unexpected error occurred. Please try again.");
+      }
+    } finally {
+      setIsLoading(false);
+      setShowSuccessOverlay(false);
     }
   };
 
   const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (file) {
-      resetScanner();
       setIsLoading(true);
       setScanMode("image");
       const reader = new FileReader();
@@ -73,7 +168,8 @@ const QRCodeScanner: React.FC<QRCodeScannerProps> = ({
               imageData.height
             );
             if (code) {
-              onScan(code.data);
+              setShowSuccessOverlay(true);
+              await processQRCode(code.data);
             } else {
               setError(
                 "No QR code found in the image. Please try again with a clear image of a QR code."
@@ -94,132 +190,162 @@ const QRCodeScanner: React.FC<QRCodeScannerProps> = ({
     }
   };
 
-  const ScanningAnimation = () => (
-    <div className="absolute inset-0 flex items-center justify-center">
-      <div className="w-full h-full relative overflow-hidden">
-        <motion.div
-          className="w-full h-1 bg-primary absolute left-0"
-          initial={{ top: "0%" }}
-          animate={{ top: "100%" }}
-          transition={{ repeat: Infinity, duration: 2, ease: "linear" }}
-        />
-      </div>
-    </div>
-  );
+  const resetScanner = () => {
+    setScanMode(null);
+    setError(null);
+    setIsLoading(false);
+    setUploadedImage(null);
+    setIsScanning(false);
+    setIsCameraEnabled(true);
+    setShowSuccessOverlay(false);
+    setScannedUserData(null);
+    if (fileInputRef.current) {
+      fileInputRef.current.value = "";
+    }
+  };
 
   return (
-    <Card className="w-full max-w-md mx-auto shadow-lg">
-      <CardContent className="p-6">
-        <AnimatePresence mode="wait">
-          {scanMode ? (
-            <motion.div
-              key="scanner"
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -20 }}
-              transition={{ duration: 0.3 }}
-              className="mb-4"
-            >
-              <div className="relative">
-                {scanMode === "camera" ? (
-                  <QrReader
-                    onResult={handleScan}
-                    constraints={{ facingMode: "environment" }}
-                    videoId="qr-reader-video"
-                    scanDelay={300}
-                    containerStyle={{ width: "100%" }}
-                    videoStyle={{ width: "100%" }}
-                  />
-                ) : uploadedImage ? (
-                  <img
-                    src={uploadedImage}
-                    alt="Uploaded QR Code"
-                    className="w-full"
-                  />
-                ) : null}
-                {!isScanning && <ScanningAnimation />}
-              </div>
-              <p className="text-center mt-2 text-sm text-gray-600">
-                {scanMode === "camera"
-                  ? "Align QR code within the frame"
-                  : isScanning
-                  ? "Scanning uploaded image..."
-                  : "Processing uploaded image..."}
-              </p>
-              <Button
-                onClick={() => {
-                  onCancel();
-                  resetScanner();
-                }}
-                className="w-full mt-4 bg-secondary hover:bg-secondary/90 transition-all duration-300"
+    <>
+      <Card className="w-full max-w-sm mx-auto shadow-lg">
+        <CardContent className="p-4 sm:p-6">
+          <AnimatePresence mode="wait">
+            {scanMode ? (
+              <motion.div
+                key="scanner"
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -20 }}
+                transition={{ duration: 0.3 }}
+                className="mb-4"
               >
-                Cancel
-              </Button>
-            </motion.div>
-          ) : (
-            <motion.div
-              key="buttons"
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -20 }}
-              transition={{ duration: 0.3 }}
-              className="space-y-4"
-            >
-              <Button
-                onClick={() => setScanMode("camera")}
-                className="w-full bg-primary hover:bg-primary/90 transition-all duration-300"
-              >
-                <Camera className="mr-2 h-4 w-4" />
-                Scan with Camera
-              </Button>
-              <div className="relative">
-                <Button
-                  onClick={() => fileInputRef.current?.click()}
-                  className="w-full transition-all duration-300"
-                  disabled={isLoading}
-                >
-                  {isLoading ? (
-                    <>
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      Processing...
-                    </>
-                  ) : (
-                    <>
-                      <Upload className="mr-2 h-4 w-4" />
-                      Upload QR Code Image
-                    </>
+                <div className="relative">
+                  {scanMode === "camera" ? (
+                    isCameraEnabled ? (
+                      <div className="relative">
+                        <QrReader
+                          onResult={handleScan}
+                          constraints={{ facingMode: "environment" }}
+                          videoId="qr-reader-video"
+                          scanDelay={300}
+                          containerStyle={{
+                            width: "100%",
+                            aspectRatio: "1",
+                            maxHeight: "60vh",
+                          }}
+                          videoStyle={{ objectFit: "cover" }}
+                        />
+                        {isCameraEnabled && !showSuccessOverlay && (
+                          <ScanningAnimation />
+                        )}
+                      </div>
+                    ) : (
+                      <div className="aspect-video bg-gray-200 flex items-center justify-center">
+                        <p className="text-gray-500">
+                          Camera disabled after successful scan
+                        </p>
+                      </div>
+                    )
+                  ) : uploadedImage ? (
+                    <div
+                      className="relative w-full"
+                      style={{ aspectRatio: "1", maxHeight: "60vh" }}
+                    >
+                      <img
+                        src={uploadedImage}
+                        alt="Uploaded QR Code"
+                        className="w-full h-full object-cover"
+                      />
+                    </div>
+                  ) : null}
+                  {showSuccessOverlay && scannedUserData && (
+                    <SuccessOverlay name={scannedUserData.name} />
                   )}
+                </div>
+                <p className="text-center mt-2 text-sm text-gray-600">
+                  {scanMode === "camera"
+                    ? isCameraEnabled
+                      ? "Align QR code within the frame"
+                      : "QR code scanned. Camera disabled."
+                    : isScanning
+                    ? "Scanning uploaded image..."
+                    : "Processing uploaded image..."}
+                </p>
+                <Button
+                  onClick={resetScanner}
+                  className="w-full mt-2 bg-secondary hover:bg-secondary/90 transition-all duration-300"
+                >
+                  {isCameraEnabled ? "Cancel" : "Scan Again"}
                 </Button>
-                <input
-                  type="file"
-                  ref={fileInputRef}
-                  onChange={handleFileUpload}
-                  accept="image/*"
-                  className="hidden"
-                />
-              </div>
-            </motion.div>
-          )}
-        </AnimatePresence>
+              </motion.div>
+            ) : (
+              <motion.div
+                key="buttons"
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -20 }}
+                transition={{ duration: 0.3 }}
+                className="space-y-2 sm:space-y-4"
+              >
+                <Button
+                  onClick={() => setScanMode("camera")}
+                  className="w-full bg-primary hover:bg-primary/90 transition-all duration-300"
+                >
+                  <Camera className="mr-2 h-4 w-4" />
+                  Scan with Camera
+                </Button>
+                <div className="relative">
+                  <Button
+                    onClick={() => fileInputRef.current?.click()}
+                    className="w-full transition-all duration-300"
+                    disabled={isLoading}
+                  >
+                    {isLoading ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        Processing...
+                      </>
+                    ) : (
+                      <>
+                        <Upload className="mr-2 h-4 w-4" />
+                        Upload QR Code Image
+                      </>
+                    )}
+                  </Button>
+                  <input
+                    type="file"
+                    ref={fileInputRef}
+                    onChange={handleFileUpload}
+                    accept="image/*"
+                    className="hidden"
+                  />
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
 
-        <AnimatePresence>
-          {error && (
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -20 }}
-              transition={{ duration: 0.3 }}
-            >
-              <Alert variant="destructive" className="mt-4">
-                <AlertTitle>Error</AlertTitle>
-                <AlertDescription>{error}</AlertDescription>
-              </Alert>
-            </motion.div>
-          )}
-        </AnimatePresence>
-      </CardContent>
-    </Card>
+          <AnimatePresence>
+            {error && (
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -20 }}
+                transition={{ duration: 0.3 }}
+              >
+                <Alert variant="destructive" className="mt-4">
+                  <AlertTitle>Error</AlertTitle>
+                  <AlertDescription>{error}</AlertDescription>
+                </Alert>
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </CardContent>
+      </Card>
+      <ResultDialog
+        isOpen={dialogState.isOpen}
+        onClose={() => setDialogState((prev) => ({ ...prev, isOpen: false }))}
+        type={dialogState.type}
+        message={dialogState.message}
+      />
+    </>
   );
-};
-
-export default QRCodeScanner;
+}

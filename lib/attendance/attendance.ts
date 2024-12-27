@@ -145,4 +145,59 @@ export const createGeneralAttendance = async (
   }
 };
 
+export const createUserAttendance = async (
+  userData: User
+): Promise<GeneralAttendance | null> => {
+  try {
+    validateEnvVariables();
+
+    // Check for existing attendance record
+    const existingRecords = await databases.listDocuments(
+      DATABASE_ID,
+      GENERAL_ATTENDANCE_COLLECTION_ID,
+      [
+        Query.equal("userId", userData.userId),
+        Query.equal("studentId", userData.studentId),
+        Query.equal("date", new Date().toISOString().split("T")[0]), // Current date
+      ]
+    );
+
+    if (existingRecords.documents.length > 0) {
+      console.log("Attendance already recorded for this user today.");
+      return null;
+    }
+
+    // Create event data for today
+    const eventData: EventData = {
+      eventName: "Daily Attendance",
+      location: "Campus",
+      date: new Date().toISOString().split("T")[0],
+      day: new Date().toLocaleDateString("en-US", { weekday: "long" }),
+      time: new Date().toLocaleTimeString("en-US"),
+    };
+
+    // Create the document with permissions
+    const result = await databases.createDocument(
+      DATABASE_ID,
+      GENERAL_ATTENDANCE_COLLECTION_ID,
+      ID.unique(),
+      {
+        ...userData,
+        ...eventData,
+      },
+      [
+        Permission.read(Role.any()),
+        Permission.write(Role.user(userData.userId)),
+        Permission.delete(Role.user(userData.userId)),
+      ]
+    );
+
+    console.log("User attendance record created successfully:", result);
+    return (result as unknown) as GeneralAttendance;
+  } catch (error) {
+    console.error("Error creating user attendance record:", error);
+    throw error;
+  }
+};
+
 export { getCurrentSession, getCurrentUser };

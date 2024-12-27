@@ -47,12 +47,7 @@ import {
   getAllEvents,
   Event,
 } from "@/lib/events/eventService";
-import {
-  createGeneralAttendance,
-  EventData,
-  getCurrentUser,
-  User,
-} from "@/lib/attendance/attendance";
+import { User } from "@/lib/attendance/attendance";
 import QRCodeScanner from "./QRCodeScanner";
 
 interface AlertState {
@@ -124,8 +119,6 @@ export default function EventDisplay() {
     [key: string]: "save" | "delete" | null;
   }>({});
   const [isQRScannerOpen, setIsQRScannerOpen] = useState(false);
-  const [currentEvent, setCurrentEvent] = useState<Event | null>(null);
-  const [currentUser, setCurrentUser] = useState<User | null>(null);
 
   useEffect(() => {
     const fetchEvents = async () => {
@@ -144,25 +137,6 @@ export default function EventDisplay() {
     };
 
     fetchEvents();
-  }, []);
-
-  useEffect(() => {
-    const fetchCurrentUser = async () => {
-      try {
-        const user = await getCurrentUser();
-        setCurrentUser(user);
-      } catch (error) {
-        console.error("Error fetching current user:", error);
-        setAlertState({
-          isOpen: true,
-          title: "Error",
-          description: "Failed to fetch user data. Please try again later.",
-          type: "error",
-        });
-      }
-    };
-
-    fetchCurrentUser();
   }, []);
 
   const handleEdit = (event: Event) => {
@@ -333,60 +307,6 @@ export default function EventDisplay() {
     }
   };
 
-  const resetScanner = useCallback(() => {
-    setIsQRScannerOpen(false);
-    setCurrentEvent(null);
-  }, []);
-
-  const handleQRCodeScan = async (result: string) => {
-    try {
-      const scannedData = JSON.parse(result) as EventData;
-
-      if (!currentEvent) {
-        throw new Error("No event selected for attendance");
-      }
-
-      const attendanceData = {
-        ...scannedData,
-        eventName: currentEvent.eventName,
-        location: currentEvent.location,
-        date: currentEvent.date,
-        day: currentEvent.day,
-        time: currentEvent.time,
-      };
-
-      const attendanceResult = await createGeneralAttendance(attendanceData);
-
-      if (attendanceResult === null) {
-        setAlertState({
-          isOpen: true,
-          title: "Attendance Already Recorded",
-          description:
-            "This user has already recorded attendance for this event.",
-          type: "error",
-        });
-      } else {
-        setAlertState({
-          isOpen: true,
-          title: "Attendance Recorded",
-          description:
-            "Attendance has been successfully recorded for this event.",
-          type: "success",
-        });
-      }
-    } catch (error) {
-      console.error("Error processing QR code:", error);
-      setAlertState({
-        isOpen: true,
-        title: "Error",
-        description: "Failed to process the QR code. Please try again.",
-        type: "error",
-      });
-    } finally {
-      resetScanner();
-    }
-  };
-
   return (
     <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-8">
       <h1 className="text-2xl sm:text-3xl font-bold mb-6 text-center">
@@ -449,45 +369,39 @@ export default function EventDisplay() {
                     <DialogContent className="sm:max-w-md">
                       <DialogHeader>
                         <DialogTitle className="text-center">
-                          User QR Code
+                          Event QR Code
                         </DialogTitle>
                       </DialogHeader>
                       <div className="flex flex-col items-center p-6 bg-white rounded-lg shadow-inner">
                         <div className="bg-white p-4 rounded-lg shadow-md">
-                          {currentUser && <QRCodeDisplay event={event} />}
+                          <QRCodeDisplay event={event} />
                         </div>
                         <div className="mt-6 text-center">
-                          {currentUser && (
-                            <>
-                              <h3 className="font-semibold text-lg mb-2">
-                                {currentUser.name}
-                              </h3>
-                              <p className="text-sm text-gray-600 mb-1">
-                                ID: {currentUser.studentId}
-                              </p>
-                              <p className="text-sm text-gray-600 mb-1">
-                                {currentUser.degreeProgram}
-                              </p>
-                              <p className="text-sm text-gray-600">
-                                {currentUser.yearLevel} - {currentUser.section}
-                              </p>
-                            </>
-                          )}
+                          <h3 className="font-semibold text-gray-600 text-lg mb-2">
+                            {event.eventName}
+                          </h3>
+                          <p className="text-sm text-gray-600 mb-1">
+                            {event.day}, {formatEventDate(event.date)}
+                          </p>
+                          <p className="text-sm text-gray-600 mb-1">
+                            {event.time
+                              ? formatEventTime(event.time)
+                              : "No time set"}
+                          </p>
+                          <p className="text-sm text-gray-600">
+                            {event.location}
+                          </p>
                         </div>
                         <div className="flex mt-6 space-x-4">
                           <Button
-                            onClick={() =>
-                              currentUser && downloadQRCode(currentUser)
-                            }
+                            onClick={() => downloadQRCode(event)}
                             className="flex-1"
                           >
                             <Download className="mr-2 h-4 w-4" />
                             Download PNG
                           </Button>
                           <Button
-                            onClick={() =>
-                              currentUser && printQRCode(currentUser)
-                            }
+                            onClick={() => printQRCode(event)}
                             className="flex-1"
                           >
                             <Printer className="mr-2 h-4 w-4" />
@@ -500,10 +414,7 @@ export default function EventDisplay() {
                   <Button
                     variant="outline"
                     className="w-full"
-                    onClick={() => {
-                      setCurrentEvent(event);
-                      setIsQRScannerOpen(true);
-                    }}
+                    onClick={() => setIsQRScannerOpen(true)}
                   >
                     <UserPlus className="mr-2 h-4 w-4" />
                     Record Attendance
@@ -622,16 +533,15 @@ export default function EventDisplay() {
         </Dialog>
       )}
 
-      <Dialog open={isQRScannerOpen} onOpenChange={setIsQRScannerOpen}>
+      <Dialog
+        open={isQRScannerOpen}
+        onOpenChange={(open) => setIsQRScannerOpen(open)}
+      >
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
             <DialogTitle>Scan Attendance QR Code</DialogTitle>
           </DialogHeader>
-          <QRCodeScanner
-            onScan={handleQRCodeScan}
-            onCancel={resetScanner}
-            resetScanner={resetScanner}
-          />
+          <QRCodeScanner />
         </DialogContent>
       </Dialog>
 
