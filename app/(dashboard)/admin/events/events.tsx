@@ -119,6 +119,7 @@ export default function EventDisplay() {
     [key: string]: "save" | "delete" | null;
   }>({});
   const [isQRScannerOpen, setIsQRScannerOpen] = useState(false);
+  const [selectedEvent, setSelectedEvent] = useState<Event | null>(null);
 
   useEffect(() => {
     const fetchEvents = async () => {
@@ -414,7 +415,10 @@ export default function EventDisplay() {
                   <Button
                     variant="outline"
                     className="w-full"
-                    onClick={() => setIsQRScannerOpen(true)}
+                    onClick={() => {
+                      setSelectedEvent(event);
+                      setIsQRScannerOpen(true);
+                    }}
                   >
                     <UserPlus className="mr-2 h-4 w-4" />
                     Record Attendance
@@ -535,13 +539,23 @@ export default function EventDisplay() {
 
       <Dialog
         open={isQRScannerOpen}
-        onOpenChange={(open) => setIsQRScannerOpen(open)}
+        onOpenChange={(open) => {
+          if (!open) {
+            setIsQRScannerOpen(false);
+            setSelectedEvent(null);
+          }
+        }}
       >
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
             <DialogTitle>Scan Attendance QR Code</DialogTitle>
           </DialogHeader>
-          <QRCodeScanner />
+          {selectedEvent && (
+            <QRCodeScanner
+              eventData={selectedEvent}
+              onSuccessfulScan={() => setIsQRScannerOpen(false)}
+            />
+          )}
         </DialogContent>
       </Dialog>
 

@@ -51,7 +51,19 @@ export interface EventData {
   time: string;
 }
 
-interface GeneralAttendance extends User, EventData {}
+interface GeneralAttendance extends User, EventData {
+  userId: string;
+  studentId: string;
+  name: string;
+  degreeProgram: string;
+  yearLevel: string;
+  section: string;
+  eventName: string;
+  location: string;
+  date: string;
+  day: string;
+  time: string;
+}
 
 const getCurrentSession = async (): Promise<string | null> => {
   try {
@@ -146,7 +158,8 @@ export const createGeneralAttendance = async (
 };
 
 export const createUserAttendance = async (
-  userData: User
+  userData: User,
+  eventData: EventData
 ): Promise<GeneralAttendance | null> => {
   try {
     validateEnvVariables();
@@ -158,23 +171,21 @@ export const createUserAttendance = async (
       [
         Query.equal("userId", userData.userId),
         Query.equal("studentId", userData.studentId),
-        Query.equal("date", new Date().toISOString().split("T")[0]), // Current date
+        Query.equal("eventName", eventData.eventName),
+        Query.equal("date", eventData.date),
       ]
     );
 
     if (existingRecords.documents.length > 0) {
-      console.log("Attendance already recorded for this user today.");
+      console.log("Attendance already recorded for this user and event.");
       return null;
     }
 
-    // Create event data for today
-    const eventData: EventData = {
-      eventName: "Daily Attendance",
-      location: "Campus",
-      date: new Date().toISOString().split("T")[0],
-      day: new Date().toLocaleDateString("en-US", { weekday: "long" }),
-      time: new Date().toLocaleTimeString("en-US"),
-    };
+    // Get the current user's session
+    const currentSession = await getCurrentSession();
+    if (!currentSession) {
+      throw new Error("No active session found. Please log in and try again.");
+    }
 
     // Create the document with permissions
     const result = await databases.createDocument(
@@ -182,13 +193,22 @@ export const createUserAttendance = async (
       GENERAL_ATTENDANCE_COLLECTION_ID,
       ID.unique(),
       {
-        ...userData,
-        ...eventData,
+        userId: userData.userId,
+        studentId: userData.studentId,
+        name: userData.name,
+        degreeProgram: userData.degreeProgram,
+        yearLevel: userData.yearLevel,
+        section: userData.section,
+        eventName: eventData.eventName,
+        location: eventData.location,
+        date: eventData.date,
+        day: eventData.day,
+        time: eventData.time,
       },
       [
         Permission.read(Role.any()),
-        Permission.write(Role.user(userData.userId)),
-        Permission.delete(Role.user(userData.userId)),
+        Permission.write(Role.user(currentSession)),
+        Permission.delete(Role.user(currentSession)),
       ]
     );
 

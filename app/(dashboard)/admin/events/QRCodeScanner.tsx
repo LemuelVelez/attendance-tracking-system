@@ -1,8 +1,8 @@
 /* eslint-disable @next/next/no-img-element */
+/* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
-import React, { useState, useRef, useEffect } from "react";
-import { QrReader } from "react-qr-reader";
+import React, { useState, useRef, useEffect, useCallback } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
@@ -10,12 +10,18 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Loader2, Upload, Camera, CheckCircle } from "lucide-react";
 import {
   createUserAttendance,
-  User as UserData,
+  User,
+  EventData,
 } from "@/lib/attendance/attendance";
 import jsQR from "jsqr";
 import { ResultDialog } from "@/components/SuccessDialog";
+import Webcam from "react-webcam";
 
 type ScanMode = "camera" | "image" | null;
+
+interface QRCodeScannerProps {
+  eventData: EventData;
+}
 
 const SuccessOverlay = ({ name }: { name: string }) => (
   <div className="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center z-10">
@@ -42,7 +48,7 @@ const ScanningAnimation = () => (
   </div>
 );
 
-export default function QRCodeScanner() {
+export default function QRCodeScanner({ eventData }: QRCodeScannerProps) {
   const [error, setError] = useState<string | null>(null);
   const [scanMode, setScanMode] = useState<ScanMode>(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -60,135 +66,8 @@ export default function QRCodeScanner() {
   });
   const [isCameraEnabled, setIsCameraEnabled] = useState(true);
   const [showSuccessOverlay, setShowSuccessOverlay] = useState(false);
-  const [scannedUserData, setScannedUserData] = useState<UserData | null>(null);
-
-  useEffect(() => {
-    setError(null);
-  }, [scanMode]);
-
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const handleScan = async (result: any) => {
-    if (result && isCameraEnabled) {
-      setIsCameraEnabled(false);
-      setShowSuccessOverlay(true);
-      await processQRCode(result.text);
-    }
-  };
-
-  const processQRCode = async (data: string) => {
-    try {
-      setIsLoading(true);
-
-      let userData: UserData;
-      try {
-        userData = JSON.parse(data);
-        if (
-          !userData.userId ||
-          !userData.studentId ||
-          !userData.name ||
-          !userData.degreeProgram ||
-          !userData.yearLevel ||
-          !userData.section
-        ) {
-          throw new Error("Invalid QR code data: missing required fields");
-        }
-        setScannedUserData(userData);
-      } catch (parseError) {
-        console.error("Error parsing QR code data:", parseError);
-        throw new Error("Invalid QR code format. Please scan a valid QR code.");
-      }
-
-      const result = await createUserAttendance(userData);
-
-      if (result === null) {
-        setDialogState({
-          isOpen: true,
-          type: "error",
-          message: `${userData.name}, you have already recorded attendance for today.`,
-        });
-      } else {
-        setDialogState({
-          isOpen: true,
-          type: "success",
-          message: `Attendance recorded for ${userData.name}. Thank you for participating!`,
-        });
-      }
-      setScanMode(null);
-    } catch (err) {
-      console.error("Error processing QR code:", err);
-      if (err instanceof Error) {
-        if (err.message.includes("User not found")) {
-          setError(
-            "User not found. Please ensure you are logged in and your account is properly set up."
-          );
-        } else if (err.message.includes("No active session found")) {
-          setError("No active session found. Please log in and try again.");
-        } else {
-          setError(err.message);
-        }
-      } else {
-        setError("An unexpected error occurred. Please try again.");
-      }
-    } finally {
-      setIsLoading(false);
-      setShowSuccessOverlay(false);
-    }
-  };
-
-  const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (file) {
-      setIsLoading(true);
-      setScanMode("image");
-      const reader = new FileReader();
-      reader.onload = async (e) => {
-        setUploadedImage(e.target?.result as string);
-        setIsScanning(true);
-        try {
-          const img = new Image();
-          img.src = e.target?.result as string;
-          await new Promise((resolve) => {
-            img.onload = resolve;
-          });
-          const canvas = document.createElement("canvas");
-          const ctx = canvas.getContext("2d");
-          canvas.width = img.width;
-          canvas.height = img.height;
-          ctx?.drawImage(img, 0, 0, img.width, img.height);
-          const imageData = ctx?.getImageData(
-            0,
-            0,
-            canvas.width,
-            canvas.height
-          );
-          if (imageData) {
-            const code = jsQR(
-              imageData.data,
-              imageData.width,
-              imageData.height
-            );
-            if (code) {
-              setShowSuccessOverlay(true);
-              await processQRCode(code.data);
-            } else {
-              setError(
-                "No QR code found in the image. Please try again with a clear image of a QR code."
-              );
-            }
-          }
-        } catch (error) {
-          console.error("Error processing image:", error);
-          setError(
-            "Failed to process the image. Please try again with a different image."
-          );
-        } finally {
-          setIsScanning(false);
-          setIsLoading(false);
-        }
-      };
-      reader.readAsDataURL(file);
-    }
-  };
+  const [scannedUserData, setScannedUserData] = useState<User | null>(null);
+  const webcamRef = useRef<Webcam>(null);
 
   const resetScanner = () => {
     setScanMode(null);
@@ -199,17 +78,156 @@ export default function QRCodeScanner() {
     setIsCameraEnabled(true);
     setShowSuccessOverlay(false);
     setScannedUserData(null);
+    setDialogState({ isOpen: false, type: "success", message: "" });
     if (fileInputRef.current) {
       fileInputRef.current.value = "";
     }
   };
+
+  useEffect(() => {
+    resetScanner();
+  }, []);
+
+  const processQRCode = useCallback(
+    async (imageSrc: string) => {
+      try {
+        setIsLoading(true);
+        setShowSuccessOverlay(true);
+
+        const img = new Image();
+        img.src = imageSrc;
+        await new Promise((resolve) => {
+          img.onload = resolve;
+        });
+
+        const canvas = document.createElement("canvas");
+        const ctx = canvas.getContext("2d");
+        canvas.width = img.width;
+        canvas.height = img.height;
+        ctx?.drawImage(img, 0, 0, img.width, img.height);
+        const imageData = ctx?.getImageData(0, 0, canvas.width, canvas.height);
+
+        if (imageData) {
+          const code = jsQR(imageData.data, imageData.width, imageData.height);
+          if (code) {
+            let userData: User;
+            try {
+              userData = JSON.parse(code.data);
+              if (
+                !userData.userId ||
+                !userData.studentId ||
+                !userData.name ||
+                !userData.degreeProgram ||
+                !userData.yearLevel ||
+                !userData.section
+              ) {
+                throw new Error(
+                  "Invalid QR code data: missing required fields"
+                );
+              }
+              setScannedUserData(userData);
+
+              const result = await createUserAttendance(userData, eventData);
+
+              if (result === null) {
+                setDialogState({
+                  isOpen: true,
+                  type: "error",
+                  message: `${userData.name}, you have already recorded attendance for this event.`,
+                });
+              } else {
+                setDialogState({
+                  isOpen: true,
+                  type: "success",
+                  message: `Attendance recorded for ${userData.name}. Thank you for participating!`,
+                });
+              }
+            } catch (parseError) {
+              console.error("Error parsing QR code data:", parseError);
+              throw new Error(
+                "Invalid QR code format. Please scan a valid QR code."
+              );
+            }
+          } else {
+            setError(
+              "No QR code found in the image. Please try again with a clear image of a QR code."
+            );
+          }
+        }
+      } catch (err) {
+        console.error("Error processing QR code:", err);
+        if (err instanceof Error) {
+          setError(err.message);
+        } else {
+          setError("An unexpected error occurred. Please try again.");
+        }
+      } finally {
+        setIsLoading(false);
+        setShowSuccessOverlay(false);
+      }
+    },
+    [
+      eventData,
+      setDialogState,
+      setError,
+      setIsLoading,
+      setScannedUserData,
+      setShowSuccessOverlay,
+    ]
+  );
+
+  const handleFileUpload = useCallback(
+    (event: React.ChangeEvent<HTMLInputElement>) => {
+      const file = event.target.files?.[0];
+      if (file) {
+        setIsLoading(true);
+        setScanMode("image");
+        const reader = new FileReader();
+        reader.onload = async (e) => {
+          const imageSrc = e.target?.result as string;
+          setUploadedImage(imageSrc);
+          setIsScanning(true);
+          try {
+            await processQRCode(imageSrc);
+          } catch (error) {
+            console.error("Error processing image:", error);
+            setError(
+              "Failed to process the image. Please try again with a different image."
+            );
+          } finally {
+            setIsScanning(false);
+            setIsLoading(false);
+          }
+        };
+        reader.readAsDataURL(file);
+      }
+    },
+    [
+      processQRCode,
+      setError,
+      setIsLoading,
+      setIsScanning,
+      setScanMode,
+      setUploadedImage,
+    ]
+  );
+
+  const captureImage = useCallback(() => {
+    console.log("Capture button clicked");
+    const imageSrc = webcamRef.current?.getScreenshot();
+    if (imageSrc) {
+      setUploadedImage(imageSrc);
+      processQRCode(imageSrc);
+      setScanMode("image");
+    }
+  }, [processQRCode, setUploadedImage, setScanMode]);
 
   return (
     <>
       <Card className="w-full max-w-sm mx-auto shadow-lg">
         <CardContent className="p-4 sm:p-6">
           <AnimatePresence mode="wait">
-            {scanMode ? (
+            {scanMode && !dialogState.isOpen ? (
               <motion.div
                 key="scanner"
                 initial={{ opacity: 0, y: 20 }}
@@ -222,21 +240,21 @@ export default function QRCodeScanner() {
                   {scanMode === "camera" ? (
                     isCameraEnabled ? (
                       <div className="relative">
-                        <QrReader
-                          onResult={handleScan}
-                          constraints={{ facingMode: "environment" }}
-                          videoId="qr-reader-video"
-                          scanDelay={300}
-                          containerStyle={{
-                            width: "100%",
-                            aspectRatio: "1",
-                            maxHeight: "60vh",
-                          }}
-                          videoStyle={{ objectFit: "cover" }}
+                        <Webcam
+                          audio={false}
+                          ref={webcamRef}
+                          screenshotFormat="image/jpeg"
+                          videoConstraints={{ facingMode: "environment" }}
+                          className="w-full aspect-square object-cover"
                         />
-                        {isCameraEnabled && !showSuccessOverlay && (
-                          <ScanningAnimation />
-                        )}
+                        <Button
+                          onClick={captureImage}
+                          type="button"
+                          className="absolute bottom-4 left-1/2 transform -translate-x-1/2 z-10"
+                        >
+                          Capture QR Code
+                        </Button>
+                        {!showSuccessOverlay && <ScanningAnimation />}
                       </div>
                     ) : (
                       <div className="aspect-video bg-gray-200 flex items-center justify-center">
@@ -264,7 +282,7 @@ export default function QRCodeScanner() {
                 <p className="text-center mt-2 text-sm text-gray-600">
                   {scanMode === "camera"
                     ? isCameraEnabled
-                      ? "Align QR code within the frame"
+                      ? "Align QR code within the frame and tap Capture"
                       : "QR code scanned. Camera disabled."
                     : isScanning
                     ? "Scanning uploaded image..."
@@ -274,7 +292,7 @@ export default function QRCodeScanner() {
                   onClick={resetScanner}
                   className="w-full mt-2 bg-secondary hover:bg-secondary/90 transition-all duration-300"
                 >
-                  {isCameraEnabled ? "Cancel" : "Scan Again"}
+                  Cancel
                 </Button>
               </motion.div>
             ) : (
@@ -287,8 +305,12 @@ export default function QRCodeScanner() {
                 className="space-y-2 sm:space-y-4"
               >
                 <Button
-                  onClick={() => setScanMode("camera")}
+                  onClick={() => {
+                    setScanMode("camera");
+                    setIsCameraEnabled(true);
+                  }}
                   className="w-full bg-primary hover:bg-primary/90 transition-all duration-300"
+                  disabled={isLoading}
                 >
                   <Camera className="mr-2 h-4 w-4" />
                   Scan with Camera
@@ -342,7 +364,9 @@ export default function QRCodeScanner() {
       </Card>
       <ResultDialog
         isOpen={dialogState.isOpen}
-        onClose={() => setDialogState((prev) => ({ ...prev, isOpen: false }))}
+        onClose={() => {
+          resetScanner();
+        }}
         type={dialogState.type}
         message={dialogState.message}
       />
