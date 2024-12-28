@@ -1,5 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { Client, Databases } from "appwrite";
+import { Query } from "appwrite";
 
 const client = new Client();
 client
@@ -23,7 +24,11 @@ export const getGeneralAttendance = async (): Promise<any[]> => {
     // Step 1: Retrieve all documents
     const allDocuments = await databases.listDocuments(
       DATABASE_ID,
-      GENERAL_ATTENDANCE_COLLECTION_ID
+      GENERAL_ATTENDANCE_COLLECTION_ID,
+      [
+        // Add the Created field to the query
+        Query.orderDesc("$createdAt"),
+      ]
     );
 
     // Step 2: Identify and delete duplicates
@@ -55,10 +60,20 @@ export const getGeneralAttendance = async (): Promise<any[]> => {
     // Step 3: Retrieve all documents again (now without duplicates)
     const finalDocuments = await databases.listDocuments(
       DATABASE_ID,
-      GENERAL_ATTENDANCE_COLLECTION_ID
+      GENERAL_ATTENDANCE_COLLECTION_ID,
+      [
+        // Add the Created field to the query
+        Query.orderDesc("$createdAt"),
+      ]
     );
 
-    return finalDocuments.documents;
+    // Step 4: Map the documents to include the Created field
+    const documentsWithCreated = finalDocuments.documents.map((doc: any) => ({
+      ...doc,
+      Created: doc.$createdAt,
+    }));
+
+    return documentsWithCreated;
   } catch (error) {
     console.error("Error in getGeneralAttendance:", error);
     throw error;

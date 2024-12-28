@@ -52,6 +52,7 @@ export type Attendance = {
   date: string;
   day: string;
   time: string;
+  Created: string;
 };
 
 export const columns: ColumnDef<Attendance>[] = [
@@ -160,7 +161,33 @@ export const columns: ColumnDef<Attendance>[] = [
   {
     accessorKey: "time",
     header: "Time",
-    cell: ({ row }) => <div>{row.getValue("time")}</div>,
+    cell: ({ row }) => {
+      const time24 = row.getValue("time") as string;
+      const [hours, minutes] = time24.split(":");
+      const hours12 = ((parseInt(hours) + 11) % 12) + 1;
+      const amPm = parseInt(hours) >= 12 ? "PM" : "AM";
+      const time12 = `${hours12}:${minutes} ${amPm}`;
+      return <div className="min-w-[100px]">{time12}</div>;
+    },
+  },
+  {
+    accessorKey: "Created",
+    header: ({ column }) => {
+      return (
+        <Button
+          variant="ghost"
+          onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+        >
+          Created
+          <ArrowUpDown className="ml-2 h-4 w-4" />
+        </Button>
+      );
+    },
+    cell: ({ row }) => (
+      <div className="min-w-[150px]">
+        {new Date(row.getValue("Created")).toLocaleString()}
+      </div>
+    ),
   },
   {
     id: "actions",
@@ -212,7 +239,12 @@ export function GeneralAttendanceTable() {
       try {
         setIsLoading(true);
         const attendanceData = await getGeneralAttendance();
-        setData(attendanceData);
+        setData(
+          attendanceData.map((record) => ({
+            ...record,
+            Created: record.Created || record.$createdAt, // Use Created if available, fallback to $createdAt
+          }))
+        );
       } catch (err) {
         console.error("Error fetching attendance data:", err);
         setError("Failed to load attendance data. Please try again later.");
