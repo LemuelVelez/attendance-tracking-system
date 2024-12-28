@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { MoreHorizontal, ChevronDown, ArrowUpDown, Search } from "lucide-react";
+import { ChevronDown, ArrowUpDown, Search } from "lucide-react";
 import {
   ColumnDef,
   ColumnFiltersState,
@@ -21,9 +21,6 @@ import {
   DropdownMenu,
   DropdownMenuCheckboxItem,
   DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
@@ -189,35 +186,6 @@ export const columns: ColumnDef<Attendance>[] = [
       </div>
     ),
   },
-  {
-    id: "actions",
-    enableHiding: false,
-    cell: ({ row }) => {
-      const attendance = row.original;
-
-      return (
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="ghost" className="h-8 w-8 p-0">
-              <span className="sr-only">Open menu</span>
-              <MoreHorizontal className="h-4 w-4" />
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
-            <DropdownMenuLabel>Actions</DropdownMenuLabel>
-            <DropdownMenuItem
-              onClick={() => navigator.clipboard.writeText(attendance.$id)}
-            >
-              Copy attendance ID
-            </DropdownMenuItem>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem>View details</DropdownMenuItem>
-            <DropdownMenuItem>Edit attendance</DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
-      );
-    },
-  },
 ];
 
 export function GeneralAttendanceTable() {
@@ -242,7 +210,7 @@ export function GeneralAttendanceTable() {
         setData(
           attendanceData.map((record) => ({
             ...record,
-            Created: record.Created || record.$createdAt, // Use Created if available, fallback to $createdAt
+            Created: record.Created || record.$createdAt,
           }))
         );
       } catch (err) {
