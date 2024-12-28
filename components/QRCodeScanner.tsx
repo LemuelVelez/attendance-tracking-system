@@ -20,7 +20,7 @@ type ScanMode = "camera" | "image" | null;
 const SuccessOverlay = () => (
   <div className="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center z-10">
     <div className="bg-white p-4 rounded-lg shadow-lg text-center">
-      <CheckCircle className="mx-auto mb-2 text-green-500 h-12 w-12" />
+      <CheckCircle className="mx-auto text-green-500 h-12 w-12" />
       <p className="text-lg font-semibold">QR Code Scanned Successfully!</p>
       <p className="text-sm text-gray-600">
         Please wait while we process the result...

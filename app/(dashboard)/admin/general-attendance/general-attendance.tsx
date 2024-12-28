@@ -37,38 +37,10 @@ import {
 } from "@/components/ui/table";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
-
-const data: Attendance[] = [
-  {
-    userId: "1",
-    studentId: "2023001",
-    name: "Alice Johnson",
-    degreeProgram: "Computer Science",
-    yearLevel: "3rd Year",
-    section: "A",
-    eventName: "Orientation Day",
-    location: "Main Auditorium",
-    date: "2023-08-15",
-    day: "Monday",
-    time: "09:00 AM",
-  },
-  {
-    userId: "2",
-    studentId: "2023002",
-    name: "Bob Smith",
-    degreeProgram: "Business Administration",
-    yearLevel: "2nd Year",
-    section: "B",
-    eventName: "Career Fair",
-    location: "University Gymnasium",
-    date: "2023-09-20",
-    day: "Wednesday",
-    time: "02:00 PM",
-  },
-  // Add more mock data here...
-];
+import { getGeneralAttendance } from "@/lib/GeneralAttendance/GeneralAttendance";
 
 export type Attendance = {
+  $id: string;
   userId: string;
   studentId: string;
   name: string;
@@ -106,7 +78,7 @@ export const columns: ColumnDef<Attendance>[] = [
     accessorKey: "studentId",
     header: "Student ID",
     cell: ({ row }) => (
-      <div className="capitalize">{row.getValue("studentId")}</div>
+      <div className="min-w-[150px]">{row.getValue("studentId")}</div>
     ),
   },
   {
@@ -122,61 +94,43 @@ export const columns: ColumnDef<Attendance>[] = [
         </Button>
       );
     },
-    cell: ({ row }) => <div className="lowercase">{row.getValue("name")}</div>,
+    cell: ({ row }) => (
+      <div className="min-w-[150px]">{row.getValue("name")}</div>
+    ),
   },
   {
     accessorKey: "degreeProgram",
-    header: ({ column }) => {
-      return (
-        <Button
-          variant="ghost"
-          onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
-        >
-          Degree Program
-          <ArrowUpDown className="ml-2 h-4 w-4" />
-        </Button>
-      );
-    },
+    header: "Degree Program",
     cell: ({ row }) => (
-      <div className="capitalize">{row.getValue("degreeProgram")}</div>
+      <div className="min-w-[150px]">{row.getValue("degreeProgram")}</div>
     ),
   },
   {
     accessorKey: "yearLevel",
-    header: ({ column }) => {
-      return (
-        <Button
-          variant="ghost"
-          onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
-        >
-          Year Level
-          <ArrowUpDown className="ml-2 h-4 w-4" />
-        </Button>
-      );
-    },
+    header: "Year Level",
     cell: ({ row }) => (
-      <div className="capitalize">{row.getValue("yearLevel")}</div>
+      <div className="min-w-[120px]">{row.getValue("yearLevel")}</div>
     ),
   },
   {
     accessorKey: "section",
     header: "Section",
     cell: ({ row }) => (
-      <div className="capitalize">{row.getValue("section")}</div>
+      <div className="min-w-[90px]">{row.getValue("section")}</div>
     ),
   },
   {
     accessorKey: "eventName",
     header: "Event Name",
     cell: ({ row }) => (
-      <div className="capitalize">{row.getValue("eventName")}</div>
+      <div className="min-w-[150px]">{row.getValue("eventName")}</div>
     ),
   },
   {
     accessorKey: "location",
     header: "Location",
     cell: ({ row }) => (
-      <div className="capitalize">{row.getValue("location")}</div>
+      <div className="min-w-[150px]">{row.getValue("location")}</div>
     ),
   },
   {
@@ -192,17 +146,21 @@ export const columns: ColumnDef<Attendance>[] = [
         </Button>
       );
     },
-    cell: ({ row }) => <div className="capitalize">{row.getValue("date")}</div>,
+    cell: ({ row }) => (
+      <div className="min-w-[100px]">{row.getValue("date")}</div>
+    ),
   },
   {
     accessorKey: "day",
     header: "Day",
-    cell: ({ row }) => <div className="capitalize">{row.getValue("day")}</div>,
+    cell: ({ row }) => (
+      <div className="min-w-[90px]">{row.getValue("day")}</div>
+    ),
   },
   {
     accessorKey: "time",
     header: "Time",
-    cell: ({ row }) => <div className="capitalize">{row.getValue("time")}</div>,
+    cell: ({ row }) => <div>{row.getValue("time")}</div>,
   },
   {
     id: "actions",
@@ -221,9 +179,9 @@ export const columns: ColumnDef<Attendance>[] = [
           <DropdownMenuContent align="end">
             <DropdownMenuLabel>Actions</DropdownMenuLabel>
             <DropdownMenuItem
-              onClick={() => navigator.clipboard.writeText(attendance.userId)}
+              onClick={() => navigator.clipboard.writeText(attendance.$id)}
             >
-              Copy user ID
+              Copy attendance ID
             </DropdownMenuItem>
             <DropdownMenuSeparator />
             <DropdownMenuItem>View details</DropdownMenuItem>
@@ -245,6 +203,26 @@ export function GeneralAttendanceTable() {
   >({});
   const [rowSelection, setRowSelection] = React.useState({});
   const [globalFilter, setGlobalFilter] = React.useState("");
+  const [data, setData] = React.useState<Attendance[]>([]);
+  const [isLoading, setIsLoading] = React.useState(true);
+  const [error, setError] = React.useState<string | null>(null);
+
+  React.useEffect(() => {
+    const fetchData = async () => {
+      try {
+        setIsLoading(true);
+        const attendanceData = await getGeneralAttendance();
+        setData(attendanceData);
+      } catch (err) {
+        console.error("Error fetching attendance data:", err);
+        setError("Failed to load attendance data. Please try again later.");
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchData();
+  }, []);
 
   const table = useReactTable({
     data,
@@ -271,143 +249,154 @@ export function GeneralAttendanceTable() {
 
   return (
     <div className="flex items-center justify-center min-h-screen p-2 sm:p-4 md:p-8">
-      <Card className="w-full max-w-[calc(100vw-2rem)] sm:max-w-xl md:max-w-2xl lg:max-w-4xl xl:max-w-5xl">
+      <Card className="w-full max-w-[calc(100vw-2rem)] sm:max-w-2xl md:max-w-3xl lg:max-w-5xl xl:max-w-6xl">
         <CardHeader>
           <CardTitle className="text-2xl font-bold">
             General Attendance
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="space-y-4">
-            <div className="flex flex-col sm:flex-row justify-between items-stretch sm:items-center gap-2 sm:gap-4">
-              <div className="relative w-full sm:max-w-xs">
-                <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
-                <Input
-                  placeholder="Search all columns..."
-                  value={globalFilter ?? ""}
-                  onChange={(event) => setGlobalFilter(event.target.value)}
-                  className="pl-8 w-full"
-                />
-              </div>
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="outline" className="w-full sm:w-[200px]">
-                    Columns <ChevronDown className="ml-2 h-4 w-4" />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-[200px]">
-                  {table
-                    .getAllColumns()
-                    .filter((column) => column.getCanHide())
-                    .map((column) => {
-                      return (
-                        <DropdownMenuCheckboxItem
-                          key={column.id}
-                          className="capitalize"
-                          checked={column.getIsVisible()}
-                          onCheckedChange={(value) =>
-                            column.toggleVisibility(!!value)
-                          }
-                        >
-                          {column.id}
-                        </DropdownMenuCheckboxItem>
-                      );
-                    })}
-                </DropdownMenuContent>
-              </DropdownMenu>
-            </div>
-            <ScrollArea
-              className="rounded-md border"
-              style={{
-                height: `calc(100vh - ${Math.min(
-                  data.length * 40 + 350,
-                  800
-                )}px)`,
-                maxHeight: "calc(100vh - 350px)",
-              }}
-            >
-              <Table>
-                <TableHeader>
-                  {table.getHeaderGroups().map((headerGroup) => (
-                    <TableRow key={headerGroup.id}>
-                      {headerGroup.headers.map((header) => {
+          {isLoading ? (
+            <div className="text-center py-4">Loading attendance data...</div>
+          ) : error ? (
+            <div className="text-center text-red-500 py-4">{error}</div>
+          ) : (
+            <div className="space-y-4">
+              <div className="flex flex-col sm:flex-row justify-between items-stretch sm:items-center gap-2 sm:gap-4">
+                <div className="relative w-full sm:max-w-xs">
+                  <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    placeholder="Search all columns..."
+                    value={globalFilter ?? ""}
+                    onChange={(event) => setGlobalFilter(event.target.value)}
+                    className="pl-8 w-full"
+                  />
+                </div>
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="outline" className="w-full sm:w-[200px]">
+                      Columns <ChevronDown className="ml-2 h-4 w-4" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end" className="w-[200px]">
+                    {table
+                      .getAllColumns()
+                      .filter((column) => column.getCanHide())
+                      .map((column) => {
                         return (
-                          <TableHead
-                            key={header.id}
-                            className="whitespace-nowrap"
+                          <DropdownMenuCheckboxItem
+                            key={column.id}
+                            className="capitalize"
+                            checked={column.getIsVisible()}
+                            onCheckedChange={(value) =>
+                              column.toggleVisibility(!!value)
+                            }
                           >
-                            {header.isPlaceholder
-                              ? null
-                              : flexRender(
-                                  header.column.columnDef.header,
-                                  header.getContext()
-                                )}
-                          </TableHead>
+                            {column.id}
+                          </DropdownMenuCheckboxItem>
                         );
                       })}
-                    </TableRow>
-                  ))}
-                </TableHeader>
-                <TableBody>
-                  {table.getRowModel().rows?.length ? (
-                    table.getRowModel().rows.map((row) => (
-                      <TableRow
-                        key={row.id}
-                        data-state={row.getIsSelected() && "selected"}
-                      >
-                        {row.getVisibleCells().map((cell) => (
-                          <TableCell key={cell.id} className="p-2 md:p-4">
-                            {flexRender(
-                              cell.column.columnDef.cell,
-                              cell.getContext()
-                            )}
-                          </TableCell>
-                        ))}
-                      </TableRow>
-                    ))
-                  ) : (
-                    <TableRow>
-                      <TableCell
-                        colSpan={columns.length}
-                        className="h-24 text-center"
-                      >
-                        No results.
-                      </TableCell>
-                    </TableRow>
-                  )}
-                </TableBody>
-              </Table>
-              <ScrollBar orientation="horizontal" />
-            </ScrollArea>
-            <div className="flex flex-col sm:flex-row items-center justify-between space-y-2 sm:space-y-0">
-              <div className="text-sm text-muted-foreground">
-                {table.getFilteredSelectedRowModel().rows.length} of{" "}
-                {table.getFilteredRowModel().rows.length} row(s) selected.
+                  </DropdownMenuContent>
+                </DropdownMenu>
               </div>
-              <div className="flex items-center space-x-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => table.previousPage()}
-                  disabled={!table.getCanPreviousPage()}
-                >
-                  Previous
-                </Button>
-                <span className="text-sm text-muted-foreground">
-                  Page {table.getState().pagination.pageIndex + 1} of{" "}
-                  {table.getPageCount()}
-                </span>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => table.nextPage()}
-                  disabled={!table.getCanNextPage()}
-                >
-                  Next
-                </Button>
+              <ScrollArea
+                className="rounded-md border"
+                style={{
+                  height: `calc(100vh - ${Math.min(
+                    data.length * 40 + 350,
+                    800
+                  )}px)`,
+                  maxHeight: "calc(100vh - 350px)",
+                  width: "100%",
+                  overflowX: "auto",
+                }}
+              >
+                <Table>
+                  <TableHeader>
+                    {table.getHeaderGroups().map((headerGroup) => (
+                      <TableRow key={headerGroup.id}>
+                        {headerGroup.headers.map((header) => {
+                          return (
+                            <TableHead
+                              key={header.id}
+                              className="whitespace-nowrap"
+                            >
+                              {header.isPlaceholder
+                                ? null
+                                : flexRender(
+                                    header.column.columnDef.header,
+                                    header.getContext()
+                                  )}
+                            </TableHead>
+                          );
+                        })}
+                      </TableRow>
+                    ))}
+                  </TableHeader>
+                  <TableBody>
+                    {table.getRowModel().rows?.length ? (
+                      table.getRowModel().rows.map((row) => (
+                        <TableRow
+                          key={row.id}
+                          data-state={row.getIsSelected() && "selected"}
+                        >
+                          {row.getVisibleCells().map((cell) => (
+                            <TableCell
+                              key={cell.id}
+                              className="p-2 md:p-4 whitespace-nowrap"
+                            >
+                              {flexRender(
+                                cell.column.columnDef.cell,
+                                cell.getContext()
+                              )}
+                            </TableCell>
+                          ))}
+                        </TableRow>
+                      ))
+                    ) : (
+                      <TableRow>
+                        <TableCell
+                          colSpan={columns.length}
+                          className="h-24 text-center"
+                        >
+                          No results.
+                        </TableCell>
+                      </TableRow>
+                    )}
+                  </TableBody>
+                </Table>
+                <ScrollBar orientation="horizontal" />
+              </ScrollArea>
+              <div className="flex flex-col sm:flex-row items-center justify-between space-y-2 sm:space-y-0">
+                <div className="text-sm text-muted-foreground">
+                  {table.getFilteredSelectedRowModel().rows.length} of{" "}
+                  {table.getFilteredRowModel().rows.length} row(s) selected.
+                </div>
+                <div className="flex items-center space-x-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => table.previousPage()}
+                    disabled={!table.getCanPreviousPage()}
+                  >
+                    Previous
+                  </Button>
+                  <span className="text-sm text-muted-foreground">
+                    Page {table.getState().pagination.pageIndex + 1} of{" "}
+                    {table.getPageCount()}
+                  </span>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => table.nextPage()}
+                    disabled={!table.getCanNextPage()}
+                  >
+                    Next
+                  </Button>
+                </div>
               </div>
             </div>
-          </div>
+          )}
         </CardContent>
       </Card>
     </div>
