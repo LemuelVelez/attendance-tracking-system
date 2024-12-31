@@ -14,13 +14,13 @@ import {
   EventData,
 } from "@/lib/attendance/attendance";
 import jsQR from "jsqr";
-import { ResultDialog } from "@/components/SuccessDialog";
 import Webcam from "react-webcam";
 
 type ScanMode = "camera" | "image" | null;
 
 interface QRCodeScannerProps {
   eventData: EventData;
+  onSuccessfulScan: () => void;
 }
 
 const SuccessOverlay = ({ name }: { name: string }) => (
@@ -48,7 +48,10 @@ const ScanningAnimation = () => (
   </div>
 );
 
-export default function QRCodeScanner({ eventData }: QRCodeScannerProps) {
+export default function QRCodeScanner({
+  eventData,
+  onSuccessfulScan,
+}: QRCodeScannerProps) {
   const [error, setError] = useState<string | null>(null);
   const [scanMode, setScanMode] = useState<ScanMode>(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -141,6 +144,7 @@ export default function QRCodeScanner({ eventData }: QRCodeScannerProps) {
                   type: "success",
                   message: `Attendance recorded for ${userData.name}. Thank you for participating!`,
                 });
+                onSuccessfulScan();
               }
             } catch (parseError) {
               console.error("Error parsing QR code data:", parseError);
@@ -166,14 +170,7 @@ export default function QRCodeScanner({ eventData }: QRCodeScannerProps) {
         setShowSuccessOverlay(false);
       }
     },
-    [
-      eventData,
-      setDialogState,
-      setError,
-      setIsLoading,
-      setScannedUserData,
-      setShowSuccessOverlay,
-    ]
+    [eventData, onSuccessfulScan]
   );
 
   const handleFileUpload = useCallback(
@@ -202,14 +199,7 @@ export default function QRCodeScanner({ eventData }: QRCodeScannerProps) {
         reader.readAsDataURL(file);
       }
     },
-    [
-      processQRCode,
-      setError,
-      setIsLoading,
-      setIsScanning,
-      setScanMode,
-      setUploadedImage,
-    ]
+    [processQRCode]
   );
 
   const captureImage = useCallback(() => {
@@ -220,7 +210,7 @@ export default function QRCodeScanner({ eventData }: QRCodeScannerProps) {
       processQRCode(imageSrc);
       setScanMode("image");
     }
-  }, [processQRCode, setUploadedImage, setScanMode]);
+  }, [processQRCode]);
 
   return (
     <>
@@ -360,16 +350,21 @@ export default function QRCodeScanner({ eventData }: QRCodeScannerProps) {
               </motion.div>
             )}
           </AnimatePresence>
+          {dialogState.isOpen && (
+            <Alert
+              variant={
+                dialogState.type === "success" ? "default" : "destructive"
+              }
+              className="mt-4"
+            >
+              <AlertTitle>
+                {dialogState.type === "success" ? "Success" : "Error"}
+              </AlertTitle>
+              <AlertDescription>{dialogState.message}</AlertDescription>
+            </Alert>
+          )}
         </CardContent>
       </Card>
-      <ResultDialog
-        isOpen={dialogState.isOpen}
-        onClose={() => {
-          resetScanner();
-        }}
-        type={dialogState.type}
-        message={dialogState.message}
-      />
     </>
   );
 }

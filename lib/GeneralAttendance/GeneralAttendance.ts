@@ -79,3 +79,26 @@ export const getGeneralAttendance = async (): Promise<any[]> => {
     throw error;
   }
 };
+
+export const deleteGeneralAttendance = async (
+  documentId: string
+): Promise<void> => {
+  try {
+    if (!DATABASE_ID || !GENERAL_ATTENDANCE_COLLECTION_ID) {
+      throw new Error(
+        "Missing Appwrite environment variables. Please check your .env file."
+      );
+    }
+
+    await databases.deleteDocument(
+      DATABASE_ID,
+      GENERAL_ATTENDANCE_COLLECTION_ID,
+      documentId
+    );
+
+    console.log(`Successfully deleted document with ID: ${documentId}`);
+  } catch (error) {
+    console.error("Error in deleteGeneralAttendance:", error);
+    throw error;
+  }
+};
