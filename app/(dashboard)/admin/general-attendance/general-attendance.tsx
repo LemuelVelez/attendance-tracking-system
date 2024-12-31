@@ -106,7 +106,7 @@ const collegeOptions = [
   },
   {
     value: "CCS_ATTENDANCE_COLLECTION_ID",
-    label: "College of Computer Studies",
+    label: "College of Computing Studies",
   },
 ];
 
@@ -394,7 +394,7 @@ export function GeneralAttendanceTable() {
             General Attendance
           </CardTitle>
         </CardHeader>
-        <CardContent>
+        <CardContent className="h-full">
           {isLoading ? (
             <div className="text-center py-4">Loading attendance data...</div>
           ) : error ? (
@@ -457,17 +457,37 @@ export function GeneralAttendanceTable() {
                       </AlertDialogFooter>
                     </AlertDialogContent>
                   </AlertDialog>
-                  <Button
-                    variant="destructive"
-                    className="w-full sm:w-[200px]"
-                    disabled={
-                      table.getFilteredSelectedRowModel().rows.length === 0
-                    }
-                    onClick={handleDeleteAllAttendance}
-                  >
-                    <Trash2 className="mr-2 h-4 w-4" />
-                    Delete
-                  </Button>
+                  <AlertDialog>
+                    <AlertDialogTrigger asChild>
+                      <Button
+                        variant="destructive"
+                        className="w-full sm:w-[200px]"
+                        disabled={
+                          table.getFilteredSelectedRowModel().rows.length === 0
+                        }
+                      >
+                        <Trash2 className="mr-2 h-4 w-4" />
+                        Delete
+                      </Button>
+                    </AlertDialogTrigger>
+                    <AlertDialogContent>
+                      <AlertDialogHeader>
+                        <AlertDialogTitle>
+                          Delete Attendance Records
+                        </AlertDialogTitle>
+                        <AlertDialogDescription>
+                          Are you sure you want to delete the selected
+                          attendance records? This action cannot be undone.
+                        </AlertDialogDescription>
+                      </AlertDialogHeader>
+                      <AlertDialogFooter>
+                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                        <AlertDialogAction onClick={handleDeleteAllAttendance}>
+                          Delete
+                        </AlertDialogAction>
+                      </AlertDialogFooter>
+                    </AlertDialogContent>
+                  </AlertDialog>
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
                       <Button variant="outline" className="w-full sm:w-[200px]">
@@ -500,10 +520,7 @@ export function GeneralAttendanceTable() {
               <ScrollArea
                 className="rounded-md border"
                 style={{
-                  height: `calc(100vh - ${Math.min(
-                    data.length * 40 + 350,
-                    800
-                  )}px)`,
+                  height: "calc(100vh - 350px)",
                   maxHeight: "calc(100vh - 350px)",
                   width: "100%",
                   overflowX: "auto",
