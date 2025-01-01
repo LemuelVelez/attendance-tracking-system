@@ -20,19 +20,32 @@ const DATABASE_ID = process.env.NEXT_PUBLIC_APPWRITE_DATABASE_ID || "";
 const USERS_COLLECTION_ID =
   process.env.NEXT_PUBLIC_APPWRITE_USERS_COLLECTION_ID || "";
 const CTE_ATTENDANCE_COLLECTION_ID =
-  process.env.NEXT_PUBLIC_APPWRITE_CTE_ATTENDANCE_COLLECTION_ID || "";
+  process.env
+    .NEXT_PUBLIC_APPWRITE_CollegeOfTeacherEducation_Attendance_COLLECTION_ID ||
+  "";
 const COE_ATTENDANCE_COLLECTION_ID =
-  process.env.NEXT_PUBLIC_APPWRITE_COE_ATTENDANCE_COLLECTION_ID || "";
+  process.env
+    .NEXT_PUBLIC_APPWRITE_CollegeOfEngineering_Attendance_COLLECTION_ID || "";
 const CCJE_ATTENDANCE_COLLECTION_ID =
-  process.env.NEXT_PUBLIC_APPWRITE_CCJE_ATTENDANCE_COLLECTION_ID || "";
+  process.env
+    .NEXT_PUBLIC_APPWRITE_CollegeOfCriminalJusticeEducation_Attendance_COLLECTION_ID ||
+  "";
 const CBA_ATTENDANCE_COLLECTION_ID =
-  process.env.NEXT_PUBLIC_APPWRITE_CBA_ATTENDANCE_COLLECTION_ID || "";
+  process.env
+    .NEXT_PUBLIC_APPWRITE_CollegeOfBusinessAdministration_Attendance_COLLECTION_ID ||
+  "";
 const CAS_ATTENDANCE_COLLECTION_ID =
-  process.env.NEXT_PUBLIC_APPWRITE_CAS_ATTENDANCE_COLLECTION_ID || "";
+  process.env
+    .NEXT_PUBLIC_APPWRITE_CollegeOfArtsAndSciences_Attendance_COLLECTION_ID ||
+  "";
 const CAF_ATTENDANCE_COLLECTION_ID =
-  process.env.NEXT_PUBLIC_APPWRITE_CAF_ATTENDANCE_COLLECTION_ID || "";
+  process.env
+    .NEXT_PUBLIC_APPWRITE_CollegeOfAgricultureAndForestry_Attendance_COLLECTION_ID ||
+  "";
 const CCS_ATTENDANCE_COLLECTION_ID =
-  process.env.NEXT_PUBLIC_APPWRITE_CCS_ATTENDANCE_COLLECTION_ID || "";
+  process.env
+    .NEXT_PUBLIC_APPWRITE_CollegeOfComputingStudies_Attendance_COLLECTION_ID ||
+  "";
 
 const validateEnvVariables = () => {
   if (
@@ -69,19 +82,9 @@ export interface EventData {
   time: string;
 }
 
-interface GeneralAttendance extends User, EventData {
-  userId: string;
-  studentId: string;
-  name: string;
-  degreeProgram: string;
-  yearLevel: string;
-  section: string;
-  eventName: string;
-  location: string;
-  date: string;
-  day: string;
-  time: string;
-}
+interface GeneralAttendance extends User, EventData {}
+
+interface CollegeAttendance extends User, EventData {}
 
 const getCurrentSession = async (): Promise<string | null> => {
   try {
@@ -125,93 +128,149 @@ const getCurrentUser = async (): Promise<User | null> => {
 };
 
 export const createCTEAttendance = async (
-  eventData: EventData
+  eventData: EventData,
+  userData: User
 ): Promise<GeneralAttendance | null> => {
-  return createCollegeAttendance(CTE_ATTENDANCE_COLLECTION_ID, eventData);
+  return createCollegeAttendance(
+    CTE_ATTENDANCE_COLLECTION_ID,
+    eventData,
+    userData
+  );
 };
 
 export const createCOEAttendance = async (
-  eventData: EventData
+  eventData: EventData,
+  userData: User
 ): Promise<GeneralAttendance | null> => {
-  return createCollegeAttendance(COE_ATTENDANCE_COLLECTION_ID, eventData);
+  return createCollegeAttendance(
+    COE_ATTENDANCE_COLLECTION_ID,
+    eventData,
+    userData
+  );
 };
 
 export const createCCJEAttendance = async (
-  eventData: EventData
+  eventData: EventData,
+  userData: User
 ): Promise<GeneralAttendance | null> => {
-  return createCollegeAttendance(CCJE_ATTENDANCE_COLLECTION_ID, eventData);
+  return createCollegeAttendance(
+    CCJE_ATTENDANCE_COLLECTION_ID,
+    eventData,
+    userData
+  );
 };
 
 export const createCBAAttendance = async (
-  eventData: EventData
+  eventData: EventData,
+  userData: User
 ): Promise<GeneralAttendance | null> => {
-  return createCollegeAttendance(CBA_ATTENDANCE_COLLECTION_ID, eventData);
+  return createCollegeAttendance(
+    CBA_ATTENDANCE_COLLECTION_ID,
+    eventData,
+    userData
+  );
 };
 
 export const createCASAttendance = async (
-  eventData: EventData
+  eventData: EventData,
+  userData: User
 ): Promise<GeneralAttendance | null> => {
-  return createCollegeAttendance(CAS_ATTENDANCE_COLLECTION_ID, eventData);
+  return createCollegeAttendance(
+    CAS_ATTENDANCE_COLLECTION_ID,
+    eventData,
+    userData
+  );
 };
 
 export const createCAFAttendance = async (
-  eventData: EventData
+  eventData: EventData,
+  userData: User
 ): Promise<GeneralAttendance | null> => {
-  return createCollegeAttendance(CAF_ATTENDANCE_COLLECTION_ID, eventData);
+  return createCollegeAttendance(
+    CAF_ATTENDANCE_COLLECTION_ID,
+    eventData,
+    userData
+  );
 };
 
 export const createCCSAttendance = async (
-  eventData: EventData
+  eventData: EventData,
+  userData: User
 ): Promise<GeneralAttendance | null> => {
-  return createCollegeAttendance(CCS_ATTENDANCE_COLLECTION_ID, eventData);
+  return createCollegeAttendance(
+    CCS_ATTENDANCE_COLLECTION_ID,
+    eventData,
+    userData
+  );
 };
 
 const createCollegeAttendance = async (
   collectionId: string,
-  eventData: EventData
-): Promise<GeneralAttendance | null> => {
+  eventData: EventData,
+  userData: User
+): Promise<CollegeAttendance | null> => {
   try {
     validateEnvVariables();
 
-    const user = await getCurrentUser();
-    if (!user) {
-      throw new Error("Failed to retrieve current user data.");
+    if (!userData) {
+      throw new Error("User data is required to create attendance record.");
     }
 
-    // Check for existing attendance record
+    // Check for existing attendance record with the same userId and eventName
     const existingRecords = await databases.listDocuments(
       DATABASE_ID,
       collectionId,
       [
-        Query.equal("userId", user.userId),
+        Query.equal("userId", userData.userId),
         Query.equal("eventName", eventData.eventName),
-        Query.equal("date", eventData.date),
       ]
     );
 
     if (existingRecords.documents.length > 0) {
-      console.log("Attendance already recorded for this event.");
+      console.log("Attendance already recorded for this user and event.");
       return null;
     }
 
-    // Create the document with permissions
+    // Create the document with updated permissions
     const result = await databases.createDocument(
       DATABASE_ID,
       collectionId,
       ID.unique(),
       {
-        ...user,
-        ...eventData,
+        userId: userData.userId,
+        studentId: userData.studentId,
+        name: userData.name,
+        degreeProgram: userData.degreeProgram,
+        yearLevel: userData.yearLevel,
+        section: userData.section,
+        eventName: eventData.eventName,
+        location: eventData.location,
+        date: eventData.date,
+        day: eventData.day,
+        time: eventData.time,
       },
       [
         Permission.read(Role.any()),
-        Permission.write(Role.user(user.userId)),
-        Permission.delete(Role.user(user.userId)),
+        Permission.write(Role.any()),
+        Permission.update(Role.any()),
+        Permission.delete(Role.any()),
       ]
     );
 
     console.log("Attendance record created successfully:", result);
-    return (result as unknown) as GeneralAttendance;
+    return {
+      userId: result.userId,
+      studentId: result.studentId,
+      name: result.name,
+      degreeProgram: result.degreeProgram,
+      yearLevel: result.yearLevel,
+      section: result.section,
+      eventName: result.eventName,
+      location: result.location,
+      date: result.date,
+      day: result.day,
+      time: result.time,
+    } as CollegeAttendance;
   } catch (error) {
     console.error("Error creating college attendance record:", error);
     throw error;

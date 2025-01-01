@@ -45,7 +45,15 @@ import {
   getGeneralAttendance,
   deleteGeneralAttendance,
 } from "@/lib/GeneralAttendance/GeneralAttendance";
-import { createCollegeAttendance } from "@/lib/attendance/college";
+import {
+  createCTEAttendance,
+  createCOEAttendance,
+  createCCJEAttendance,
+  createCBAAttendance,
+  createCASAttendance,
+  createCAFAttendance,
+  createCCSAttendance,
+} from "@/lib/attendance/college";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -331,14 +339,73 @@ export function GeneralAttendanceTable() {
     }
 
     try {
+      let createdCount = 0;
+      let existingCount = 0;
+
       for (const row of selectedRows) {
-        const eventData = row.original;
-        await createCollegeAttendance(selectedCollege, eventData);
+        const attendanceData = row.original;
+        const eventData = {
+          eventName: attendanceData.eventName,
+          location: attendanceData.location,
+          date: attendanceData.date,
+          day: attendanceData.day,
+          time: attendanceData.time,
+        };
+        const userData = {
+          userId: attendanceData.userId,
+          studentId: attendanceData.studentId,
+          name: attendanceData.name,
+          degreeProgram: attendanceData.degreeProgram,
+          yearLevel: attendanceData.yearLevel,
+          section: attendanceData.section,
+        };
+
+        let result;
+        switch (selectedCollege) {
+          case "CTE_ATTENDANCE_COLLECTION_ID":
+            result = await createCTEAttendance(eventData, userData);
+            break;
+          case "COE_ATTENDANCE_COLLECTION_ID":
+            result = await createCOEAttendance(eventData, userData);
+            break;
+          case "CCJE_ATTENDANCE_COLLECTION_ID":
+            result = await createCCJEAttendance(eventData, userData);
+            break;
+          case "CBA_ATTENDANCE_COLLECTION_ID":
+            result = await createCBAAttendance(eventData, userData);
+            break;
+          case "CAS_ATTENDANCE_COLLECTION_ID":
+            result = await createCASAttendance(eventData, userData);
+            break;
+          case "CAF_ATTENDANCE_COLLECTION_ID":
+            result = await createCAFAttendance(eventData, userData);
+            break;
+          case "CCS_ATTENDANCE_COLLECTION_ID":
+            result = await createCCSAttendance(eventData, userData);
+            break;
+          default:
+            throw new Error("Invalid college selected");
+        }
+
+        if (result === null) {
+          existingCount++;
+        } else {
+          createdCount++;
+        }
       }
-      toast({
-        title: "Success",
-        description: "College attendance records created successfully.",
-      });
+
+      if (createdCount > 0) {
+        toast({
+          title: "Success",
+          description: `Created ${createdCount} new attendance record(s). ${existingCount} record(s) were already recorded for the same user and event, and were skipped.`,
+        });
+      } else {
+        toast({
+          title: "Info",
+          description: `All ${existingCount} selected record(s) were already recorded for the same user and event. No new records were created.`,
+          variant: "default",
+        });
+      }
     } catch (error) {
       console.error("Error creating college attendance:", error);
       toast({

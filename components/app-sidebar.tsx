@@ -105,8 +105,8 @@ const data = {
           url: "/admin/general-attendance",
         },
         {
-          title: "Export Reports (PDF/CSV)",
-          url: "/admin/export-reports",
+          title: "College Attendance",
+          url: "/admin/college-attendance",
         },
       ],
     },

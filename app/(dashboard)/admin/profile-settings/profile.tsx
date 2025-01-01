@@ -110,7 +110,7 @@ export default function Profile() {
           </CardHeader>
           <CardContent className="space-y-6">
             <div className="flex flex-col items-center space-y-4">
-              <Avatar className="h-24 w-24">
+              <Avatar className="h-28 w-24">
                 <AvatarImage src={avatarUrl || undefined} alt="User Avatar" />
                 <AvatarFallback className="text-2xl">
                   {userData?.name?.charAt(0) || "U"}
@@ -138,17 +138,6 @@ export default function Profile() {
                   value={userData?.name || ""}
                   onChange={(e) =>
                     setUserData((prev) => ({ ...prev, name: e.target.value }))
-                  }
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="email">Email</Label>
-                <Input
-                  id="email"
-                  type="email"
-                  value={userData?.email || ""}
-                  onChange={(e) =>
-                    setUserData((prev) => ({ ...prev, email: e.target.value }))
                   }
                 />
               </div>
