@@ -4,13 +4,13 @@ import * as React from "react";
 import {
   ShieldCheck,
   QrCode,
-  UserPlus,
   FileText,
   DollarSign,
   Bell,
   Settings2,
   CheckSquare,
   Layout,
+  Users,
 } from "lucide-react";
 
 import { NavMain } from "@/components/nav-main";
@@ -68,15 +68,11 @@ const data = {
     {
       title: "Student Management",
       url: "#",
-      icon: UserPlus,
+      icon: Users,
       items: [
         {
-          title: "Register Student",
-          url: "/admin/register-student",
-        },
-        {
-          title: "View Student Profiles",
-          url: "/admin/student-profiles",
+          title: "Students",
+          url: "/admin/students",
         },
       ],
     },
