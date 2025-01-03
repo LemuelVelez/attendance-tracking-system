@@ -43,6 +43,17 @@ import {
   Search,
   LayoutGrid,
 } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 export default function StudentTable() {
   const [students, setStudents] = useState<Student[]>([]);
@@ -52,6 +63,9 @@ export default function StudentTable() {
   const [currentPage, setCurrentPage] = useState(1);
   const [isUpdating, setIsUpdating] = useState(false);
   const [studentsPerPage, setStudentsPerPage] = useState(10);
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [selectedStudent, setSelectedStudent] = useState<Student | null>(null);
+  const { toast } = useToast();
 
   useEffect(() => {
     const fetchStudents = async () => {
@@ -63,11 +77,16 @@ export default function StudentTable() {
         console.error("Error fetching students:", err);
         setError("Failed to load students. Please try again later.");
         setLoading(false);
+        toast({
+          title: "Error",
+          description: "Failed to load students. Please try again later.",
+          variant: "destructive",
+        });
       }
     };
 
     fetchStudents();
-  }, []);
+  }, [toast]);
 
   const handleRoleUpdate = async (
     userId: string,
@@ -82,12 +101,29 @@ export default function StudentTable() {
           student.userId === userId ? { ...student, role: newRole } : student
         )
       );
+      toast({
+        title: "Role updated successfully",
+        description: `User role has been changed to ${newRole}.`,
+        variant: "default",
+      });
     } catch (err) {
       console.error("Error updating user role:", err);
       setError("Failed to update user role. Please try again.");
+      toast({
+        title: "Error",
+        description: "Failed to update user role. Please try again.",
+        variant: "destructive",
+      });
     } finally {
       setIsUpdating(false);
+      setDialogOpen(false);
+      setSelectedStudent(null);
     }
+  };
+
+  const openConfirmDialog = (student: Student) => {
+    setSelectedStudent(student);
+    setDialogOpen(true);
   };
 
   const filteredStudents = students.filter(
@@ -260,12 +296,7 @@ export default function StudentTable() {
                     aria-label="Actions"
                   >
                     <Button
-                      onClick={() =>
-                        handleRoleUpdate(
-                          student.userId,
-                          student.role === "admin" ? "student" : "admin"
-                        )
-                      }
+                      onClick={() => openConfirmDialog(student)}
                       variant="outline"
                       size="sm"
                       disabled={isUpdating}
@@ -331,6 +362,32 @@ export default function StudentTable() {
           </PaginationContent>
         </Pagination>
       </CardContent>
+      <AlertDialog open={dialogOpen} onOpenChange={setDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Confirm Role Change</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to change {selectedStudent?.name}&apos;s
+              role from {selectedStudent?.role} to{" "}
+              {selectedStudent?.role === "admin" ? "student" : "admin"}?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() =>
+                selectedStudent &&
+                handleRoleUpdate(
+                  selectedStudent.userId,
+                  selectedStudent.role === "admin" ? "student" : "admin"
+                )
+              }
+            >
+              Confirm
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </Card>
   );
 }
