@@ -61,13 +61,20 @@ import {
 } from "@/components/ui/select";
 
 import {
-  getCollegeOfTeacherEducationAttendance,
-  getCollegeOfEngineeringAttendance,
-  getCollegeOfCriminalJusticeEducationAttendance,
-  getCollegeOfBusinessAdministrationAttendance,
-  getCollegeOfArtsAndSciencesAttendance,
-  getCollegeOfAgricultureAndForestryAttendance,
-  getCollegeOfComputingStudiesAttendance,
+  getTeacherEducationAttendance,
+  getEngineeringAttendance,
+  getCriminalJusticeEducationAttendance,
+  getBusinessAdministrationAttendance,
+  getArtsAndSciencesAttendance,
+  getAgricultureAndForestryAttendance,
+  getComputingStudiesAttendance,
+  deleteTeacherEducationAttendance,
+  deleteEngineeringAttendance,
+  deleteCriminalJusticeEducationAttendance,
+  deleteBusinessAdministrationAttendance,
+  deleteArtsAndSciencesAttendance,
+  deleteAgricultureAndForestryAttendance,
+  deleteComputingStudiesAttendance,
 } from "@/lib/GeneralAttendance/getCollegeAttendance";
 
 export type Attendance = {
@@ -100,19 +107,19 @@ const collegeOptions = [
 async function fetchCollegeAttendance(college: string): Promise<Attendance[]> {
   switch (college) {
     case "CTE":
-      return getCollegeOfTeacherEducationAttendance();
+      return getTeacherEducationAttendance();
     case "COE":
-      return getCollegeOfEngineeringAttendance();
+      return getEngineeringAttendance();
     case "CCJE":
-      return getCollegeOfCriminalJusticeEducationAttendance();
+      return getCriminalJusticeEducationAttendance();
     case "CBA":
-      return getCollegeOfBusinessAdministrationAttendance();
+      return getBusinessAdministrationAttendance();
     case "CAS":
-      return getCollegeOfArtsAndSciencesAttendance();
+      return getArtsAndSciencesAttendance();
     case "CAF":
-      return getCollegeOfAgricultureAndForestryAttendance();
+      return getAgricultureAndForestryAttendance();
     case "CCS":
-      return getCollegeOfComputingStudiesAttendance();
+      return getComputingStudiesAttendance();
     default:
       throw new Error("Invalid college selected");
   }
@@ -122,8 +129,24 @@ async function deleteCollegeAttendance(
   college: string,
   attendanceId: string
 ): Promise<void> {
-  // This is still a mock implementation. You would need to implement the actual delete functionality for each college.
-  console.log(`Deleted attendance ${attendanceId} from ${college}`);
+  switch (college) {
+    case "CTE":
+      return deleteTeacherEducationAttendance(attendanceId);
+    case "COE":
+      return deleteEngineeringAttendance(attendanceId);
+    case "CCJE":
+      return deleteCriminalJusticeEducationAttendance(attendanceId);
+    case "CBA":
+      return deleteBusinessAdministrationAttendance(attendanceId);
+    case "CAS":
+      return deleteArtsAndSciencesAttendance(attendanceId);
+    case "CAF":
+      return deleteAgricultureAndForestryAttendance(attendanceId);
+    case "CCS":
+      return deleteComputingStudiesAttendance(attendanceId);
+    default:
+      throw new Error("Invalid college selected");
+  }
 }
 
 export function CollegeAttendanceTable() {

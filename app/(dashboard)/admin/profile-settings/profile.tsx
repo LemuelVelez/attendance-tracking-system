@@ -110,15 +110,15 @@ export default function Profile() {
           </CardHeader>
           <CardContent className="space-y-6">
             <div className="flex flex-col items-center space-y-4">
-              <Avatar className="h-28 w-24">
+              <Avatar className="h-24 w-24">
                 <AvatarImage src={avatarUrl || undefined} alt="User Avatar" />
                 <AvatarFallback className="text-2xl">
                   {userData?.name?.charAt(0) || "U"}
                 </AvatarFallback>
               </Avatar>
               <Label htmlFor="avatar-upload" className="cursor-pointer">
-                <div className="flex h-10 items-center space-x-2 rounded-md bg-primary px-4 py-2 text-primary-foreground hover:bg-primary/90">
-                  <Upload className="h-5 w-5" />
+                <div className="flex h-7 items-center space-x-2 rounded-md bg-primary px-4 py-2 text-primary-foreground hover:bg-primary/90">
+                  <Upload className="h-4 w-4" />
                   <span>Upload New Picture</span>
                 </div>
                 <Input

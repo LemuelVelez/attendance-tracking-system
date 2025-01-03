@@ -163,23 +163,23 @@ export default function StudentTable() {
                   <GraduationCap className="inline-block mr-2" />
                   Student ID
                 </TableHead>
-                <TableHead>
+                <TableHead className="w-[155px]">
                   <Layers className="inline-block mr-2" />
                   Degree Program
                 </TableHead>
-                <TableHead>
+                <TableHead className="w-[90px]">
                   <CalendarDays className="inline-block mr-2" />
                   Year
                 </TableHead>
-                <TableHead>
+                <TableHead className="w-[95px]">
                   <LayoutGrid className="inline-block mr-2" />
                   Section
                 </TableHead>
-                <TableHead>
+                <TableHead className="w-[90px]">
                   <UserCog className="inline-block mr-2" />
                   Role
                 </TableHead>
-                <TableHead>
+                <TableHead className="w-[10px]">
                   <Mail className="inline-block mr-2" />
                   Email
                 </TableHead>
@@ -269,7 +269,7 @@ export default function StudentTable() {
                       variant="outline"
                       size="sm"
                       disabled={isUpdating}
-                      className="text-xs px-2 py-1 rounded-full hover:bg-blue-100 transition-colors"
+                      className="text-xs px-2 py-1 rounded-full hover:bg-gray-400 transition-colors"
                     >
                       {isUpdating
                         ? "Updating..."
