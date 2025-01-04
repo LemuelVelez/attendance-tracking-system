@@ -5,7 +5,7 @@ import {
   ShieldCheck,
   QrCode,
   FileText,
-  DollarSign,
+  Archive,
   Bell,
   Settings2,
   CheckSquare,
@@ -109,15 +109,11 @@ const data = {
     {
       title: "Fine Management",
       url: "#",
-      icon: DollarSign,
+      icon: Archive,
       items: [
         {
-          title: "Set Absence Fines",
-          url: "/admin/set-fines",
-        },
-        {
-          title: "View Fine Reports",
-          url: "/admin/fine-reports",
+          title: "Attendance Penalties",
+          url: "/admin/attendance-penalties-management",
         },
       ],
     },
