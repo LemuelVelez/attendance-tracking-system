@@ -1,8 +1,17 @@
 "use client";
 
-import { Bar, BarChart, Line, LineChart, Pie, PieChart } from "recharts";
+import { useEffect, useState } from "react";
+import {
+  Bar,
+  BarChart,
+  Line,
+  LineChart,
+  ResponsiveContainer,
+  Tooltip,
+  XAxis,
+  YAxis,
+} from "recharts";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { ChartContainer } from "@/components/ui/chart";
 import {
   Table,
   TableBody,
@@ -11,205 +20,390 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import {
+  Pagination,
+  PaginationContent,
+  PaginationItem,
+  PaginationLink,
+  PaginationNext,
+  PaginationPrevious,
+} from "@/components/ui/pagination";
+import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  getAllData,
+  User,
+  Event,
+  Attendance,
+  FineDocument,
+} from "@/lib/overview/overview";
+import {
+  Loader2,
+  Users,
+  BarChartIcon,
+  Calendar,
+  DollarSign,
+  TrendingUp,
+  List,
+} from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
 
-// Sample data - replace with actual data from your backend
-const attendanceByEvent = [
-  { event: "General Assembly", attendance: 150 },
-  { event: "Leadership Workshop", attendance: 75 },
-  { event: "Community Service", attendance: 100 },
-  { event: "Sports Fest", attendance: 200 },
-  { event: "Academic Forum", attendance: 80 },
-];
+interface OverviewData {
+  users: User[];
+  events: Event[];
+  attendance: Attendance[];
+  fines: FineDocument[];
+}
 
-const attendanceTrend = [
-  { month: "Jan", attendance: 300 },
-  { month: "Feb", attendance: 350 },
-  { month: "Mar", attendance: 400 },
-  { month: "Apr", attendance: 450 },
-  { month: "May", attendance: 500 },
-];
-
-const absenceReasons = [
-  { reason: "Illness", value: 30 },
-  { reason: "Transportation", value: 20 },
-  { reason: "Family Emergency", value: 15 },
-  { reason: "Other", value: 35 },
-];
-
-const recentEvents = [
-  { name: "General Assembly", date: "2023-05-15", attendance: 150, total: 180 },
-  {
-    name: "Leadership Workshop",
-    date: "2023-05-10",
-    attendance: 75,
-    total: 100,
-  },
-  {
-    name: "Community Service",
-    date: "2023-05-05",
-    attendance: 100,
-    total: 120,
-  },
-  { name: "Sports Fest", date: "2023-04-30", attendance: 200, total: 250 },
-  { name: "Academic Forum", date: "2023-04-25", attendance: 80, total: 100 },
-];
+const MotionCard = motion(Card);
 
 export default function Overview() {
+  const [data, setData] = useState<OverviewData | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [rowsPerPage, setRowsPerPage] = useState(10);
+
+  useEffect(() => {
+    async function fetchData() {
+      try {
+        setIsLoading(true);
+        const result = await getAllData();
+        setData(result);
+      } catch (error) {
+        console.error("Error fetching data:", error);
+        setError("Failed to load data. Please try again later.");
+      } finally {
+        setIsLoading(false);
+      }
+    }
+    fetchData();
+  }, []);
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center h-screen">
+        <Loader2 className="w-12 h-12 animate-spin text-primary" />
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="flex items-center justify-center h-screen">
+        <div className="text-center text-red-500 bg-red-100 dark:bg-red-900 p-4 rounded-lg shadow-lg">
+          <h2 className="text-2xl font-bold mb-2">Error</h2>
+          <p>{error}</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!data) {
+    return (
+      <div className="flex items-center justify-center h-screen">
+        <div className="text-center text-gray-500 dark:text-gray-400">
+          No data available.
+        </div>
+      </div>
+    );
+  }
+
+  const totalStudents = data.users.length;
+  const totalEvents = new Set(data.attendance.map((a) => a.eventName)).size;
+  const totalAttendance = data.attendance.length;
+  const averageAttendance =
+    totalEvents > 0
+      ? ((totalAttendance / (totalEvents * totalStudents)) * 100).toFixed(2)
+      : 0;
+
+  const totalFinesCleared = data.fines.filter(
+    (fine) => fine.status === "Cleared"
+  ).length;
+
+  const attendanceByEvent = Array.from(
+    data.attendance.reduce((acc, curr) => {
+      const count = acc.get(curr.eventName) || 0;
+      acc.set(curr.eventName, count + 1);
+      return acc;
+    }, new Map<string, number>())
+  )
+    .map(([event, attendance]) => ({ event, attendance }))
+    .sort((a, b) => b.attendance - a.attendance)
+    .slice(0, 10);
+
+  const attendanceTrend = data.attendance
+    .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
+    .reduce((acc, curr) => {
+      const date = new Date(curr.date).toLocaleDateString();
+      const existingEntry = acc.find((entry) => entry.date === date);
+      if (existingEntry) {
+        existingEntry.attendance += 1;
+      } else {
+        acc.push({ date, attendance: 1 });
+      }
+      return acc;
+    }, [] as { date: string; attendance: number }[]);
+
+  const recentEvents = data.attendance
+    .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+    .reduce((acc, curr) => {
+      if (!acc.some((event) => event.eventName === curr.eventName)) {
+        acc.push({
+          eventName: curr.eventName,
+          date: new Date(curr.date).toLocaleDateString(),
+          attendance: data.attendance.filter(
+            (a) => a.eventName === curr.eventName
+          ).length,
+          total: totalStudents,
+        });
+      }
+      return acc;
+    }, [] as { eventName: string; date: string; attendance: number; total: number }[]);
+
+  const totalPages = Math.ceil(recentEvents.length / rowsPerPage);
+  const paginatedEvents = recentEvents.slice(
+    (currentPage - 1) * rowsPerPage,
+    currentPage * rowsPerPage
+  );
+
   return (
-    <div className="p-8 space-y-8">
-      <h1 className="text-3xl font-bold">Overview</h1>
+    <div className="p-8 space-y-8 min-h-screen bg-gradient-to-br from-background to-secondary/20">
+      <h1 className="text-4xl font-bold text-primary">Overview</h1>
 
       {/* Overview Cards */}
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">
-              Total Students
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">1,234</div>
-            <p className="text-xs text-muted-foreground">
-              +20% from last month
-            </p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">
-              Average Attendance
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">85%</div>
-            <p className="text-xs text-muted-foreground">+5% from last month</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">
-              Events This Month
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">12</div>
-            <p className="text-xs text-muted-foreground">
-              2 more than last month
-            </p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">
-              Total Fines Collected
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">$520</div>
-            <p className="text-xs text-muted-foreground">
-              +12% from last month
-            </p>
-          </CardContent>
-        </Card>
+      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
+        <AnimatePresence>
+          {[
+            { title: "Total Students", value: totalStudents, icon: Users },
+            {
+              title: "Average Attendance",
+              value: `${averageAttendance}%`,
+              icon: BarChartIcon,
+            },
+            { title: "Total Events", value: totalEvents, icon: Calendar },
+            {
+              title: "Total Fines Cleared",
+              value: totalFinesCleared,
+              icon: DollarSign,
+            },
+          ].map((item, index) => (
+            <MotionCard
+              key={item.title}
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -20 }}
+              transition={{ duration: 0.3, delay: index * 0.1 }}
+              className="overflow-hidden bg-card hover:bg-card/90 transition-colors"
+            >
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">
+                  {item.title}
+                </CardTitle>
+                <item.icon className="h-4 w-4 text-primary" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold text-primary">
+                  {item.value}
+                </div>
+              </CardContent>
+            </MotionCard>
+          ))}
+        </AnimatePresence>
       </div>
 
       {/* Charts */}
-      <div className="grid gap-4 md:grid-cols-2">
-        <Card>
-          <CardHeader>
-            <CardTitle>Attendance by Event</CardTitle>
+      <div className="grid gap-6 md:grid-cols-2">
+        <MotionCard
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.3, delay: 0.4 }}
+          className="bg-card hover:bg-card/90 transition-colors"
+        >
+          <CardHeader className="flex flex-row items-center justify-between space-y-0">
+            <CardTitle className="text-xl font-semibold text-primary">
+              Top 10 Events by Attendance
+            </CardTitle>
+            <BarChartIcon className="h-5 w-5 text-primary" />
           </CardHeader>
           <CardContent>
-            <ChartContainer
-              config={{
-                event: { label: "Event", color: "hsl(var(--chart-1))" },
-              }}
-              className="w-auto h-auto"
-            >
-              <BarChart data={attendanceByEvent}>
-                <Bar dataKey="attendance" fill="var(--color-event)" />
-              </BarChart>
-            </ChartContainer>
+            <ScrollArea className="h-[300px] w-full rounded-md border">
+              <ResponsiveContainer width="100%" height={300}>
+                <BarChart
+                  data={attendanceByEvent}
+                  margin={{ top: 20, right: 30, left: 20, bottom: 70 }}
+                >
+                  <XAxis
+                    dataKey="event"
+                    angle={-45}
+                    textAnchor="end"
+                    height={80}
+                    interval={0}
+                    tick={{ fontSize: 12, fill: "currentColor" }}
+                  />
+                  <YAxis tick={{ fontSize: 12, fill: "currentColor" }} />
+                  <Tooltip
+                    contentStyle={{
+                      backgroundColor: "hsl(var(--popover))",
+                      border: "1px solid hsl(var(--border))",
+                      borderRadius: "8px",
+                      color: "hsl(var(--popover-foreground))",
+                    }}
+                  />
+                  <Bar dataKey="attendance" fill="hsl(var(--primary))" />
+                </BarChart>
+              </ResponsiveContainer>
+              <ScrollBar orientation="horizontal" />
+            </ScrollArea>
           </CardContent>
-        </Card>
-        <Card>
-          <CardHeader>
-            <CardTitle>Attendance Trend</CardTitle>
+        </MotionCard>
+        <MotionCard
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.3, delay: 0.5 }}
+          className="bg-card hover:bg-card/90 transition-colors"
+        >
+          <CardHeader className="flex flex-row items-center justify-between space-y-0">
+            <CardTitle className="text-xl font-semibold text-primary">
+              Attendance Trend
+            </CardTitle>
+            <TrendingUp className="h-5 w-5 text-primary" />
           </CardHeader>
           <CardContent>
-            <ChartContainer
-              config={{
-                attendance: {
-                  label: "Attendance",
-                  color: "hsl(var(--chart-2))",
-                },
-              }}
-              className="w-auto h-auto"
-            >
-              <LineChart data={attendanceTrend}>
-                <Line
-                  type="monotone"
-                  dataKey="attendance"
-                  stroke="var(--color-attendance)"
-                />
-              </LineChart>
-            </ChartContainer>
+            <ScrollArea className="h-[300px] w-full rounded-md border">
+              <ResponsiveContainer width="100%" height={300}>
+                <LineChart
+                  data={attendanceTrend}
+                  margin={{ top: 20, right: 30, left: 20, bottom: 70 }}
+                >
+                  <XAxis
+                    dataKey="date"
+                    angle={-45}
+                    textAnchor="end"
+                    height={80}
+                    interval={0}
+                    tick={{ fontSize: 12, fill: "currentColor" }}
+                  />
+                  <YAxis tick={{ fontSize: 12, fill: "currentColor" }} />
+                  <Tooltip
+                    contentStyle={{
+                      backgroundColor: "hsl(var(--popover))",
+                      border: "1px solid hsl(var(--border))",
+                      borderRadius: "8px",
+                      color: "hsl(var(--popover-foreground))",
+                    }}
+                  />
+                  <Line
+                    type="monotone"
+                    dataKey="attendance"
+                    stroke="hsl(var(--primary))"
+                    strokeWidth={2}
+                    dot={{ fill: "hsl(var(--primary))", strokeWidth: 2 }}
+                  />
+                </LineChart>
+              </ResponsiveContainer>
+              <ScrollBar orientation="horizontal" />
+            </ScrollArea>
           </CardContent>
-        </Card>
+        </MotionCard>
       </div>
 
-      <div className="grid gap-4 md:grid-cols-2">
-        <Card>
-          <CardHeader>
-            <CardTitle>Absence Reasons</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <ChartContainer
-              config={{
-                reason: { label: "Reason", color: "hsl(var(--chart-3))" },
-                value: { label: "Value", color: "hsl(var(--chart-4))" },
-              }}
-              className="h-auto w-auto"
-            >
-              <PieChart>
-                <Pie
-                  data={absenceReasons}
-                  dataKey="value"
-                  nameKey="reason"
-                  fill="var(--color-reason)"
-                />
-              </PieChart>
-            </ChartContainer>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader>
-            <CardTitle>Recent Events</CardTitle>
-          </CardHeader>
-          <CardContent>
+      <MotionCard
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.3, delay: 0.6 }}
+        className="bg-card hover:bg-card/90 transition-colors"
+      >
+        <CardHeader className="flex flex-row items-center justify-between space-y-0">
+          <CardTitle className="text-xl font-semibold text-primary">
+            Recent Events
+          </CardTitle>
+          <List className="h-5 w-5 text-primary" />
+        </CardHeader>
+        <CardContent>
+          <ScrollArea className="h-[400px] w-full">
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Event</TableHead>
+                  <TableHead className="w-[250px]">Event</TableHead>
                   <TableHead>Date</TableHead>
                   <TableHead>Attendance</TableHead>
+                  <TableHead className="text-right">Attendance Rate</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {recentEvents.map((event) => (
-                  <TableRow key={event.name}>
-                    <TableCell>{event.name}</TableCell>
+                {paginatedEvents.map((event) => (
+                  <TableRow
+                    key={event.eventName}
+                    className="hover:bg-muted/50 transition-colors"
+                  >
+                    <TableCell className="font-medium">
+                      {event.eventName}
+                    </TableCell>
                     <TableCell>{event.date}</TableCell>
                     <TableCell>
                       {event.attendance}/{event.total}
+                    </TableCell>
+                    <TableCell className="text-right">
+                      {((event.attendance / event.total) * 100).toFixed(2)}%
                     </TableCell>
                   </TableRow>
                 ))}
               </TableBody>
             </Table>
-          </CardContent>
-        </Card>
-      </div>
+            <ScrollBar orientation="horizontal" />
+          </ScrollArea>
+          <div className="flex items-center justify-between mt-4">
+            <Select
+              value={rowsPerPage.toString()}
+              onValueChange={(value) => setRowsPerPage(Number(value))}
+            >
+              <SelectTrigger className="w-[180px]">
+                <SelectValue placeholder="Rows per page" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="10">10 rows per page</SelectItem>
+                <SelectItem value="20">20 rows per page</SelectItem>
+                <SelectItem value="50">50 rows per page</SelectItem>
+              </SelectContent>
+            </Select>
+            <Pagination>
+              <PaginationContent>
+                <PaginationItem>
+                  <PaginationPrevious
+                    onClick={() =>
+                      setCurrentPage((prev) => Math.max(prev - 1, 1))
+                    }
+                  />
+                </PaginationItem>
+                {[...Array(totalPages)].map((_, i) => (
+                  <PaginationItem key={i}>
+                    <PaginationLink
+                      onClick={() => setCurrentPage(i + 1)}
+                      isActive={currentPage === i + 1}
+                    >
+                      {i + 1}
+                    </PaginationLink>
+                  </PaginationItem>
+                ))}
+                <PaginationItem>
+                  <PaginationNext
+                    onClick={() =>
+                      setCurrentPage((prev) => Math.min(prev + 1, totalPages))
+                    }
+                  />
+                </PaginationItem>
+              </PaginationContent>
+            </Pagination>
+          </div>
+        </CardContent>
+      </MotionCard>
     </div>
   );
 }
