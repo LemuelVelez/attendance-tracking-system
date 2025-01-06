@@ -1,7 +1,6 @@
-/* eslint-disable react-hooks/exhaustive-deps */
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import {
   Table,
@@ -19,36 +18,20 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  getGeneralAttendance,
+  createFineDocument,
+  getFineDocuments,
+  getTotalUniqueEvents,
+  getAllUsers,
+  FineDocument,
+  Attendance,
+  FineDocumentData,
+  User,
+} from "@/lib/GeneralAttendance/GeneralAttendance";
 
-// Types
-interface Attendance {
-  userId: string;
-  studentId: string;
-  name: string;
-  degreeProgram: string;
-  yearLevel: string;
-  section: string;
-  eventName: string;
-  location: string;
-  date: string;
-  day: string;
-  time: string;
-}
-
-interface Fine {
-  id: number;
-  userId: string;
-  studentId: string;
-  name: string;
-  absences: number;
-  penalties: string;
-  dateIssued: string;
-  datePaid?: string;
-  status: "Pending" | "Submitted";
-}
-
-// Penalties configuration based on number of absences
 const PENALTIES_MAP: Record<number, string> = {
+  0: "No penalty",
   1: "1 pad grade 1 paper, 1 pencil",
   2: "2 pads Grade 2 paper, 2 pencils, 1 eraser",
   3: "3 Pads Grade 3 paper, 3 pencils, 2 eraser, 1 sharpener",
@@ -61,62 +44,18 @@ const PENALTIES_MAP: Record<number, string> = {
   10: "1 plastic envelop with handle, 2 Pads intermediate paper, 3 notebooks 3 pencils, 2 eraser, 3 sharpener, 3 ball pen, 1 crayon",
 };
 
-// Mock Data
-const mockAttendances: Attendance[] = [
-  {
-    userId: "1",
-    studentId: "S001",
-    name: "John Doe",
-    degreeProgram: "Computer Science",
-    yearLevel: "3",
-    section: "A",
-    eventName: "Orientation",
-    location: "Main Hall",
-    date: "2023-08-01",
-    day: "Monday",
-    time: "09:00",
-  },
-  {
-    userId: "2",
-    studentId: "S002",
-    name: "Jane Smith",
-    degreeProgram: "Engineering",
-    yearLevel: "2",
-    section: "B",
-    eventName: "Orientation",
-    location: "Main Hall",
-    date: "2023-08-01",
-    day: "Monday",
-    time: "09:00",
-  },
-  {
-    userId: "3",
-    studentId: "S003",
-    name: "Bob Johnson",
-    degreeProgram: "Business",
-    yearLevel: "4",
-    section: "C",
-    eventName: "Career Fair",
-    location: "Gym",
-    date: "2023-08-15",
-    day: "Tuesday",
-    time: "14:00",
-  },
-];
-
 export default function SupplyFinesManagement() {
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const [attendances, setAttendances] = useState<Attendance[]>(mockAttendances);
-  const [fines, setFines] = useState<Fine[]>([]);
+  const [attendances, setAttendances] = useState<Attendance[]>([]);
+  const [fines, setFines] = useState<FineDocument[]>([]);
   const [selectedEvent, setSelectedEvent] = useState<string>("All Events");
-  const [nextId, setNextId] = useState(1);
-  const totalEvents = 10; // Total number of required events
+  const [totalEvents, setTotalEvents] = useState<number>(0);
+  const [allUsers, setAllUsers] = useState<User[]>([]);
 
   useEffect(() => {
-    calculateFines();
-  }, [attendances, selectedEvent]);
+    fetchData();
+  }, []);
 
-  const calculateFines = () => {
+  const calculateFines = useCallback(async () => {
     const userAttendances = attendances.reduce((acc, attendance) => {
       if (
         selectedEvent === "All Events" ||
@@ -127,46 +66,95 @@ export default function SupplyFinesManagement() {
       return acc;
     }, {} as Record<string, number>);
 
-    const uniqueStudents = [...new Set(attendances.map((a) => a.userId))];
-    const newFines: Fine[] = uniqueStudents
-      .map((userId) => {
-        const student = attendances.find((a) => a.userId === userId);
-        if (!student) return null;
+    const newFines: FineDocument[] = [];
 
-        const attended = userAttendances[userId] || 0;
-        const absences = totalEvents - attended;
-        const penalties = PENALTIES_MAP[absences] || PENALTIES_MAP[10]; // Use maximum penalties if absences > 10
+    for (const user of allUsers) {
+      const attended = userAttendances[user.$id] || 0;
+      const absences = Math.max(0, totalEvents - attended);
+      const presences = attended;
 
-        const fine: Fine = {
-          id: nextId + uniqueStudents.indexOf(userId),
-          userId,
-          studentId: student.studentId,
-          name: student.name,
-          absences,
-          penalties,
-          dateIssued: new Date().toISOString().split("T")[0],
-          status: "Pending",
-        };
-        return fine;
-      })
-      .filter((fine): fine is Fine => fine !== null);
+      const penalties = PENALTIES_MAP[absences] || PENALTIES_MAP[10];
 
-    setFines(newFines);
-    setNextId(nextId + uniqueStudents.length);
+      const fineData: FineDocumentData = {
+        userId: user.$id,
+        studentId: user.studentId,
+        name: user.name,
+        absences: absences.toString(),
+        presences: presences.toString(),
+        penalties,
+        dateIssued: new Date().toISOString().split("T")[0],
+        status: penalties === "No penalty" ? "Cleared" : "Pending",
+      };
+
+      try {
+        const createdFine = await createFineDocument(fineData);
+        newFines.push(createdFine);
+      } catch (error) {
+        console.error("Error creating fine document:", error);
+        continue;
+      }
+    }
+
+    setFines((prevFines) => {
+      const updatedFines = [...prevFines];
+      for (const newFine of newFines) {
+        const index = updatedFines.findIndex((f) => f.$id === newFine.$id);
+        if (index !== -1) {
+          updatedFines[index] = newFine;
+        } else {
+          updatedFines.push(newFine);
+        }
+      }
+      return updatedFines;
+    });
+  }, [allUsers, attendances, selectedEvent, totalEvents]);
+
+  useEffect(() => {
+    calculateFines();
+  }, [allUsers, attendances, selectedEvent, totalEvents, calculateFines]);
+
+  const fetchData = async () => {
+    try {
+      const attendanceData = await getGeneralAttendance();
+      setAttendances(attendanceData);
+
+      const finesData = await getFineDocuments();
+      setFines(finesData);
+
+      const totalEventsCount = await getTotalUniqueEvents();
+      setTotalEvents(totalEventsCount);
+
+      const usersData = await getAllUsers();
+      setAllUsers(usersData);
+    } catch (error) {
+      console.error("Error fetching data:", error);
+    }
   };
 
-  const handleSubmitSupplies = (id: number) => {
-    setFines((prev) =>
-      prev.map((fine) =>
-        fine.id === id
-          ? {
-              ...fine,
-              status: "Submitted",
-              datePaid: new Date().toISOString().split("T")[0],
-            }
-          : fine
-      )
-    );
+  const handleSubmitSupplies = async (id: string) => {
+    try {
+      const fineToUpdate = fines.find((fine) => fine.$id === id);
+      if (!fineToUpdate) return;
+
+      const updatedFineData: FineDocumentData = {
+        userId: fineToUpdate.userId,
+        studentId: fineToUpdate.studentId,
+        name: fineToUpdate.name,
+        absences: fineToUpdate.absences,
+        presences: fineToUpdate.presences,
+        penalties: fineToUpdate.penalties,
+        dateIssued: fineToUpdate.dateIssued,
+        status: "Cleared",
+        datePaid: new Date().toISOString().split("T")[0],
+      };
+
+      const updatedFineDocument = await createFineDocument(updatedFineData);
+      setFines((prev) =>
+        prev.map((fine) => (fine.$id === id ? updatedFineDocument : fine))
+      );
+    } catch (error) {
+      console.error("Error updating fine document:", error);
+    }
   };
 
   const uniqueEvents = [
@@ -179,6 +167,15 @@ export default function SupplyFinesManagement() {
       <h1 className="text-2xl font-bold mb-4">
         Attendance Penalties Management
       </h1>
+
+      <Card className="mb-4">
+        <CardHeader>
+          <CardTitle>Event Information</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <p>Total number of required events: {totalEvents}</p>
+        </CardContent>
+      </Card>
 
       <Card className="mb-4">
         <CardHeader>
@@ -210,6 +207,7 @@ export default function SupplyFinesManagement() {
               <TableRow>
                 <TableHead>Student ID</TableHead>
                 <TableHead>Name</TableHead>
+                <TableHead>Presences</TableHead>
                 <TableHead>Absences</TableHead>
                 <TableHead>Required Supplies</TableHead>
                 <TableHead>Date Issued</TableHead>
@@ -218,25 +216,41 @@ export default function SupplyFinesManagement() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {fines.map((fine) => (
-                <TableRow key={fine.id}>
-                  <TableCell>{fine.studentId}</TableCell>
-                  <TableCell>{fine.name}</TableCell>
-                  <TableCell>{fine.absences}</TableCell>
-                  <TableCell className="max-w-md whitespace-normal">
-                    {fine.penalties}
-                  </TableCell>
-                  <TableCell>{fine.dateIssued}</TableCell>
-                  <TableCell>{fine.status}</TableCell>
-                  <TableCell>
-                    {fine.status === "Pending" && (
-                      <Button onClick={() => handleSubmitSupplies(fine.id)}>
-                        Mark as Submitted
-                      </Button>
-                    )}
-                  </TableCell>
-                </TableRow>
-              ))}
+              {fines.map((fine) => {
+                const presences =
+                  selectedEvent === "All Events"
+                    ? parseInt(fine.presences)
+                    : attendances.filter(
+                        (a) =>
+                          a.userId === fine.userId &&
+                          a.eventName === selectedEvent
+                      ).length;
+
+                return (
+                  <TableRow key={fine.$id}>
+                    <TableCell>{fine.studentId}</TableCell>
+                    <TableCell>{fine.name}</TableCell>
+                    <TableCell>{presences}</TableCell>
+                    <TableCell>{fine.absences}</TableCell>
+                    <TableCell className="max-w-md whitespace-normal">
+                      {fine.penalties}
+                    </TableCell>
+                    <TableCell>{fine.dateIssued}</TableCell>
+                    <TableCell>{fine.status}</TableCell>
+                    <TableCell>
+                      {fine.status === "Pending" ? (
+                        <Button onClick={() => handleSubmitSupplies(fine.$id)}>
+                          Mark as Cleared
+                        </Button>
+                      ) : fine.status === "Cleared" ? (
+                        <span className="text-green-600 font-semibold">
+                          Cleared
+                        </span>
+                      ) : null}
+                    </TableCell>
+                  </TableRow>
+                );
+              })}
             </TableBody>
           </Table>
         </CardContent>
