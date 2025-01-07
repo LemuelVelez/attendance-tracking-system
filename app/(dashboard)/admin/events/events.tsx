@@ -33,11 +33,13 @@ import QRCode from "qrcode";
 import {
   AlertDialog,
   AlertDialogAction,
+  AlertDialogCancel,
   AlertDialogContent,
   AlertDialogDescription,
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
+  AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { format, parseISO } from "date-fns";
 import Link from "next/link";
@@ -49,13 +51,7 @@ import {
 } from "@/lib/events/eventService";
 import { User } from "@/lib/attendance/attendance";
 import QRCodeScanner from "./QRCodeScanner";
-
-interface AlertState {
-  isOpen: boolean;
-  title: string;
-  description: string;
-  type: "success" | "error";
-}
+import { useToast } from "@/hooks/use-toast";
 
 const generateQRCode = async (event: Event): Promise<string> => {
   const qrData = JSON.stringify({
@@ -109,17 +105,12 @@ const QRCodeDisplay: React.FC<{ event: Event }> = ({ event }) => {
 export default function EventDisplay() {
   const [events, setEvents] = useState<Event[]>([]);
   const [editingEvent, setEditingEvent] = useState<Event | null>(null);
-  const [alertState, setAlertState] = useState<AlertState>({
-    isOpen: false,
-    title: "",
-    description: "",
-    type: "success",
-  });
   const [loadingActions, setLoadingActions] = useState<{
     [key: string]: "save" | "delete" | null;
   }>({});
   const [isQRScannerOpen, setIsQRScannerOpen] = useState(false);
   const [selectedEvent, setSelectedEvent] = useState<Event | null>(null);
+  const { toast } = useToast();
 
   useEffect(() => {
     const fetchEvents = async () => {
@@ -128,17 +119,16 @@ export default function EventDisplay() {
         setEvents(fetchedEvents);
       } catch (error) {
         console.error("Error fetching events:", error);
-        setAlertState({
-          isOpen: true,
+        toast({
           title: "Error",
           description: "Failed to fetch events. Please try again later.",
-          type: "error",
+          variant: "destructive",
         });
       }
     };
 
     fetchEvents();
-  }, []);
+  }, [toast]);
 
   const handleEdit = (event: Event) => {
     setEditingEvent(event);
@@ -149,19 +139,17 @@ export default function EventDisplay() {
     try {
       await deleteEvent(id);
       setEvents(events.filter((event) => event.$id !== id));
-      setAlertState({
-        isOpen: true,
+      toast({
         title: "Event Deleted",
         description: "The event has been successfully deleted.",
-        type: "success",
+        variant: "default",
       });
     } catch (error) {
       console.error("Error deleting event:", error);
-      setAlertState({
-        isOpen: true,
+      toast({
         title: "Error",
         description: "Failed to delete the event. Please try again.",
-        type: "error",
+        variant: "destructive",
       });
     } finally {
       setLoadingActions((prev) => {
@@ -184,22 +172,20 @@ export default function EventDisplay() {
           )
         );
         setEditingEvent(null);
-        setAlertState({
-          isOpen: true,
+        toast({
           title: "Event Updated",
           description: "The event has been successfully updated.",
-          type: "success",
+          variant: "default",
         });
       } else {
         throw new Error("Saved event is not of type Event");
       }
     } catch (error) {
       console.error("Error updating event:", error);
-      setAlertState({
-        isOpen: true,
+      toast({
         title: "Error",
         description: "Failed to update the event. Please try again.",
-        type: "error",
+        variant: "destructive",
       });
     } finally {
       setLoadingActions((prev) => ({ ...prev, [updatedEvent.$id]: null }));
@@ -311,13 +297,12 @@ export default function EventDisplay() {
   const handleSuccessfulScan = useCallback(() => {
     setIsQRScannerOpen(false);
     setSelectedEvent(null);
-    setAlertState({
-      isOpen: true,
+    toast({
       title: "Attendance Recorded",
       description: "The attendance has been successfully recorded.",
-      type: "success",
+      variant: "default",
     });
-  }, []);
+  }, [toast]);
 
   return (
     <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -445,24 +430,42 @@ export default function EventDisplay() {
                   <Edit className="mr-2 h-4 w-4" />
                   Edit
                 </Button>
-                <Button
-                  variant="destructive"
-                  onClick={() => handleDelete(event.$id)}
-                  className="w-full sm:w-auto"
-                  disabled={loadingActions[event.$id] === "delete"}
-                >
-                  {loadingActions[event.$id] === "delete" ? (
-                    <>
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      Deleting...
-                    </>
-                  ) : (
-                    <>
+                <AlertDialog>
+                  <AlertDialogTrigger asChild>
+                    <Button
+                      variant="destructive"
+                      className="w-full sm:w-auto"
+                      disabled={loadingActions[event.$id] === "delete"}
+                    >
                       <Trash className="mr-2 h-4 w-4" />
                       Delete
-                    </>
-                  )}
-                </Button>
+                    </Button>
+                  </AlertDialogTrigger>
+                  <AlertDialogContent>
+                    <AlertDialogHeader>
+                      <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                      <AlertDialogDescription>
+                        This action cannot be undone. This will permanently
+                        delete the event.
+                      </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel>Cancel</AlertDialogCancel>
+                      <AlertDialogAction
+                        onClick={() => handleDelete(event.$id)}
+                      >
+                        {loadingActions[event.$id] === "delete" ? (
+                          <>
+                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                            Deleting...
+                          </>
+                        ) : (
+                          "Delete"
+                        )}
+                      </AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
               </CardFooter>
             </Card>
           ))}
@@ -569,25 +572,6 @@ export default function EventDisplay() {
           )}
         </DialogContent>
       </Dialog>
-
-      <AlertDialog
-        open={alertState.isOpen}
-        onOpenChange={(isOpen) =>
-          setAlertState((prev) => ({ ...prev, isOpen }))
-        }
-      >
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>{alertState.title}</AlertDialogTitle>
-            <AlertDialogDescription>
-              {alertState.description}
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogAction>OK</AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
     </div>
   );
 }
