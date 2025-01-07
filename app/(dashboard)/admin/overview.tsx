@@ -174,236 +174,244 @@ export default function Overview() {
   );
 
   return (
-    <div className="p-8 space-y-8 min-h-screen bg-gradient-to-br from-background to-secondary/20">
-      <h1 className="text-4xl font-bold text-primary">Overview</h1>
+    <div className="p-4 sm:p-8 space-y-4 sm:space-y-8 min-h-screen bg-gradient-to-br from-background to-secondary/20">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <h1 className="text-3xl sm:text-4xl font-bold text-primary">
+          Overview
+        </h1>
 
-      {/* Overview Cards */}
-      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
-        <AnimatePresence>
-          {[
-            { title: "Total Students", value: totalStudents, icon: Users },
-            {
-              title: "Average Attendance",
-              value: `${averageAttendance}%`,
-              icon: BarChartIcon,
-            },
-            { title: "Total Events", value: totalEvents, icon: Calendar },
-            {
-              title: "Total Fines Cleared",
-              value: totalFinesCleared,
-              icon: DollarSign,
-            },
-          ].map((item, index) => (
-            <MotionCard
-              key={item.title}
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -20 }}
-              transition={{ duration: 0.3, delay: index * 0.1 }}
-              className="overflow-hidden bg-card hover:bg-card/90 transition-colors"
-            >
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">
-                  {item.title}
-                </CardTitle>
-                <item.icon className="h-4 w-4 text-primary" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold text-primary">
-                  {item.value}
-                </div>
-              </CardContent>
-            </MotionCard>
-          ))}
-        </AnimatePresence>
-      </div>
+        {/* Overview Cards */}
+        <div className="grid gap-4 sm:gap-6 grid-cols-2 lg:grid-cols-4 mt-4 sm:mt-8">
+          <AnimatePresence>
+            {[
+              { title: "Total Students", value: totalStudents, icon: Users },
+              {
+                title: "Average Attendance",
+                value: `${averageAttendance}%`,
+                icon: BarChartIcon,
+              },
+              { title: "Total Events", value: totalEvents, icon: Calendar },
+              {
+                title: "Total Fines Cleared",
+                value: totalFinesCleared,
+                icon: DollarSign,
+              },
+            ].map((item, index) => (
+              <MotionCard
+                key={item.title}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -20 }}
+                transition={{ duration: 0.3, delay: index * 0.1 }}
+                className="overflow-hidden bg-card hover:bg-card/90 transition-colors"
+              >
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium">
+                    {item.title}
+                  </CardTitle>
+                  <item.icon className="h-4 w-4 text-primary" />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold text-primary">
+                    {item.value}
+                  </div>
+                </CardContent>
+              </MotionCard>
+            ))}
+          </AnimatePresence>
+        </div>
 
-      {/* Charts */}
-      <div className="grid gap-6 md:grid-cols-2">
-        <MotionCard
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.3, delay: 0.4 }}
-          className="bg-card hover:bg-card/90 transition-colors"
-        >
-          <CardHeader className="flex flex-row items-center justify-between space-y-0">
-            <CardTitle className="text-xl font-semibold text-primary">
-              Top 10 Events by Attendance
-            </CardTitle>
-            <BarChartIcon className="h-5 w-5 text-primary" />
-          </CardHeader>
-          <CardContent>
-            <ScrollArea className="h-[300px] w-full rounded-md border">
-              <ResponsiveContainer width="100%" height={300}>
-                <BarChart
-                  data={attendanceByEvent}
-                  margin={{ top: 20, right: 30, left: 20, bottom: 70 }}
-                >
-                  <XAxis
-                    dataKey="event"
-                    angle={-45}
-                    textAnchor="end"
-                    height={80}
-                    interval={0}
-                    tick={{ fontSize: 12, fill: "currentColor" }}
-                  />
-                  <YAxis tick={{ fontSize: 12, fill: "currentColor" }} />
-                  <Tooltip
-                    contentStyle={{
-                      backgroundColor: "hsl(var(--popover))",
-                      border: "1px solid hsl(var(--border))",
-                      borderRadius: "8px",
-                      color: "hsl(var(--popover-foreground))",
-                    }}
-                  />
-                  <Bar dataKey="attendance" fill="hsl(var(--primary))" />
-                </BarChart>
-              </ResponsiveContainer>
-              <ScrollBar orientation="horizontal" />
-            </ScrollArea>
-          </CardContent>
-        </MotionCard>
-        <MotionCard
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.3, delay: 0.5 }}
-          className="bg-card hover:bg-card/90 transition-colors"
-        >
-          <CardHeader className="flex flex-row items-center justify-between space-y-0">
-            <CardTitle className="text-xl font-semibold text-primary">
-              Attendance Trend
-            </CardTitle>
-            <TrendingUp className="h-5 w-5 text-primary" />
-          </CardHeader>
-          <CardContent>
-            <ScrollArea className="h-[300px] w-full rounded-md border">
-              <ResponsiveContainer width="100%" height={300}>
-                <LineChart
-                  data={attendanceTrend}
-                  margin={{ top: 20, right: 30, left: 20, bottom: 70 }}
-                >
-                  <XAxis
-                    dataKey="date"
-                    angle={-45}
-                    textAnchor="end"
-                    height={80}
-                    interval={0}
-                    tick={{ fontSize: 12, fill: "currentColor" }}
-                  />
-                  <YAxis tick={{ fontSize: 12, fill: "currentColor" }} />
-                  <Tooltip
-                    contentStyle={{
-                      backgroundColor: "hsl(var(--popover))",
-                      border: "1px solid hsl(var(--border))",
-                      borderRadius: "8px",
-                      color: "hsl(var(--popover-foreground))",
-                    }}
-                  />
-                  <Line
-                    type="monotone"
-                    dataKey="attendance"
-                    stroke="hsl(var(--primary))"
-                    strokeWidth={2}
-                    dot={{ fill: "hsl(var(--primary))", strokeWidth: 2 }}
-                  />
-                </LineChart>
-              </ResponsiveContainer>
-              <ScrollBar orientation="horizontal" />
-            </ScrollArea>
-          </CardContent>
-        </MotionCard>
-      </div>
-
-      <MotionCard
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.3, delay: 0.6 }}
-        className="bg-card hover:bg-card/90 transition-colors"
-      >
-        <CardHeader className="flex flex-row items-center justify-between space-y-0">
-          <CardTitle className="text-xl font-semibold text-primary">
-            Recent Events
-          </CardTitle>
-          <List className="h-5 w-5 text-primary" />
-        </CardHeader>
-        <CardContent>
-          <ScrollArea className="h-[400px] w-full">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead className="w-[250px]">Event</TableHead>
-                  <TableHead>Date</TableHead>
-                  <TableHead>Attendance</TableHead>
-                  <TableHead className="text-right">Attendance Rate</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {paginatedEvents.map((event) => (
-                  <TableRow
-                    key={event.eventName}
-                    className="hover:bg-muted/50 transition-colors"
+        {/* Charts */}
+        <div className="grid gap-4 sm:gap-6 md:grid-cols-2 mt-8 sm:mt-12">
+          <MotionCard
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.3, delay: 0.4 }}
+            className="bg-card hover:bg-card/90 transition-colors"
+          >
+            <CardHeader className="flex flex-row items-center justify-between space-y-0">
+              <CardTitle className="text-lg sm:text-xl font-semibold text-primary">
+                Top 10 Events by Attendance
+              </CardTitle>
+              <BarChartIcon className="h-5 w-5 text-primary" />
+            </CardHeader>
+            <CardContent>
+              <ScrollArea className="h-[300px] w-full rounded-md border">
+                <ResponsiveContainer width="100%" height={300}>
+                  <BarChart
+                    data={attendanceByEvent}
+                    margin={{ top: 20, right: 10, left: 0, bottom: 70 }}
                   >
-                    <TableCell className="font-medium">
-                      {event.eventName}
-                    </TableCell>
-                    <TableCell>{event.date}</TableCell>
-                    <TableCell>
-                      {event.attendance}/{event.total}
-                    </TableCell>
-                    <TableCell className="text-right">
-                      {((event.attendance / event.total) * 100).toFixed(2)}%
-                    </TableCell>
+                    <XAxis
+                      dataKey="event"
+                      angle={-45}
+                      textAnchor="end"
+                      height={80}
+                      interval={0}
+                      tick={{ fontSize: 10, fill: "currentColor" }}
+                    />
+                    <YAxis tick={{ fontSize: 10, fill: "currentColor" }} />
+                    <Tooltip
+                      contentStyle={{
+                        backgroundColor: "hsl(var(--popover))",
+                        border: "1px solid hsl(var(--border))",
+                        borderRadius: "8px",
+                        color: "hsl(var(--popover-foreground))",
+                      }}
+                    />
+                    <Bar dataKey="attendance" fill="hsl(var(--primary))" />
+                  </BarChart>
+                </ResponsiveContainer>
+                <ScrollBar orientation="horizontal" />
+              </ScrollArea>
+            </CardContent>
+          </MotionCard>
+          <MotionCard
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.3, delay: 0.5 }}
+            className="bg-card hover:bg-card/90 transition-colors"
+          >
+            <CardHeader className="flex flex-row items-center justify-between space-y-0">
+              <CardTitle className="text-lg sm:text-xl font-semibold text-primary">
+                Attendance Trend
+              </CardTitle>
+              <TrendingUp className="h-5 w-5 text-primary" />
+            </CardHeader>
+            <CardContent>
+              <ScrollArea className="h-[300px] w-full rounded-md border">
+                <ResponsiveContainer width="100%" height={300}>
+                  <LineChart
+                    data={attendanceTrend}
+                    margin={{ top: 20, right: 10, left: 0, bottom: 70 }}
+                  >
+                    <XAxis
+                      dataKey="date"
+                      angle={-45}
+                      textAnchor="end"
+                      height={80}
+                      interval={0}
+                      tick={{ fontSize: 10, fill: "currentColor" }}
+                    />
+                    <YAxis tick={{ fontSize: 10, fill: "currentColor" }} />
+                    <Tooltip
+                      contentStyle={{
+                        backgroundColor: "hsl(var(--popover))",
+                        border: "1px solid hsl(var(--border))",
+                        borderRadius: "8px",
+                        color: "hsl(var(--popover-foreground))",
+                      }}
+                    />
+                    <Line
+                      type="monotone"
+                      dataKey="attendance"
+                      stroke="hsl(var(--primary))"
+                      strokeWidth={2}
+                      dot={{ fill: "hsl(var(--primary))", strokeWidth: 2 }}
+                    />
+                  </LineChart>
+                </ResponsiveContainer>
+                <ScrollBar orientation="horizontal" />
+              </ScrollArea>
+            </CardContent>
+          </MotionCard>
+        </div>
+
+        <MotionCard
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.3, delay: 0.6 }}
+          className="bg-card hover:bg-card/90 transition-colors mt-8 sm:mt-12"
+        >
+          <CardHeader className="flex flex-row items-center justify-between space-y-0">
+            <CardTitle className="text-lg sm:text-xl font-semibold text-primary">
+              Recent Events
+            </CardTitle>
+            <List className="h-5 w-5 text-primary" />
+          </CardHeader>
+          <CardContent>
+            <ScrollArea className="h-[400px] w-full">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead className="w-[120px] sm:w-[250px]">
+                      Event
+                    </TableHead>
+                    <TableHead className="hidden sm:table-cell">Date</TableHead>
+                    <TableHead>Attendance</TableHead>
+                    <TableHead className="text-right">Rate</TableHead>
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-            <ScrollBar orientation="horizontal" />
-          </ScrollArea>
-          <div className="flex items-center justify-between mt-4">
-            <Select
-              value={rowsPerPage.toString()}
-              onValueChange={(value) => setRowsPerPage(Number(value))}
-            >
-              <SelectTrigger className="w-[180px]">
-                <SelectValue placeholder="Rows per page" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="10">10 rows per page</SelectItem>
-                <SelectItem value="20">20 rows per page</SelectItem>
-                <SelectItem value="50">50 rows per page</SelectItem>
-              </SelectContent>
-            </Select>
-            <Pagination>
-              <PaginationContent>
-                <PaginationItem>
-                  <PaginationPrevious
-                    onClick={() =>
-                      setCurrentPage((prev) => Math.max(prev - 1, 1))
-                    }
-                  />
-                </PaginationItem>
-                {[...Array(totalPages)].map((_, i) => (
-                  <PaginationItem key={i}>
-                    <PaginationLink
-                      onClick={() => setCurrentPage(i + 1)}
-                      isActive={currentPage === i + 1}
+                </TableHeader>
+                <TableBody>
+                  {paginatedEvents.map((event) => (
+                    <TableRow
+                      key={event.eventName}
+                      className="hover:bg-muted/50 transition-colors"
                     >
-                      {i + 1}
-                    </PaginationLink>
+                      <TableCell className="font-medium">
+                        {event.eventName}
+                      </TableCell>
+                      <TableCell className="hidden sm:table-cell">
+                        {event.date}
+                      </TableCell>
+                      <TableCell>
+                        {event.attendance}/{event.total}
+                      </TableCell>
+                      <TableCell className="text-right">
+                        {((event.attendance / event.total) * 100).toFixed(0)}%
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+              <ScrollBar orientation="horizontal" />
+            </ScrollArea>
+            <div className="flex flex-col sm:flex-row items-center justify-between mt-4 gap-4">
+              <Select
+                value={rowsPerPage.toString()}
+                onValueChange={(value) => setRowsPerPage(Number(value))}
+              >
+                <SelectTrigger className="w-[180px]">
+                  <SelectValue placeholder="Rows per page" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="10">10 rows per page</SelectItem>
+                  <SelectItem value="20">20 rows per page</SelectItem>
+                  <SelectItem value="50">50 rows per page</SelectItem>
+                </SelectContent>
+              </Select>
+              <Pagination>
+                <PaginationContent>
+                  <PaginationItem>
+                    <PaginationPrevious
+                      onClick={() =>
+                        setCurrentPage((prev) => Math.max(prev - 1, 1))
+                      }
+                    />
                   </PaginationItem>
-                ))}
-                <PaginationItem>
-                  <PaginationNext
-                    onClick={() =>
-                      setCurrentPage((prev) => Math.min(prev + 1, totalPages))
-                    }
-                  />
-                </PaginationItem>
-              </PaginationContent>
-            </Pagination>
-          </div>
-        </CardContent>
-      </MotionCard>
+                  {[...Array(totalPages)].map((_, i) => (
+                    <PaginationItem key={i} className="hidden sm:inline-block">
+                      <PaginationLink
+                        onClick={() => setCurrentPage(i + 1)}
+                        isActive={currentPage === i + 1}
+                      >
+                        {i + 1}
+                      </PaginationLink>
+                    </PaginationItem>
+                  ))}
+                  <PaginationItem>
+                    <PaginationNext
+                      onClick={() =>
+                        setCurrentPage((prev) => Math.min(prev + 1, totalPages))
+                      }
+                    />
+                  </PaginationItem>
+                </PaginationContent>
+              </Pagination>
+            </div>
+          </CardContent>
+        </MotionCard>
+      </div>
     </div>
   );
 }
