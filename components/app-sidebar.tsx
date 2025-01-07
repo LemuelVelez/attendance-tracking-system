@@ -6,7 +6,6 @@ import {
   QrCode,
   FileText,
   Archive,
-  Bell,
   Settings2,
   CheckSquare,
   Layout,
@@ -112,22 +111,16 @@ const data = {
       icon: Archive,
       items: [
         {
-          title: "Attendance Penalties",
+          title: "General Records",
           url: "/admin/attendance-penalties-management",
         },
-      ],
-    },
-    {
-      title: "Notifications",
-      url: "#",
-      icon: Bell,
-      items: [
         {
-          title: "Send Notifications",
-          url: "/admin/send-notifications",
+          title: "Personal Records",
+          url: "/admin/my-attendance-penalties",
         },
       ],
     },
+
     {
       title: "Settings",
       url: "#",
