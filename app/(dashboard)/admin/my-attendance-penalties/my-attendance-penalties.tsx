@@ -14,7 +14,7 @@ import {
   User,
   Attendance,
 } from "@/lib/personalrecords/personalrecords";
-import { Calendar, CreditCard } from "lucide-react";
+import { Calendar, CreditCard, Loader2 } from "lucide-react";
 
 export function SupplyFinesManagement() {
   const [fines, setFines] = useState<FineDocument[]>([]);
@@ -58,7 +58,7 @@ export function SupplyFinesManagement() {
   if (!currentUser) {
     return (
       <div className="flex justify-center items-center h-screen">
-        Loading...
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
       </div>
     );
   }

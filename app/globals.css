@@ -14,6 +14,47 @@ body {
   -ms-overflow-style: none; /* Internet Explorer 10+ */
   scrollbar-width: none; /* Firefox */
 }
+@media print {
+  @page {
+    size: A4;
+    margin: 20mm;
+  }
+
+  body {
+    font-size: 12pt;
+  }
+
+  .print\:hidden {
+    display: none !important;
+  }
+
+  .print\:block {
+    display: block !important;
+  }
+
+  .print\:shadow-none {
+    box-shadow: none !important;
+  }
+
+  .print\:border-none {
+    border: none !important;
+  }
+}
+
+@media print {
+  body * {
+    visibility: hidden;
+  }
+  .print-table,
+  .print-table * {
+    visibility: visible;
+  }
+  .print-table {
+    position: absolute;
+    left: 0;
+    top: 0;
+  }
+}
 
 @layer base {
   :root {

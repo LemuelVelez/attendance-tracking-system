@@ -103,6 +103,10 @@ const data = {
           title: "College Attendance",
           url: "/admin/college-attendance",
         },
+        {
+          title: "Print Attendance",
+          url: "/admin/print-attendance",
+        },
       ],
     },
     {

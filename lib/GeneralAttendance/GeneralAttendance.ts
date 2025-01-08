@@ -1,4 +1,5 @@
-import { Client, Databases, ID, Models, Query } from "appwrite";
+import { Client, Databases, ID, Models } from "appwrite";
+import { Query } from "appwrite";
 
 const client = new Client();
 client
@@ -183,7 +184,15 @@ export const createFineDocument = async (
     );
 
     if (existingDocuments.documents.length > 0) {
-      throw new Error("Duplicate fine document found. Creation not allowed.");
+      console.log("Duplicate fine document found. Not creating a new one.");
+      const existingDoc = existingDocuments.documents[0];
+      if (isFineDocument(existingDoc)) {
+        return existingDoc;
+      } else {
+        throw new Error(
+          "Existing document does not match FineDocument structure"
+        );
+      }
     }
 
     const response = await databases.createDocument(
@@ -218,7 +227,6 @@ export const getFineDocuments = async (
       );
     }
 
-    // Step 1: Retrieve all documents
     const response = await databases.listDocuments(
       DATABASE_ID,
       FINES_MANAGEMENT_COLLECTION_ID,
@@ -228,69 +236,41 @@ export const getFineDocuments = async (
     const uniqueMap = new Map<string, FineDocument>();
     const duplicatesToDelete: string[] = [];
 
-    // Step 2: Identify duplicates
     response.documents.forEach((doc: unknown) => {
       if (isFineDocument(doc)) {
         const key = `${doc.userId}-${doc.studentId}-${doc.dateIssued}`;
-        if (
-          !uniqueMap.has(key) ||
-          doc.$updatedAt > uniqueMap.get(key)!.$updatedAt
-        ) {
-          if (uniqueMap.has(key)) {
-            duplicatesToDelete.push(uniqueMap.get(key)!.$id);
-          }
-          uniqueMap.set(key, doc);
-        } else {
+        if (uniqueMap.has(key)) {
           duplicatesToDelete.push(doc.$id);
-        }
-      } else {
-        console.warn("Invalid document structure found:", doc);
-        if (typeof doc === "object" && doc !== null && "$id" in doc) {
-          duplicatesToDelete.push(doc.$id as string);
+        } else {
+          uniqueMap.set(key, doc);
         }
       }
     });
 
-    // Step 3: Delete duplicates
-    if (duplicatesToDelete.length > 0) {
-      try {
-        await Promise.all(
-          duplicatesToDelete.map((id) =>
-            databases.deleteDocument(
-              DATABASE_ID,
-              FINES_MANAGEMENT_COLLECTION_ID,
-              id
-            )
-          )
-        );
-        console.log(
-          `Deleted ${duplicatesToDelete.length} duplicate fine documents.`
-        );
-      } catch (deleteError) {
-        console.error("Error deleting duplicate documents:", deleteError);
-        // If deletion fails, we'll continue with the unique documents we've identified
-      }
-    }
-
-    // Step 4: Retrieve documents again to ensure we have the most up-to-date list
-    const finalResponse = await databases.listDocuments(
-      DATABASE_ID,
-      FINES_MANAGEMENT_COLLECTION_ID,
-      queries
+    await Promise.all(
+      duplicatesToDelete.map((id) =>
+        databases.deleteDocument(
+          DATABASE_ID,
+          FINES_MANAGEMENT_COLLECTION_ID,
+          id
+        )
+      )
     );
 
-    const finalDocuments = finalResponse.documents.filter(
-      (doc): doc is FineDocument => isFineDocument(doc)
+    console.log(
+      `Deleted ${duplicatesToDelete.length} duplicate fine documents.`
     );
 
-    if (finalDocuments.length !== response.documents.length) {
+    const fineDocuments = Array.from(uniqueMap.values());
+
+    if (fineDocuments.length !== response.documents.length) {
       console.warn(
-        `Found and removed ${response.documents.length -
-          finalDocuments.length} duplicate or invalid fine documents.`
+        `Found ${response.documents.length -
+          fineDocuments.length} invalid or duplicate fine documents.`
       );
     }
 
-    return finalDocuments;
+    return fineDocuments;
   } catch (error) {
     console.error("Error in getFineDocuments:", error);
     throw error;

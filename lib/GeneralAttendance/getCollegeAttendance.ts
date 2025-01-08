@@ -165,3 +165,22 @@ export const deleteComputingStudiesAttendance = (documentId: string) =>
     COLLEGE_ATTENDANCE_COLLECTION_IDS.ComputingStudies,
     documentId
   );
+export type AttendanceType = "general" | "college";
+
+export type CollegeType =
+  | "ComputingStudies"
+  | "AgricultureAndForestry"
+  | "ArtsAndSciences"
+  | "BusinessAdministration"
+  | "CriminalJusticeEducation"
+  | "Engineering"
+  | "TeacherEducation";
+
+export interface AttendanceRecord {
+  name: string;
+  studentId: string;
+  eventName: string;
+  date: string;
+  location: string;
+  time: string;
+}
