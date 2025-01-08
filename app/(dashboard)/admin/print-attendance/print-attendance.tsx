@@ -177,6 +177,18 @@ const collegeAttendanceFunctions: Record<
   },
 };
 
+function convertTo12HourFormat(time24: string): string {
+  const [hour, minute] = time24.split(":");
+  const hour12 = parseInt(hour, 10) % 12 || 12;
+  const ampm = parseInt(hour, 10) >= 12 ? "PM" : "AM";
+  return `${hour12}:${minute} ${ampm}`;
+}
+
+function formatDate(dateString: string): string {
+  const [year, month, day] = dateString.split("-");
+  return `${month}/${day}/${year}`;
+}
+
 export default function PrintableAttendanceDocument() {
   const [attendanceType, setAttendanceType] = useState<AttendanceType>(
     "general"
@@ -321,43 +333,34 @@ export default function PrintableAttendanceDocument() {
         doc.setFontSize(10);
         doc.text(`Event: ${selectedEvent}`, 14, eventDetailsY);
         doc.text("Venue: JRMSU Gymnasium", 14, eventDetailsY + 6);
-        doc.text(
-          `Date: ${new Date().toLocaleDateString()}`,
-          width - 14,
-          eventDetailsY,
-          {
-            align: "right",
-          }
-        );
-        doc.text(
-          `Time: ${new Date().toLocaleTimeString()}`,
-          width - 14,
-          eventDetailsY + 6,
-          {
-            align: "right",
-          }
-        );
+
+        // Use the date and time from the first selected record
+        const firstSelectedRecord = filteredData[Array.from(selectedRows)[0]];
+        if (firstSelectedRecord) {
+          doc.text(
+            `Date: ${formatDate(firstSelectedRecord.date)}`,
+            width - 14,
+            eventDetailsY,
+            { align: "right" }
+          );
+          doc.text(
+            `Time: ${convertTo12HourFormat(firstSelectedRecord.time)}`,
+            width - 14,
+            eventDetailsY + 6,
+            { align: "right" }
+          );
+        }
 
         return eventDetailsY + 15;
       };
 
-      const tableColumn = [
-        "Name",
-        "Student ID",
-        "Date",
-        "Time",
-        "Program",
-        "Year",
-        "Section",
-      ];
+      const tableColumn = ["Name", "Student ID", "Program", "Year", "Section"];
 
       const tableRows = Array.from(selectedRows).map((index) => {
         const record = filteredData[index];
         return [
           record.name,
           record.studentId,
-          record.date,
-          record.time,
           record.degreeProgram,
           record.yearLevel,
           record.section,
@@ -418,7 +421,7 @@ export default function PrintableAttendanceDocument() {
           </CardTitle>
         </CardHeader>
         <CardContent className="p-6">
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
+          <div className="grid grid-cols-2 sm: lg:grid-cols-3 gap-4 mb-6">
             <Select
               defaultValue="general"
               onValueChange={(value) =>
@@ -482,7 +485,7 @@ export default function PrintableAttendanceDocument() {
               placeholder="Search records..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-10 w-auto"
+              className="pl-10"
               aria-label="Search records"
             />
           </div>
@@ -527,8 +530,6 @@ export default function PrintableAttendanceDocument() {
                   <TableHead className="text-xs sm:text-base">
                     Student ID
                   </TableHead>
-                  <TableHead className="text-xs sm:text-base">Date</TableHead>
-                  <TableHead className="text-xs sm:text-base">Time</TableHead>
                   <TableHead className="text-xs sm:text-base">
                     Degree Program
                   </TableHead>
@@ -554,12 +555,6 @@ export default function PrintableAttendanceDocument() {
                     </TableCell>
                     <TableCell className="text-xs sm:text-base">
                       {record.studentId}
-                    </TableCell>
-                    <TableCell className="text-xs sm:text-base">
-                      {record.date}
-                    </TableCell>
-                    <TableCell className="text-xs sm:text-base">
-                      {record.time}
                     </TableCell>
                     <TableCell className="text-xs sm:text-base">
                       {record.degreeProgram}
@@ -604,7 +599,7 @@ export default function PrintableAttendanceDocument() {
               />
             </div>
             <div className="text-center mb-8">
-              <h1 className="text-xl sm:text-3xl font-bold text-gray-950">
+              <h1 className="text-base sm:text-3xl font-bold text-gray-950">
                 ATTENDANCE RECORD
               </h1>
               <p className="text-xs sm:text-xl text-gray-600">
@@ -629,11 +624,19 @@ export default function PrintableAttendanceDocument() {
                 <div className="text-right">
                   <p className="text-xs sm:text-base text-gray-950">
                     <span className="font-semibold">Date:</span>{" "}
-                    {new Date().toLocaleDateString()}
+                    {Array.from(selectedRows)[0] !== undefined
+                      ? formatDate(
+                          filteredData[Array.from(selectedRows)[0]].date
+                        )
+                      : ""}
                   </p>
                   <p className="text-xs sm:text-base text-gray-950">
                     <span className="font-semibold">Time:</span>{" "}
-                    {new Date().toLocaleTimeString()}
+                    {Array.from(selectedRows)[0] !== undefined
+                      ? convertTo12HourFormat(
+                          filteredData[Array.from(selectedRows)[0]].time
+                        )
+                      : ""}
                   </p>
                 </div>
               </div>
@@ -644,8 +647,6 @@ export default function PrintableAttendanceDocument() {
                     <TableHead className="text-xs sm:text-base">
                       Student ID
                     </TableHead>
-                    <TableHead className="text-xs sm:text-base">Date</TableHead>
-                    <TableHead className="text-xs sm:text-base">Time</TableHead>
                     <TableHead className="text-xs sm:text-base">
                       Program
                     </TableHead>
@@ -665,12 +666,6 @@ export default function PrintableAttendanceDocument() {
                         </TableCell>
                         <TableCell className="text-xs sm:text-base text-gray-950">
                           {record.studentId}
-                        </TableCell>
-                        <TableCell className="text-xs sm:text-base text-gray-950">
-                          {record.date}
-                        </TableCell>
-                        <TableCell className="text-xs sm:text-base text-gray-950">
-                          {record.time}
                         </TableCell>
                         <TableCell className="text-xs sm:text-base text-gray-950">
                           {record.degreeProgram}
