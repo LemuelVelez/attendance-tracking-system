@@ -22,6 +22,7 @@ import {
   SidebarHeader,
   SidebarRail,
 } from "@/components/ui/sidebar";
+import { ScrollArea } from "@/components/ui/scroll-area";
 
 // Sample data
 const data = {
@@ -124,7 +125,6 @@ const data = {
         },
       ],
     },
-
     {
       title: "Settings",
       url: "#",
@@ -148,7 +148,9 @@ export function AdminSidebar({
         <TeamSwitcher teams={data.teams} />
       </SidebarHeader>
       <SidebarContent>
-        <NavMain items={data.navMain} />
+        <ScrollArea className="h-[calc(100vh-8rem)]">
+          <NavMain items={data.navMain} />
+        </ScrollArea>
       </SidebarContent>
       <SidebarFooter>
         <NavUser user={data.user} />
