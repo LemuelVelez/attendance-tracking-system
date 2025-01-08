@@ -414,7 +414,7 @@ export default function PrintableAttendanceDocument() {
 
   return (
     <div className="container mx-auto px-4 py-8 space-y-6">
-      <Card className="w-full shadow-md">
+      <Card className="w-[345px] sm:w-full mx-auto shadow-md rounded-lg p-4">
         <CardHeader className="bg-primary text-primary-foreground">
           <CardTitle className="text-xl sm:text-3xl font-bold text-center">
             Attendance Record
@@ -581,7 +581,7 @@ export default function PrintableAttendanceDocument() {
       </Card>
 
       {selectedRows.size > 0 && (
-        <Card className="w-full bg-white shadow-md">
+        <Card className="w-[345px] sm:w-full mx-auto bg-white shadow-md rounded-lg p-4">
           <CardContent className="p-6 space-y-6">
             <div className="flex justify-end">
               <Button onClick={handleDownloadPDF} className="w-full sm:w-auto">

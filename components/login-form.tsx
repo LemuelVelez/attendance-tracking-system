@@ -1,6 +1,5 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
 import { useEffect, useState, useRef } from "react";
-import { Sun, Moon, Eye, EyeOff, Loader } from "lucide-react"; // Add Loader here
+import { Sun, Moon, Eye, EyeOff, Loader } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -29,7 +28,7 @@ export function LoginForm() {
   const [showPassword, setShowPassword] = useState(false);
   const [studentId, setStudentId] = useState("");
   const [password, setPassword] = useState("");
-  const [error, setError] = useState("");
+  const [errorMessage, setErrorMessage] = useState("");
   const [loading, setLoading] = useState(false);
   const router = useRouter();
 
@@ -80,7 +79,7 @@ export function LoginForm() {
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError("");
+    setErrorMessage("");
     setLoading(true);
 
     try {
@@ -101,10 +100,18 @@ export function LoginForm() {
         router.push("/");
       }
     } catch (error) {
-      setError("Invalid Student ID or Password. Please try again.");
+      console.error("Login error:", error);
+      setErrorMessage(
+        error instanceof Error
+          ? error.message
+          : "Invalid Student ID or Password. Please try again."
+      );
       Swal.fire({
         title: "Error!",
-        text: "Invalid Student ID or Password. Please try again.",
+        text:
+          error instanceof Error
+            ? error.message
+            : "Invalid Student ID or Password. Please try again.",
         icon: "error",
         confirmButtonText: "Try Again",
       });
@@ -187,7 +194,11 @@ export function LoginForm() {
               </button>
             </div>
           </div>
-          {error && <div className="text-red-500 text-sm">{error}</div>}
+          {errorMessage && (
+            <div className="text-red-500 text-sm" role="alert">
+              {errorMessage}
+            </div>
+          )}
           <Button type="submit" className="w-full" disabled={loading}>
             {loading ? (
               <Loader className="animate-spin h-5 w-5 mx-auto" />
