@@ -231,7 +231,7 @@ export default function Overview() {
           >
             <CardHeader className="flex flex-row items-center justify-between space-y-0">
               <CardTitle className="text-lg sm:text-xl font-semibold text-primary">
-                Top 10 Events by Attendance
+                Top Events by Attendance
               </CardTitle>
               <BarChartIcon className="h-5 w-5 text-primary" />
             </CardHeader>

@@ -25,7 +25,7 @@ import {
 import { useToast } from "@/hooks/use-toast";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
-import { ScrollArea } from "@/components/ui/scroll-area";
+import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
 import {
   getAgricultureAndForestryAttendance,
   getArtsAndSciencesAttendance,
@@ -414,7 +414,7 @@ export default function PrintableAttendanceDocument() {
 
   return (
     <div className="container mx-auto px-4 py-8 space-y-6">
-      <Card className="w-[345px] sm:w-full mx-auto shadow-md rounded-lg p-4">
+      <Card className="mx-auto max-w-xs sm:max-w-sm md:max-w-md lg:max-w-6xl shadow-md rounded-lg p-4">
         <CardHeader className="bg-primary text-primary-foreground">
           <CardTitle className="text-xl sm:text-3xl font-bold text-center">
             Attendance Record
@@ -513,7 +513,15 @@ export default function PrintableAttendanceDocument() {
               </div>
             </RadioGroup>
           </div>
-          <ScrollArea className="h-[300px] w-full">
+          <ScrollArea
+            className="rounded-md border"
+            style={{
+              height: "calc(100vh - 350px)",
+              maxHeight: "calc(100vh - 350px)",
+              width: "100%",
+              overflowX: "auto",
+            }}
+          >
             <Table>
               <TableHeader>
                 <TableRow>
@@ -569,6 +577,7 @@ export default function PrintableAttendanceDocument() {
                 ))}
               </TableBody>
             </Table>
+            <ScrollBar orientation="horizontal" />
           </ScrollArea>
           <div className="mt-4 flex justify-center">
             <Pagination
@@ -581,7 +590,7 @@ export default function PrintableAttendanceDocument() {
       </Card>
 
       {selectedRows.size > 0 && (
-        <Card className="w-[345px] sm:w-full mx-auto bg-white shadow-md rounded-lg p-4">
+        <Card className="mx-auto max-w-xs sm:max-w-sm md:max-w-md lg:max-w-6xl bg-white shadow-md rounded-lg p-4">
           <CardContent className="p-6 space-y-6">
             <div className="flex justify-end">
               <Button onClick={handleDownloadPDF} className="w-full sm:w-auto">
@@ -640,47 +649,62 @@ export default function PrintableAttendanceDocument() {
                   </p>
                 </div>
               </div>
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead className="text-xs sm:text-base">Name</TableHead>
-                    <TableHead className="text-xs sm:text-base">
-                      Student ID
-                    </TableHead>
-                    <TableHead className="text-xs sm:text-base">
-                      Program
-                    </TableHead>
-                    <TableHead className="text-xs sm:text-base">Year</TableHead>
-                    <TableHead className="text-xs sm:text-base">
-                      Section
-                    </TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {Array.from(selectedRows).map((index) => {
-                    const record = filteredData[index];
-                    return (
-                      <TableRow key={index}>
-                        <TableCell className="text-xs sm:text-base text-gray-950">
-                          {record.name}
-                        </TableCell>
-                        <TableCell className="text-xs sm:text-base text-gray-950">
-                          {record.studentId}
-                        </TableCell>
-                        <TableCell className="text-xs sm:text-base text-gray-950">
-                          {record.degreeProgram}
-                        </TableCell>
-                        <TableCell className="text-xs sm:text-base text-gray-950">
-                          {record.yearLevel}
-                        </TableCell>
-                        <TableCell className="text-xs sm:text-base text-gray-950">
-                          {record.section}
-                        </TableCell>
-                      </TableRow>
-                    );
-                  })}
-                </TableBody>
-              </Table>
+              <ScrollArea
+                className="rounded-md border"
+                style={{
+                  height: "calc(100vh - 350px)",
+                  maxHeight: "calc(100vh - 350px)",
+                  width: "100%",
+                  overflowX: "auto",
+                }}
+              >
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead className="text-xs sm:text-base">
+                        Name
+                      </TableHead>
+                      <TableHead className="text-xs sm:text-base">
+                        Student ID
+                      </TableHead>
+                      <TableHead className="text-xs sm:text-base">
+                        Program
+                      </TableHead>
+                      <TableHead className="text-xs sm:text-base">
+                        Year
+                      </TableHead>
+                      <TableHead className="text-xs sm:text-base">
+                        Section
+                      </TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {Array.from(selectedRows).map((index) => {
+                      const record = filteredData[index];
+                      return (
+                        <TableRow key={index}>
+                          <TableCell className="text-xs sm:text-base text-gray-950">
+                            {record.name}
+                          </TableCell>
+                          <TableCell className="text-xs sm:text-base text-gray-950">
+                            {record.studentId}
+                          </TableCell>
+                          <TableCell className="text-xs sm:text-base text-gray-950">
+                            {record.degreeProgram}
+                          </TableCell>
+                          <TableCell className="text-xs sm:text-base text-gray-950">
+                            {record.yearLevel}
+                          </TableCell>
+                          <TableCell className="text-xs sm:text-base text-gray-950">
+                            {record.section}
+                          </TableCell>
+                        </TableRow>
+                      );
+                    })}
+                  </TableBody>
+                </Table>
+                <ScrollBar orientation="horizontal" />
+              </ScrollArea>
               <div className="grid grid-cols-2 gap-8 mt-12">
                 <div className="text-center">
                   <div className="border-t border-black w-36 sm:w-48 mx-auto mt-12 sm:mt-16"></div>
