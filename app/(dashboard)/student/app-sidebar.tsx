@@ -5,8 +5,8 @@ import {
   CheckSquare,
   GraduationCap,
   History,
+  Layout,
   Settings2,
-  Timer,
 } from "lucide-react";
 
 import { NavMain } from "@/components/nav-main";
@@ -19,13 +19,14 @@ import {
   SidebarHeader,
   SidebarRail,
 } from "@/components/ui/sidebar";
+import { ScrollArea } from "@/components/ui/scroll-area";
 
 // Updated data for the Student Dashboard
 const data = {
   user: {
-    name: "John Doe", // Example student name
-    email: "john.doe@example.com", // Example email
-    avatar: "/avatars/student-avatar.jpg", // Example avatar
+    name: "",
+    email: "",
+    avatar: "",
   },
   teams: [
     {
@@ -38,16 +39,12 @@ const data = {
     {
       title: "Dashboard",
       url: "#",
-      icon: GraduationCap,
+      icon: Layout,
       isActive: true,
       items: [
         {
-          title: "Event Attendance",
-          url: "#",
-        },
-        {
-          title: "Upcoming Events",
-          url: "#",
+          title: "Overview",
+          url: "/student",
         },
       ],
     },
@@ -57,12 +54,8 @@ const data = {
       icon: History,
       items: [
         {
-          title: "Past Events",
-          url: "#",
-        },
-        {
-          title: "Export Report",
-          url: "#",
+          title: "View Attendance",
+          url: "/student/attendance-history",
         },
       ],
     },
@@ -73,26 +66,11 @@ const data = {
       items: [
         {
           title: "My QR Code",
-          url: "#",
+          url: "/student/my-qr-code",
         },
         {
           title: "Scan QR Code",
-          url: "#",
-        },
-      ],
-    },
-    {
-      title: "Notifications",
-      url: "#",
-      icon: Timer,
-      items: [
-        {
-          title: "Reminders",
-          url: "#",
-        },
-        {
-          title: "Event Alerts",
-          url: "#",
+          url: "/student/qr-code-scanner",
         },
       ],
     },
@@ -103,11 +81,7 @@ const data = {
       items: [
         {
           title: "Profile",
-          url: "#",
-        },
-        {
-          title: "Account Security",
-          url: "#",
+          url: "/student/profile",
         },
       ],
     },
@@ -121,7 +95,9 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         <TeamSwitcher teams={data.teams} />
       </SidebarHeader>
       <SidebarContent>
-        <NavMain items={data.navMain} />
+        <ScrollArea className="h-[calc(100vh-8rem)]">
+          <NavMain items={data.navMain} />
+        </ScrollArea>
       </SidebarContent>
       <SidebarFooter>
         <NavUser user={data.user} />

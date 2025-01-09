@@ -19,7 +19,7 @@ import { useTheme } from "next-themes";
 import { Button } from "@/components/ui/button";
 import withAuth from "@/components/hoc/withAuth";
 import { getCurrentUserFirstname } from "@/lib/users/getFirstname";
-import Overview from "./overview";
+import UserQR from "./user-qr-code";
 
 const Page = () => {
   const { setTheme } = useTheme();
@@ -75,7 +75,7 @@ const Page = () => {
           </DropdownMenu>
         </header>
         <div></div>
-        <Overview />
+        <UserQR />
       </SidebarInset>
     </SidebarProvider>
   );

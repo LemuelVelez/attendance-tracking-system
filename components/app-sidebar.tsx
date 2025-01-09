@@ -27,9 +27,9 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 // Sample data
 const data = {
   user: {
-    name: "Admin",
-    email: "admin@example.com",
-    avatar: "https://github.com/shadcn.png",
+    name: "",
+    email: "",
+    avatar: "",
   },
   teams: [
     {
