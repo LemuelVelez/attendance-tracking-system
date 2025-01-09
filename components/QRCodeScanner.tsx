@@ -265,7 +265,7 @@ export default function QRCodeScanner() {
                 </p>
                 <Button
                   onClick={resetScanner}
-                  className="w-full mt-4 bg-secondary hover:bg-secondary/90 transition-all duration-300"
+                  className="w-full mt-4 bg-primary hover:bg-gray-400 transition-all duration-300"
                 >
                   {isCameraEnabled ? "Cancel" : "Scan Again"}
                 </Button>
