@@ -277,6 +277,27 @@ export const getFineDocuments = async (
   }
 };
 
+export const deleteFines = async (documentId: string): Promise<void> => {
+  try {
+    if (!DATABASE_ID || !FINES_MANAGEMENT_COLLECTION_ID) {
+      throw new Error(
+        "Missing Appwrite environment variables. Please check your .env file."
+      );
+    }
+
+    await databases.deleteDocument(
+      DATABASE_ID,
+      FINES_MANAGEMENT_COLLECTION_ID,
+      documentId
+    );
+
+    console.log(`Successfully deleted fine document with ID: ${documentId}`);
+  } catch (error) {
+    console.error("Error in deleteFines:", error);
+    throw error;
+  }
+};
+
 export const getTotalUniqueEvents = async (): Promise<number> => {
   try {
     if (!DATABASE_ID || !GENERAL_ATTENDANCE_COLLECTION_ID) {

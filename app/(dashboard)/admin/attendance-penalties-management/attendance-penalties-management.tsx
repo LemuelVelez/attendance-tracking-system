@@ -44,6 +44,7 @@ import {
   Rows,
   Loader2,
   AlertTriangle,
+  Trash2,
 } from "lucide-react";
 import {
   getGeneralAttendance,
@@ -51,11 +52,13 @@ import {
   getFineDocuments,
   getTotalUniqueEvents,
   getAllUsers,
+  deleteFines,
   FineDocument,
   Attendance,
   FineDocumentData,
   User,
 } from "@/lib/GeneralAttendance/GeneralAttendance";
+import { Checkbox } from "@/components/ui/checkbox";
 
 const PENALTIES_MAP: Record<number, string> = {
   0: "No penalty",
@@ -81,12 +84,14 @@ export default function SupplyFinesManagement() {
   const [rowsPerPage, setRowsPerPage] = useState(10);
   const [searchTerm, setSearchTerm] = useState("");
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [selectedFineId, setSelectedFineId] = useState<string | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
   const { toast } = useToast();
 
-  // New state variables
   const [isGeneratingFines, setIsGeneratingFines] = useState(false);
   const [generateDialogOpen, setGenerateDialogOpen] = useState(false);
+  const [selectedFines, setSelectedFines] = useState<string[]>([]);
 
   const fetchData = useCallback(async () => {
     try {
@@ -136,7 +141,6 @@ export default function SupplyFinesManagement() {
 
       const penalties = PENALTIES_MAP[absences] || PENALTIES_MAP[10];
 
-      // Check if a fine already exists for this user
       const existingFine = fines.find((fine) => fine.userId === user.$id);
       if (existingFine) {
         console.log(`Fine already exists for user ${user.$id}. Skipping.`);
@@ -231,6 +235,33 @@ export default function SupplyFinesManagement() {
         description: "Failed to update fine status. Please try again.",
         variant: "destructive",
       });
+    }
+  };
+
+  const handleDeleteFines = async () => {
+    setIsDeleting(true);
+    try {
+      for (const id of selectedFines) {
+        await deleteFines(id);
+      }
+      setFines((prevFines) =>
+        prevFines.filter((fine) => !selectedFines.includes(fine.$id))
+      );
+      setSelectedFines([]);
+      toast({
+        title: "Success",
+        description: `Successfully deleted ${selectedFines.length} fine(s).`,
+      });
+    } catch (error) {
+      console.error("Error deleting fines:", error);
+      toast({
+        title: "Error",
+        description: "Failed to delete fines. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsDeleting(false);
+      setDeleteDialogOpen(false);
     }
   };
 
@@ -382,6 +413,60 @@ export default function SupplyFinesManagement() {
         </DialogContent>
       </Dialog>
 
+      <div className="mb-4">
+        <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+          <DialogTrigger asChild>
+            <Button
+              variant="destructive"
+              disabled={selectedFines.length === 0 || isDeleting}
+            >
+              {isDeleting ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Deleting...
+                </>
+              ) : (
+                <>
+                  <Trash2 className="mr-2 h-4 w-4" />
+                  Delete Selected ({selectedFines.length})
+                </>
+              )}
+            </Button>
+          </DialogTrigger>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Confirm Deletion</DialogTitle>
+              <DialogDescription>
+                Are you sure you want to delete {selectedFines.length} selected
+                fine(s)? This action cannot be undone.
+              </DialogDescription>
+            </DialogHeader>
+            <DialogFooter>
+              <Button
+                variant="outline"
+                onClick={() => setDeleteDialogOpen(false)}
+              >
+                Cancel
+              </Button>
+              <Button
+                variant="destructive"
+                onClick={handleDeleteFines}
+                disabled={isDeleting}
+              >
+                {isDeleting ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Deleting...
+                  </>
+                ) : (
+                  "Delete"
+                )}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+      </div>
+
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center text-xl">
@@ -395,6 +480,16 @@ export default function SupplyFinesManagement() {
             <Table>
               <TableHeader>
                 <TableRow>
+                  <TableHead className="w-[50px]">
+                    <Checkbox
+                      checked={selectedFines.length === paginatedFines.length}
+                      onCheckedChange={(checked) => {
+                        setSelectedFines(
+                          checked ? paginatedFines.map((fine) => fine.$id) : []
+                        );
+                      }}
+                    />
+                  </TableHead>
                   <TableHead>Student ID</TableHead>
                   <TableHead>Name</TableHead>
                   <TableHead>Presences</TableHead>
@@ -418,6 +513,21 @@ export default function SupplyFinesManagement() {
 
                   return (
                     <TableRow key={fine.$id}>
+                      <TableCell>
+                        <Checkbox
+                          value={fine.$id}
+                          checked={selectedFines.includes(fine.$id)}
+                          onCheckedChange={(checked) => {
+                            if (checked) {
+                              setSelectedFines([...selectedFines, fine.$id]);
+                            } else {
+                              setSelectedFines(
+                                selectedFines.filter((id) => id !== fine.$id)
+                              );
+                            }
+                          }}
+                        />
+                      </TableCell>
                       <TableCell>{fine.studentId}</TableCell>
                       <TableCell>{fine.name}</TableCell>
                       <TableCell>{presences}</TableCell>
@@ -510,6 +620,30 @@ export default function SupplyFinesManagement() {
                 return (
                   <Card key={fine.$id} className="p-3">
                     <div className="grid grid-cols-2 gap-2 text-sm">
+                      <div className="col-span-2 flex items-center justify-between">
+                        <Checkbox
+                          checked={selectedFines.includes(fine.$id)}
+                          onCheckedChange={(checked) => {
+                            setSelectedFines((prev) =>
+                              checked
+                                ? [...prev, fine.$id]
+                                : prev.filter((id) => id !== fine.$id)
+                            );
+                          }}
+                        />
+                        <Badge
+                          variant={
+                            fine.status === "Cleared" ? "secondary" : "outline"
+                          }
+                          className={`text-xs ${
+                            fine.status === "Cleared"
+                              ? "bg-green-500 text-white"
+                              : ""
+                          }`}
+                        >
+                          {fine.status}
+                        </Badge>
+                      </div>
                       <div>
                         <p className="font-semibold">Student ID:</p>
                         <p className="truncate">{fine.studentId}</p>
@@ -533,21 +667,6 @@ export default function SupplyFinesManagement() {
                       <div>
                         <p className="font-semibold">Date Issued:</p>
                         <p className="text-xs">{fine.dateIssued}</p>
-                      </div>
-                      <div>
-                        <p className="font-semibold">Status:</p>
-                        <Badge
-                          variant={
-                            fine.status === "Cleared" ? "secondary" : "outline"
-                          }
-                          className={`text-xs ${
-                            fine.status === "Cleared"
-                              ? "bg-green-500 text-white"
-                              : ""
-                          }`}
-                        >
-                          {fine.status}
-                        </Badge>
                       </div>
                       <div className="col-span-2 mt-2">
                         {fine.status === "Pending" ? (
