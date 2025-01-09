@@ -42,6 +42,8 @@ import {
   Filter,
   Users,
   Rows,
+  Loader2,
+  AlertTriangle,
 } from "lucide-react";
 import {
   getGeneralAttendance,
@@ -82,6 +84,10 @@ export default function SupplyFinesManagement() {
   const [selectedFineId, setSelectedFineId] = useState<string | null>(null);
   const { toast } = useToast();
 
+  // New state variables
+  const [isGeneratingFines, setIsGeneratingFines] = useState(false);
+  const [generateDialogOpen, setGenerateDialogOpen] = useState(false);
+
   const fetchData = useCallback(async () => {
     try {
       const attendanceData = await getGeneralAttendance();
@@ -121,6 +127,7 @@ export default function SupplyFinesManagement() {
     }, {} as Record<string, number>);
 
     const newFines: FineDocument[] = [];
+    let duplicatesCount = 0;
 
     for (const user of allUsers) {
       const attended = userAttendances[user.$id] || 0;
@@ -128,6 +135,14 @@ export default function SupplyFinesManagement() {
       const presences = attended;
 
       const penalties = PENALTIES_MAP[absences] || PENALTIES_MAP[10];
+
+      // Check if a fine already exists for this user
+      const existingFine = fines.find((fine) => fine.userId === user.$id);
+      if (existingFine) {
+        console.log(`Fine already exists for user ${user.$id}. Skipping.`);
+        duplicatesCount++;
+        continue;
+      }
 
       const fineData: FineDocumentData = {
         userId: user.$id,
@@ -145,27 +160,44 @@ export default function SupplyFinesManagement() {
         newFines.push(createdFine);
       } catch (error) {
         console.error("Error creating fine document:", error);
+        duplicatesCount++;
         continue;
       }
     }
 
-    setFines((prevFines) => {
-      const updatedFines = [...prevFines];
-      for (const newFine of newFines) {
-        const index = updatedFines.findIndex((f) => f.$id === newFine.$id);
-        if (index !== -1) {
-          updatedFines[index] = newFine;
-        } else {
-          updatedFines.push(newFine);
-        }
-      }
-      return updatedFines;
-    });
-  }, [allUsers, attendances, selectedEvent, totalEvents]);
+    setFines((prevFines) => [...prevFines, ...newFines]);
+    return { newFinesCount: newFines.length, duplicatesCount };
+  }, [allUsers, attendances, selectedEvent, totalEvents, fines]);
 
-  useEffect(() => {
-    calculateFines();
-  }, [allUsers, attendances, selectedEvent, totalEvents, calculateFines]);
+  const handleGenerateFines = async () => {
+    setIsGeneratingFines(true);
+    try {
+      const result = await calculateFines();
+      if (result.duplicatesCount > 0) {
+        toast({
+          title: "Fines Generation Complete",
+          description: `Added ${result.newFinesCount} new fines. ${result.duplicatesCount} fines were not added due to existing data.`,
+          variant: "default",
+          className: "border-yellow-500 text-yellow-700 bg-yellow-50",
+        });
+      } else {
+        toast({
+          title: "Success",
+          description: `Successfully generated ${result.newFinesCount} new fines.`,
+        });
+      }
+    } catch (error) {
+      console.error("Error generating fines:", error);
+      toast({
+        title: "Error",
+        description: "Failed to generate fines. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsGeneratingFines(false);
+      setGenerateDialogOpen(false);
+    }
+  };
 
   const handleSubmitSupplies = async (id: string) => {
     try {
@@ -298,6 +330,57 @@ export default function SupplyFinesManagement() {
           </CardContent>
         </Card>
       </div>
+
+      <Dialog open={generateDialogOpen} onOpenChange={setGenerateDialogOpen}>
+        <DialogTrigger asChild>
+          <Button className="mb-4" disabled={isGeneratingFines}>
+            {isGeneratingFines ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Generating...
+              </>
+            ) : (
+              <>
+                <AlertTriangle className="mr-2 h-4 w-4" />
+                Generate Fines
+              </>
+            )}
+          </Button>
+        </DialogTrigger>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Confirm Fine Generation</DialogTitle>
+            <DialogDescription>
+              Are you sure you want to generate fines? This action cannot be
+              undone.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setGenerateDialogOpen(false)}
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={() => {
+                handleGenerateFines();
+                setGenerateDialogOpen(false);
+              }}
+              disabled={isGeneratingFines}
+            >
+              {isGeneratingFines ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Generating...
+                </>
+              ) : (
+                "Confirm"
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       <Card>
         <CardHeader>
