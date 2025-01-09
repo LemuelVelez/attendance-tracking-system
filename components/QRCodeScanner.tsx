@@ -14,6 +14,7 @@ import {
 } from "@/lib/attendance/attendance";
 import jsQR from "jsqr";
 import { ResultDialog } from "./SuccessDialog";
+import { format } from "date-fns";
 
 type ScanMode = "camera" | "image" | null;
 
@@ -94,6 +95,22 @@ export default function QRCodeScanner() {
       } catch (parseError) {
         console.error("Error parsing QR code data:", parseError);
         throw new Error("Invalid QR code format. Please scan a valid QR code.");
+      }
+
+      // Check if the current time is past the event time
+      const currentTime = new Date();
+      const eventTime = new Date(`${eventData.date} ${eventData.time}`);
+
+      if (currentTime > eventTime) {
+        setDialogState({
+          isOpen: true,
+          type: "error",
+          message: `Your attendance is not recorded because you are late past the time of the event. The event was scheduled for ${format(
+            eventTime,
+            "PPpp"
+          )}.`,
+        });
+        return;
       }
 
       // Create the general attendance record

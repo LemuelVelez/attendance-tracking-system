@@ -192,24 +192,30 @@ export default function EventDisplay() {
     }
   };
 
-  const downloadQRCode = async (event: Event | User) => {
-    let qrData;
-    if ("eventName" in event) {
+  const downloadQRCode = async (item: Event | User) => {
+    let qrData: string;
+    let fileName: string;
+
+    if ("eventName" in item) {
+      // This is an Event
       qrData = JSON.stringify({
-        eventName: event.eventName,
-        date: event.date,
-        time: event.time,
-        day: event.day,
-        location: event.location,
+        eventName: item.eventName,
+        date: item.date,
+        time: item.time,
+        day: item.day,
+        location: item.location,
       });
+      fileName = `${item.eventName}_QR.png`;
     } else {
+      // This is a User
       qrData = JSON.stringify({
-        name: event.name,
-        studentId: event.studentId,
-        degreeProgram: event.degreeProgram,
-        yearLevel: event.yearLevel,
-        section: event.section,
+        name: item.name,
+        studentId: item.studentId,
+        degreeProgram: item.degreeProgram,
+        yearLevel: item.yearLevel,
+        section: item.section,
       });
+      fileName = `${item.name}_QR.png`;
     }
 
     try {
@@ -224,7 +230,7 @@ export default function EventDisplay() {
       });
       const downloadLink = document.createElement("a");
       downloadLink.href = qrCodeDataURL;
-      downloadLink.download = `QR.png`;
+      downloadLink.download = fileName;
       document.body.appendChild(downloadLink);
       downloadLink.click();
       document.body.removeChild(downloadLink);
@@ -233,25 +239,32 @@ export default function EventDisplay() {
     }
   };
 
-  const printQRCode = async (event: Event | User) => {
-    let qrData;
-    if ("eventName" in event) {
+  const printQRCode = async (item: Event | User) => {
+    let qrData: string;
+    let title: string;
+
+    if ("eventName" in item) {
+      // This is an Event
       qrData = JSON.stringify({
-        eventName: event.eventName,
-        date: event.date,
-        time: event.time,
-        day: event.day,
-        location: event.location,
+        eventName: item.eventName,
+        date: item.date,
+        time: item.time,
+        day: item.day,
+        location: item.location,
       });
+      title = `QR Code for ${item.eventName}`;
     } else {
+      // This is a User
       qrData = JSON.stringify({
-        name: event.name,
-        studentId: event.studentId,
-        degreeProgram: event.degreeProgram,
-        yearLevel: event.yearLevel,
-        section: event.section,
+        name: item.name,
+        studentId: item.studentId,
+        degreeProgram: item.degreeProgram,
+        yearLevel: item.yearLevel,
+        section: item.section,
       });
+      title = `QR Code for ${item.name}`;
     }
+
     try {
       const qrCodeDataURL = await QRCode.toDataURL(qrData, {
         errorCorrectionLevel: "H",
@@ -266,7 +279,7 @@ export default function EventDisplay() {
       printWindow?.document.write(
         "<html><head><title>Print QR Code</title></head><body>"
       );
-      printWindow?.document.write(`<h1>QR Code</h1>`);
+      printWindow?.document.write(`<h1>${title}</h1>`);
       printWindow?.document.write(
         `<img src="${qrCodeDataURL}" alt="QR Code" />`
       );
