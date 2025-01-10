@@ -1,8 +1,14 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import Image from "next/image";
-import { Download, Search, ChevronLeft, ChevronRight } from "lucide-react";
+import {
+  Download,
+  Search,
+  ChevronLeft,
+  ChevronRight,
+  PlusCircle,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -207,6 +213,13 @@ export default function PrintableAttendanceDocument() {
   const [selectedEvent, setSelectedEvent] = useState<string>("");
   const [availableEvents, setAvailableEvents] = useState<string[]>([]);
   const { toast } = useToast();
+  const [academicYears, setAcademicYears] = useState<string[]>([
+    "2023-2024",
+    "2024-2025",
+    "2025-2026",
+  ]);
+  const [selectedAcademicYear, setSelectedAcademicYear] = useState("2024-2025");
+  const [newAcademicYear, setNewAcademicYear] = useState("");
 
   useEffect(() => {
     const fetchAttendanceData = async () => {
@@ -298,6 +311,14 @@ export default function PrintableAttendanceDocument() {
     setPaperSize(value);
   };
 
+  const handleAddAcademicYear = useCallback(() => {
+    if (newAcademicYear && !academicYears.includes(newAcademicYear)) {
+      setAcademicYears((prev) => [...prev, newAcademicYear]);
+      setSelectedAcademicYear(newAcademicYear);
+      setNewAcademicYear("");
+    }
+  }, [newAcademicYear, academicYears]);
+
   const handleDownloadPDF = async () => {
     try {
       const paperSizes = {
@@ -324,9 +345,14 @@ export default function PrintableAttendanceDocument() {
         doc.setFontSize(18);
         doc.text("ATTENDANCE RECORD", width / 2, titleY, { align: "center" });
         doc.setFontSize(12);
-        doc.text("Academic Year 2023-2024", width / 2, titleY + 8, {
-          align: "center",
-        });
+        doc.text(
+          `Academic Year ${selectedAcademicYear}`,
+          width / 2,
+          titleY + 8,
+          {
+            align: "center",
+          }
+        );
 
         // Event Details
         const eventDetailsY = titleY + 20;
@@ -421,7 +447,7 @@ export default function PrintableAttendanceDocument() {
           </CardTitle>
         </CardHeader>
         <CardContent className="p-6">
-          <div className="grid grid-cols-2 sm: lg:grid-cols-3 gap-4 mb-6">
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4 mb-6">
             <Select
               defaultValue="general"
               onValueChange={(value) =>
@@ -478,6 +504,32 @@ export default function PrintableAttendanceDocument() {
                 ))}
               </SelectContent>
             </Select>
+            <Select
+              value={selectedAcademicYear}
+              onValueChange={setSelectedAcademicYear}
+            >
+              <SelectTrigger className="w-full">
+                <SelectValue placeholder="Select academic year" />
+              </SelectTrigger>
+              <SelectContent>
+                {academicYears.map((year) => (
+                  <SelectItem key={year} value={year}>
+                    {year}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="flex items-center gap-2 mb-6">
+            <Input
+              placeholder="Add new academic year (e.g., 2026-2027)"
+              value={newAcademicYear}
+              onChange={(e) => setNewAcademicYear(e.target.value)}
+              className="flex-grow"
+            />
+            <Button onClick={handleAddAcademicYear} size="icon">
+              <PlusCircle className="h-4 w-4" />
+            </Button>
           </div>
           <div className="relative mb-6">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
@@ -612,7 +664,7 @@ export default function PrintableAttendanceDocument() {
                 ATTENDANCE RECORD
               </h1>
               <p className="text-xs sm:text-xl text-gray-600">
-                Academic Year 2024-2025
+                Academic Year {selectedAcademicYear}
               </p>
             </div>
             <div className="space-y-6">
