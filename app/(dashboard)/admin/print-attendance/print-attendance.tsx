@@ -612,7 +612,7 @@ export default function PrintableAttendanceDocument() {
                 ATTENDANCE RECORD
               </h1>
               <p className="text-xs sm:text-xl text-gray-600">
-                Academic Year 2023-2024
+                Academic Year 2024-2025
               </p>
             </div>
             <div className="space-y-6">
