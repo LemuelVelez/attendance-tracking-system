@@ -42,6 +42,7 @@ import {
   Settings,
   Search,
   LayoutGrid,
+  Loader2,
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import {
@@ -126,10 +127,12 @@ export default function StudentTable() {
     setDialogOpen(true);
   };
 
-  const filteredStudents = students.filter(
-    (student) =>
-      student.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      student.email.toLowerCase().includes(searchTerm.toLowerCase())
+  const filteredStudents = students.filter((student) =>
+    Object.values(student).some((value) =>
+      String(value)
+        .toLowerCase()
+        .includes(searchTerm.toLowerCase())
+    )
   );
 
   const indexOfLastStudent = currentPage * studentsPerPage;
@@ -146,7 +149,12 @@ export default function StudentTable() {
     setCurrentPage(1);
   };
 
-  if (loading) return <div className="p-4">Loading...</div>;
+  if (loading)
+    return (
+      <div className="flex justify-center items-center h-screen">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
   if (error) return <div className="p-4 text-red-500">Error: {error}</div>;
 
   return (
@@ -162,7 +170,7 @@ export default function StudentTable() {
           <div className="relative w-full sm:w-auto">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
             <Input
-              placeholder="Search by name or email"
+              placeholder="Search all fields"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="pl-10 pr-4 py-2 w-full sm:w-64 rounded-full focus:ring-2 focus:ring-blue-500 focus:outline-none"

@@ -118,3 +118,42 @@ export const editUserData = async (updatedData: Partial<UserData>) => {
     throw error;
   }
 };
+
+export const deleteAccount = async () => {
+  try {
+    const session = await account.get();
+    const userDocument = await databases.getDocument(
+      DATABASE_ID,
+      USERS_COLLECTION_ID,
+      session.$id
+    );
+
+    // Delete user's avatar if it exists
+    if (userDocument.avatar) {
+      const oldFileId = userDocument.avatar.split("/").slice(-2, -1)[0];
+      try {
+        await storage.deleteFile(AVATAR_BUCKET_ID, oldFileId);
+      } catch (error) {
+        console.warn("Error deleting avatar. It might not exist.", error);
+      }
+    }
+
+    // Delete user's document from the users collection
+    await databases.deleteDocument(
+      DATABASE_ID,
+      USERS_COLLECTION_ID,
+      session.$id
+    );
+
+    // Delete all sessions for the current user
+    await account.deleteSessions();
+
+    // Delete the user's account from Appwrite
+    await account.deleteIdentity("current");
+
+    console.log("Account deleted successfully");
+  } catch (error) {
+    console.error("Error deleting account:", error);
+    throw error;
+  }
+};
