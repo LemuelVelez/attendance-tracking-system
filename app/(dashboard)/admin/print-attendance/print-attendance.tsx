@@ -316,8 +316,12 @@ export default function PrintableAttendanceDocument() {
       setAcademicYears((prev) => [...prev, newAcademicYear]);
       setSelectedAcademicYear(newAcademicYear);
       setNewAcademicYear("");
+      toast({
+        title: "Academic Year Added",
+        description: `Successfully added ${newAcademicYear} to the list of academic years.`,
+      });
     }
-  }, [newAcademicYear, academicYears]);
+  }, [newAcademicYear, academicYears, toast]);
 
   const handleDownloadPDF = async () => {
     try {
@@ -506,7 +510,13 @@ export default function PrintableAttendanceDocument() {
             </Select>
             <Select
               value={selectedAcademicYear}
-              onValueChange={setSelectedAcademicYear}
+              onValueChange={(value) => {
+                setSelectedAcademicYear(value);
+                toast({
+                  title: "Academic Year Changed",
+                  description: `Successfully changed the academic year to ${value}.`,
+                });
+              }}
             >
               <SelectTrigger className="w-full">
                 <SelectValue placeholder="Select academic year" />
