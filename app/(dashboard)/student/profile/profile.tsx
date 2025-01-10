@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react"
 import Swal from "sweetalert2"
-import { Upload, Eye, EyeOff } from 'lucide-react'
+import { Upload, Eye, EyeOff, Trash2 } from 'lucide-react'
 
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card"
 import { Label } from "@/components/ui/label"
@@ -16,6 +16,7 @@ import {
   editUserData,
   getUserAvatar,
   setUserAvatar,
+  deleteAccount,
   type UserData,
 } from "@/lib/profile/profile"
 
@@ -28,6 +29,8 @@ export default function Profile() {
   const [showCurrentPassword, setShowCurrentPassword] = useState(false)
   const [showNewPassword, setShowNewPassword] = useState(false)
   const [showConfirmPassword, setShowConfirmPassword] = useState(false)
+  const [isChangingPassword, setIsChangingPassword] = useState(false)
+  const [isDeletingAccount, setIsDeletingAccount] = useState(false)
 
   useEffect(() => {
     async function fetchUserData() {
@@ -84,6 +87,7 @@ export default function Profile() {
       Swal.fire("Error", "New password and confirm password do not match.", "error")
       return
     }
+    setIsChangingPassword(true)
     try {
       await changePassword(currentPassword, newPassword)
       Swal.fire("Success", "Password changed successfully.", "success")
@@ -93,6 +97,35 @@ export default function Profile() {
     } catch (error) {
       console.error("Error changing password:", error)
       Swal.fire("Error", "Failed to change password. Please try again.", "error")
+    } finally {
+      setIsChangingPassword(false)
+    }
+  }
+
+  const handleDeleteAccount = async () => {
+    const result = await Swal.fire({
+      title: 'Are you sure?',
+      text: "You won't be able to revert this!",
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#d33',
+      cancelButtonColor: '#3085d6',
+      confirmButtonText: 'Yes, delete my account!'
+    })
+
+    if (result.isConfirmed) {
+      setIsDeletingAccount(true)
+      try {
+        await deleteAccount()
+        Swal.fire('Deleted!', 'Your account has been deleted.', 'success')
+        // Redirect to home page or login page after successful deletion
+        window.location.href = '/'
+      } catch (error) {
+        console.error('Error deleting account:', error)
+        Swal.fire('Error', 'Failed to delete account. Please try again.', 'error')
+      } finally {
+        setIsDeletingAccount(false)
+      }
     }
   }
 
@@ -279,8 +312,31 @@ export default function Profile() {
                 </Button>
               </div>
             </div>
-            <Button className="w-full" onClick={handleChangePassword}>
-              Change Password
+            <Button 
+              className="w-full" 
+              onClick={handleChangePassword}
+              disabled={isChangingPassword}
+            >
+              {isChangingPassword ? 'Changing...' : 'Change Password'}
+            </Button>
+          </CardContent>
+        </Card>
+
+        {/* Delete Account Card */}
+        <Card className="h-fit">
+          <CardHeader>
+            <CardTitle>Delete Account</CardTitle>
+            <CardDescription>Permanently delete your account and all associated data.</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Button 
+              variant="destructive" 
+              className="w-full" 
+              onClick={handleDeleteAccount}
+              disabled={isDeletingAccount}
+            >
+              <Trash2 className="mr-2 h-4 w-4" />
+              {isDeletingAccount ? 'Deleting...' : 'Delete Account'}
             </Button>
           </CardContent>
         </Card>
