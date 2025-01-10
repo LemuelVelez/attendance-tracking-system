@@ -1,14 +1,15 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import Swal from "sweetalert2"
-import { Upload, Eye, EyeOff, Trash2 } from 'lucide-react'
+import { Upload, Eye, EyeOff } from 'lucide-react'
 
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card"
 import { Label } from "@/components/ui/label"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import { DeleteAccountDialog } from "@/components/delete-account-dialog"
+import { useToast } from "@/hooks/use-toast"
 
 import {
   getCurrentSessionUser,
@@ -31,6 +32,7 @@ export default function Profile() {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false)
   const [isChangingPassword, setIsChangingPassword] = useState(false)
   const [isDeletingAccount, setIsDeletingAccount] = useState(false)
+  const { toast } = useToast()
 
   useEffect(() => {
     async function fetchUserData() {
@@ -50,21 +52,32 @@ export default function Profile() {
         setAvatarUrl(avatar)
       } catch (error) {
         console.error("Error fetching user data or avatar:", error)
-        Swal.fire("Error", "Failed to fetch user data or avatar.", "error")
+        toast({
+          title: "Error",
+          description: "Failed to fetch user data or avatar.",
+          variant: "destructive",
+        })
       }
     }
     fetchUserData()
-  }, [])
+  }, [toast])
 
   const handleEditUserData = async () => {
     if (!userData) return
 
     try {
       await editUserData(userData)
-      Swal.fire("Success", "Profile updated successfully.", "success")
+      toast({
+        title: "Success",
+        description: "Profile updated successfully.",
+      })
     } catch (error) {
       console.error("Error updating profile:", error)
-      Swal.fire("Error", "Failed to update profile. Please try again.", "error")
+      toast({
+        title: "Error",
+        description: "Failed to update profile. Please try again.",
+        variant: "destructive",
+      })
     }
   }
 
@@ -75,59 +88,88 @@ export default function Profile() {
     try {
       const newAvatarUrl = await setUserAvatar(file)
       setAvatarUrl(newAvatarUrl)
-      Swal.fire("Success", "Avatar updated successfully.", "success")
+      toast({
+        title: "Success",
+        description: "Avatar updated successfully.",
+      })
     } catch (error) {
       console.error("Error updating avatar:", error)
-      Swal.fire("Error", "Failed to update avatar. Please try again.", "error")
+      toast({
+        title: "Error",
+        description: "Failed to update avatar. Please try again.",
+        variant: "destructive",
+      })
     }
   }
 
   const handleChangePassword = async () => {
     if (newPassword !== confirmPassword) {
-      Swal.fire("Error", "New password and confirm password do not match.", "error")
+      toast({
+        title: "Error",
+        description: "New password and confirm password do not match.",
+        variant: "destructive",
+      })
       return
     }
     setIsChangingPassword(true)
     try {
       await changePassword(currentPassword, newPassword)
-      Swal.fire("Success", "Password changed successfully.", "success")
+      toast({
+        title: "Success",
+        description: "Password changed successfully.",
+      })
       setCurrentPassword("")
       setNewPassword("")
       setConfirmPassword("")
     } catch (error) {
       console.error("Error changing password:", error)
-      Swal.fire("Error", "Failed to change password. Please try again.", "error")
+      toast({
+        title: "Error",
+        description: "Failed to change password. Please try again.",
+        variant: "destructive",
+      })
     } finally {
       setIsChangingPassword(false)
     }
   }
 
-  const handleDeleteAccount = async () => {
-    const result = await Swal.fire({
-      title: 'Are you sure?',
-      text: "You won't be able to revert this!",
-      icon: 'warning',
-      showCancelButton: true,
-      confirmButtonColor: '#d33',
-      cancelButtonColor: '#3085d6',
-      confirmButtonText: 'Yes, delete my account!'
-    })
-
-    if (result.isConfirmed) {
-      setIsDeletingAccount(true)
-      try {
-        await deleteAccount()
-        Swal.fire('Deleted!', 'Your account has been deleted.', 'success')
-        // Redirect to home page or login page after successful deletion
-        window.location.href = '/'
-      } catch (error) {
-        console.error('Error deleting account:', error)
-        Swal.fire('Error', 'Failed to delete account. Please try again.', 'error')
-      } finally {
-        setIsDeletingAccount(false)
+  const handleDeleteAccount = async (password: string) => {
+    setIsDeletingAccount(true);
+    try {
+      await deleteAccount(password);
+      toast({
+        title: "Success",
+        description: "Your account has been deleted.",
+      });
+      // Redirect to home page or login page after successful deletion
+      window.location.href = '/';
+    } catch (error) {
+      console.error('Error deleting account:', error);
+      if (error instanceof Error) {
+        if (error.message.includes("session has expired")) {
+          toast({
+            title: "Session Expired",
+            description: "Your session has expired. Please log out and log in again before trying to delete your account.",
+            variant: "destructive",
+          });
+        } else if (error.message.includes("don't have the necessary permissions")) {
+          toast({
+            title: "Permission Denied",
+            description: "You don't have the necessary permissions to delete your account. Please contact support.",
+            variant: "destructive",
+          });
+        } else {
+          toast({
+            title: "Error",
+            description: "Failed to delete account. Please try again.",
+            variant: "destructive",
+          });
+        }
       }
+    } finally {
+      setIsDeletingAccount(false);
     }
-  }
+  };
 
   return (
     <div className="container mx-auto px-4 py-8 md:py-12 lg:py-16">
@@ -329,15 +371,10 @@ export default function Profile() {
             <CardDescription>Permanently delete your account and all associated data.</CardDescription>
           </CardHeader>
           <CardContent>
-            <Button 
-              variant="destructive" 
-              className="w-full" 
-              onClick={handleDeleteAccount}
-              disabled={isDeletingAccount}
-            >
-              <Trash2 className="mr-2 h-4 w-4" />
-              {isDeletingAccount ? 'Deleting...' : 'Delete Account'}
-            </Button>
+            <DeleteAccountDialog 
+              onDeleteAccount={handleDeleteAccount}
+              isDeleting={isDeletingAccount}
+            />
           </CardContent>
         </Card>
       </div>

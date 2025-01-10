@@ -1,405 +1,384 @@
-"use client";
+"use client"
 
-import React, { useState, useEffect } from "react";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-import { ScrollArea } from "@/components/ui/scroll-area";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import {
-  Pagination,
-  PaginationContent,
-  PaginationItem,
-  PaginationLink,
-  PaginationNext,
-  PaginationPrevious,
-} from "@/components/ui/pagination";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { getAllUsers, updateUserRole, Student } from "@/lib/users/userService";
-import {
-  Users,
-  UserCircle,
-  GraduationCap,
-  CalendarDays,
-  Layers,
-  UserCog,
-  Mail,
-  Settings,
-  Search,
-  LayoutGrid,
-  Loader2,
-} from "lucide-react";
-import { useToast } from "@/hooks/use-toast";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
+import { useState, useEffect } from "react"
+import { Upload, Eye, EyeOff } from 'lucide-react'
 
-export default function StudentTable() {
-  const [students, setStudents] = useState<Student[]>([]);
-  const [searchTerm, setSearchTerm] = useState("");
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [currentPage, setCurrentPage] = useState(1);
-  const [isUpdating, setIsUpdating] = useState(false);
-  const [studentsPerPage, setStudentsPerPage] = useState(10);
-  const [dialogOpen, setDialogOpen] = useState(false);
-  const [selectedStudent, setSelectedStudent] = useState<Student | null>(null);
-  const { toast } = useToast();
+import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card"
+import { Label } from "@/components/ui/label"
+import { Input } from "@/components/ui/input"
+import { Button } from "@/components/ui/button"
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import { DeleteAccountDialog } from "@/components/delete-account-dialog"
+import { useToast } from "@/hooks/use-toast"
+
+import {
+  getCurrentSessionUser,
+  changePassword,
+  editUserData,
+  getUserAvatar,
+  setUserAvatar,
+  deleteAccount,
+  type UserData,
+} from "@/lib/profile/profile"
+
+export default function Profile() {
+  const [userData, setUserData] = useState<UserData | null>(null)
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(null)
+  const [currentPassword, setCurrentPassword] = useState("")
+  const [newPassword, setNewPassword] = useState("")
+  const [confirmPassword, setConfirmPassword] = useState("")
+  const [showCurrentPassword, setShowCurrentPassword] = useState(false)
+  const [showNewPassword, setShowNewPassword] = useState(false)
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false)
+  const [isChangingPassword, setIsChangingPassword] = useState(false)
+  const [isDeletingAccount, setIsDeletingAccount] = useState(false)
+  const { toast } = useToast()
 
   useEffect(() => {
-    const fetchStudents = async () => {
+    async function fetchUserData() {
       try {
-        setLoading(true);
-        const users = await getAllUsers();
-        setStudents(users);
-        setLoading(false);
-      } catch (err) {
-        console.error("Error fetching students:", err);
-        setError("Failed to load students. Please try again later.");
-        setLoading(false);
+        const user = await getCurrentSessionUser()
+        const userData: UserData = {
+          name: user.name,
+          email: user.email,
+          studentId: user.studentId,
+          degreeProgram: user.degreeProgram,
+          yearLevel: user.yearLevel,
+          section: user.section,
+        }
+        setUserData(userData)
+
+        const avatar = await getUserAvatar()
+        setAvatarUrl(avatar)
+      } catch (error) {
+        console.error("Error fetching user data or avatar:", error)
         toast({
           title: "Error",
-          description: "Failed to load students. Please try again later.",
+          description: "Failed to fetch user data or avatar.",
           variant: "destructive",
-        });
+        })
       }
-    };
+    }
+    fetchUserData()
+  }, [toast])
 
-    fetchStudents();
-  }, [toast]);
+  const handleEditUserData = async () => {
+    if (!userData) return
 
-  const handleRoleUpdate = async (
-    userId: string,
-    newRole: "admin" | "student"
-  ) => {
-    setIsUpdating(true);
-    setError(null);
     try {
-      await updateUserRole(userId, newRole);
-      setStudents(
-        students.map((student) =>
-          student.userId === userId ? { ...student, role: newRole } : student
-        )
-      );
+      await editUserData(userData)
       toast({
-        title: "Role updated successfully",
-        description: `User role has been changed to ${newRole}.`,
-        variant: "default",
-      });
-    } catch (err) {
-      console.error("Error updating user role:", err);
-      setError("Failed to update user role. Please try again.");
+        title: "Success",
+        description: "Profile updated successfully.",
+      })
+    } catch (error) {
+      console.error("Error updating profile:", error)
       toast({
         title: "Error",
-        description: "Failed to update user role. Please try again.",
+        description: "Failed to update profile. Please try again.",
         variant: "destructive",
-      });
+      })
+    }
+  }
+
+  const handleAvatarUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0]
+    if (!file) return
+
+    try {
+      const newAvatarUrl = await setUserAvatar(file)
+      setAvatarUrl(newAvatarUrl)
+      toast({
+        title: "Success",
+        description: "Avatar updated successfully.",
+      })
+    } catch (error) {
+      console.error("Error updating avatar:", error)
+      toast({
+        title: "Error",
+        description: "Failed to update avatar. Please try again.",
+        variant: "destructive",
+      })
+    }
+  }
+
+  const handleChangePassword = async () => {
+    if (newPassword !== confirmPassword) {
+      toast({
+        title: "Error",
+        description: "New password and confirm password do not match.",
+        variant: "destructive",
+      })
+      return
+    }
+    setIsChangingPassword(true)
+    try {
+      await changePassword(currentPassword, newPassword)
+      toast({
+        title: "Success",
+        description: "Password changed successfully.",
+      })
+      setCurrentPassword("")
+      setNewPassword("")
+      setConfirmPassword("")
+    } catch (error) {
+      console.error("Error changing password:", error)
+      toast({
+        title: "Error",
+        description: "Failed to change password. Please try again.",
+        variant: "destructive",
+      })
     } finally {
-      setIsUpdating(false);
-      setDialogOpen(false);
-      setSelectedStudent(null);
+      setIsChangingPassword(false)
+    }
+  }
+
+  const handleDeleteAccount = async (password: string) => {
+    setIsDeletingAccount(true);
+    try {
+      await deleteAccount(password);
+      toast({
+        title: "Success",
+        description: "Your account has been deleted.",
+      });
+      // Redirect to home page or login page after successful deletion
+      window.location.href = '/';
+    } catch (error) {
+      console.error('Error deleting account:', error);
+      if (error instanceof Error) {
+        if (error.message.includes("session has expired")) {
+          toast({
+            title: "Session Expired",
+            description: "Your session has expired. Please log out and log in again before trying to delete your account.",
+            variant: "destructive",
+          });
+        } else if (error.message.includes("don't have the necessary permissions")) {
+          toast({
+            title: "Permission Denied",
+            description: "You don't have the necessary permissions to delete your account. Please contact support.",
+            variant: "destructive",
+          });
+        } else {
+          toast({
+            title: "Error",
+            description: "Failed to delete account. Please try again.",
+            variant: "destructive",
+          });
+        }
+      }
+    } finally {
+      setIsDeletingAccount(false);
     }
   };
 
-  const openConfirmDialog = (student: Student) => {
-    setSelectedStudent(student);
-    setDialogOpen(true);
-  };
-
-  const filteredStudents = students.filter((student) =>
-    Object.values(student).some((value) =>
-      String(value)
-        .toLowerCase()
-        .includes(searchTerm.toLowerCase())
-    )
-  );
-
-  const indexOfLastStudent = currentPage * studentsPerPage;
-  const indexOfFirstStudent = indexOfLastStudent - studentsPerPage;
-  const currentStudents = filteredStudents.slice(
-    indexOfFirstStudent,
-    indexOfLastStudent
-  );
-
-  const paginate = (pageNumber: number) => setCurrentPage(pageNumber);
-
-  const handleRowLimitChange = (value: string) => {
-    setStudentsPerPage(parseInt(value, 10));
-    setCurrentPage(1);
-  };
-
-  if (loading)
-    return (
-      <div className="flex justify-center items-center h-screen">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
-      </div>
-    );
-  if (error) return <div className="p-4 text-red-500">Error: {error}</div>;
-
   return (
-    <Card className="w-full max-w-7xl mx-auto my-8 shadow-lg">
-      <CardHeader className="bg-gradient-to-r from-primary/95 to-purple-600">
-        <CardTitle className="text-2xl font-bold flex items-center">
-          <Users className="mr-2" />
-          Student List
-        </CardTitle>
-      </CardHeader>
-      <CardContent className="p-6">
-        <div className="flex flex-col sm:flex-row justify-between items-center mb-6 space-y-4 sm:space-y-0">
-          <div className="relative w-full sm:w-auto">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
-            <Input
-              placeholder="Search all fields"
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-10 pr-4 py-2 w-full sm:w-64 rounded-full focus:ring-2 focus:ring-blue-500 focus:outline-none"
-            />
-          </div>
-          <div className="flex items-center space-x-2">
-            <span className="text-sm font-medium text-gray-600">
-              Rows per page:
-            </span>
-            <Select onValueChange={handleRowLimitChange} defaultValue="10">
-              <SelectTrigger className="w-[100px] rounded-md">
-                <SelectValue placeholder="10" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="10">10</SelectItem>
-                <SelectItem value="50">50</SelectItem>
-                <SelectItem value="100">100</SelectItem>
-                <SelectItem value="1000">1000</SelectItem>
-                <SelectItem value="10000">10,000</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-        </div>
-        <ScrollArea className="h-[400px] rounded-md border">
-          <Table>
-            <TableHeader>
-              <TableRow className="hidden sm:table-row">
-                <TableHead className="w-[90px]">
-                  <UserCircle className="inline-block mr-2" />
-                  Avatar
-                </TableHead>
-                <TableHead>
-                  <Users className="inline-block mr-2" />
-                  Name
-                </TableHead>
-                <TableHead>
-                  <GraduationCap className="inline-block mr-2" />
-                  Student ID
-                </TableHead>
-                <TableHead className="w-[155px]">
-                  <Layers className="inline-block mr-2" />
-                  Degree Program
-                </TableHead>
-                <TableHead className="w-[90px]">
-                  <CalendarDays className="inline-block mr-2" />
-                  Year
-                </TableHead>
-                <TableHead className="w-[95px]">
-                  <LayoutGrid className="inline-block mr-2" />
-                  Section
-                </TableHead>
-                <TableHead className="w-[90px]">
-                  <UserCog className="inline-block mr-2" />
-                  Role
-                </TableHead>
-                <TableHead className="w-[10px]">
-                  <Mail className="inline-block mr-2" />
-                  Email
-                </TableHead>
-                <TableHead>
-                  <Settings className="inline-block mr-2" />
-                  Actions
-                </TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {currentStudents.map((student) => (
-                <TableRow
-                  key={student.userId}
-                  className="hover:bg-primary/40 transition-colors flex flex-col sm:table-row mb-4 sm:mb-0 border-b sm:border-b-0"
+    <div className="container mx-auto px-4 py-8 md:py-12 lg:py-16">
+      <header className="mb-8">
+        <h1 className="text-3xl font-bold">Profile Settings</h1>
+      </header>
+      <div className="grid gap-8 md:grid-cols-2">
+        {/* Personal Information Card */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Personal Information</CardTitle>
+            <CardDescription>Update your profile details.</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-6">
+            <div className="flex flex-col items-center space-y-4">
+              <Avatar className="h-24 w-24">
+                <AvatarImage src={avatarUrl || undefined} alt="User Avatar" />
+                <AvatarFallback className="text-2xl">
+                  {userData?.name?.charAt(0) || "U"}
+                </AvatarFallback>
+              </Avatar>
+              <Label htmlFor="avatar-upload" className="cursor-pointer">
+                <div className="flex h-7 items-center space-x-2 rounded-md bg-primary px-4 py-2 text-primary-foreground hover:bg-primary/90">
+                  <Upload className="h-4 w-4" />
+                  <span>Upload New Picture</span>
+                </div>
+                <Input
+                  id="avatar-upload"
+                  type="file"
+                  className="hidden"
+                  accept="image/*"
+                  onChange={handleAvatarUpload}
+                />
+              </Label>
+            </div>
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div className="space-y-2">
+                <Label htmlFor="name">Name</Label>
+                <Input
+                  id="name"
+                  value={userData?.name || ""}
+                  onChange={(e) =>
+                    setUserData((prev) => ({ ...prev, name: e.target.value }))
+                  }
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="studentId">Student ID</Label>
+                <Input
+                  id="studentId"
+                  value={userData?.studentId || ""}
+                  onChange={(e) =>
+                    setUserData((prev) => ({
+                      ...prev,
+                      studentId: e.target.value,
+                    }))
+                  }
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="degreeProgram">Degree Program</Label>
+                <Input
+                  id="degreeProgram"
+                  value={userData?.degreeProgram || ""}
+                  onChange={(e) =>
+                    setUserData((prev) => ({
+                      ...prev,
+                      degreeProgram: e.target.value,
+                    }))
+                  }
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="yearLevel">Year Level</Label>
+                <Input
+                  id="yearLevel"
+                  value={userData?.yearLevel || ""}
+                  onChange={(e) =>
+                    setUserData((prev) => ({
+                      ...prev,
+                      yearLevel: e.target.value,
+                    }))
+                  }
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="section">Section</Label>
+                <Input
+                  id="section"
+                  value={userData?.section || ""}
+                  onChange={(e) =>
+                    setUserData((prev) => ({
+                      ...prev,
+                      section: e.target.value,
+                    }))
+                  }
+                />
+              </div>
+            </div>
+            <Button className="w-full" onClick={handleEditUserData}>
+              Save Changes
+            </Button>
+          </CardContent>
+        </Card>
+
+        {/* Change Password Card */}
+        <Card className="h-fit">
+          <CardHeader>
+            <CardTitle>Change Password</CardTitle>
+            <CardDescription>Update your account password.</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="currentPassword">Current Password</Label>
+              <div className="relative">
+                <Input
+                  id="currentPassword"
+                  type={showCurrentPassword ? "text" : "password"}
+                  value={currentPassword}
+                  onChange={(e) => setCurrentPassword(e.target.value)}
+                />
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  className="absolute inset-y-0 right-0"
+                  onClick={() => setShowCurrentPassword(!showCurrentPassword)}
                 >
-                  <TableCell
-                    className="flex justify-center items-center p-2 sm:p-4 sm:table-cell"
-                    aria-label="Avatar"
-                  >
-                    <Avatar className="w-16 h-16 sm:w-10 sm:h-10">
-                      <AvatarImage src={student.avatar} alt={student.name} />
-                      <AvatarFallback className="text-lg sm:text-base">
-                        {student.name.charAt(0)}
-                      </AvatarFallback>
-                    </Avatar>
-                  </TableCell>
-                  <TableCell
-                    className="text-center sm:table-cell"
-                    aria-label="Name"
-                  >
-                    <span className="font-medium">{student.name}</span>
-                  </TableCell>
-                  <TableCell
-                    className="text-center sm:table-cell"
-                    aria-label="Student ID"
-                  >
-                    {student.studentId}
-                  </TableCell>
-                  <TableCell
-                    className="text-center sm:table-cell"
-                    aria-label="Degree Program"
-                  >
-                    {student.degreeProgram}
-                  </TableCell>
-                  <TableCell
-                    className="text-center sm:table-cell"
-                    aria-label="Year"
-                  >
-                    {student.yearLevel}
-                  </TableCell>
-                  <TableCell
-                    className="text-center sm:table-cell"
-                    aria-label="Section"
-                  >
-                    {student.section}
-                  </TableCell>
-                  <TableCell
-                    className="flex justify-center sm:table-cell"
-                    aria-label="Role"
-                  >
-                    <Badge
-                      variant={
-                        student.role === "admin" ? "default" : "secondary"
-                      }
-                      className="px-2 py-1 rounded-full text-xs font-semibold"
-                    >
-                      {student.role}
-                    </Badge>
-                  </TableCell>
-                  <TableCell
-                    className="text-center sm:table-cell"
-                    aria-label="Email"
-                  >
-                    {student.email}
-                  </TableCell>
-                  <TableCell
-                    className="flex justify-center sm:table-cell"
-                    aria-label="Actions"
-                  >
-                    <Button
-                      onClick={() => openConfirmDialog(student)}
-                      variant="outline"
-                      size="sm"
-                      disabled={isUpdating}
-                      className="text-xs px-2 py-1 rounded-full hover:bg-gray-400 transition-colors"
-                    >
-                      {isUpdating
-                        ? "Updating..."
-                        : student.role === "admin"
-                        ? "Make Student"
-                        : "Make Admin"}
-                    </Button>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </ScrollArea>
-        <Pagination className="mt-6">
-          <PaginationContent>
-            <PaginationItem>
-              <PaginationPrevious
-                onClick={() => paginate(currentPage - 1)}
-                aria-disabled={currentPage === 1}
-                tabIndex={currentPage === 1 ? -1 : undefined}
-                className={
-                  currentPage === 1 ? "pointer-events-none opacity-50" : ""
-                }
-              />
-            </PaginationItem>
-            {[
-              ...Array(Math.ceil(filteredStudents.length / studentsPerPage)),
-            ].map((_, index) => (
-              <PaginationItem key={index}>
-                <PaginationLink
-                  onClick={() => paginate(index + 1)}
-                  isActive={currentPage === index + 1}
+                  {showCurrentPassword ? (
+                    <EyeOff className="h-4 w-4" />
+                  ) : (
+                    <Eye className="h-4 w-4" />
+                  )}
+                </Button>
+              </div>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="newPassword">New Password</Label>
+              <div className="relative">
+                <Input
+                  id="newPassword"
+                  type={showNewPassword ? "text" : "password"}
+                  value={newPassword}
+                  onChange={(e) => setNewPassword(e.target.value)}
+                />
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  className="absolute inset-y-0 right-0"
+                  onClick={() => setShowNewPassword(!showNewPassword)}
                 >
-                  {index + 1}
-                </PaginationLink>
-              </PaginationItem>
-            ))}
-            <PaginationItem>
-              <PaginationNext
-                onClick={() => paginate(currentPage + 1)}
-                aria-disabled={
-                  currentPage ===
-                  Math.ceil(filteredStudents.length / studentsPerPage)
-                }
-                tabIndex={
-                  currentPage ===
-                  Math.ceil(filteredStudents.length / studentsPerPage)
-                    ? -1
-                    : undefined
-                }
-                className={
-                  currentPage ===
-                  Math.ceil(filteredStudents.length / studentsPerPage)
-                    ? "pointer-events-none opacity-50"
-                    : ""
-                }
-              />
-            </PaginationItem>
-          </PaginationContent>
-        </Pagination>
-      </CardContent>
-      <AlertDialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Confirm Role Change</AlertDialogTitle>
-            <AlertDialogDescription>
-              Are you sure you want to change {selectedStudent?.name}&apos;s
-              role from {selectedStudent?.role} to{" "}
-              {selectedStudent?.role === "admin" ? "student" : "admin"}?
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction
-              onClick={() =>
-                selectedStudent &&
-                handleRoleUpdate(
-                  selectedStudent.userId,
-                  selectedStudent.role === "admin" ? "student" : "admin"
-                )
-              }
+                  {showNewPassword ? (
+                    <EyeOff className="h-4 w-4" />
+                  ) : (
+                    <Eye className="h-4 w-4" />
+                  )}
+                </Button>
+              </div>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="confirmPassword">Confirm Password</Label>
+              <div className="relative">
+                <Input
+                  id="confirmPassword"
+                  type={showConfirmPassword ? "text" : "password"}
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                />
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  className="absolute inset-y-0 right-0"
+                  onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                >
+                  {showConfirmPassword ? (
+                    <EyeOff className="h-4 w-4" />
+                  ) : (
+                    <Eye className="h-4 w-4" />
+                  )}
+                </Button>
+              </div>
+            </div>
+            <Button 
+              className="w-full" 
+              onClick={handleChangePassword}
+              disabled={isChangingPassword}
             >
-              Confirm
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
-    </Card>
-  );
+              {isChangingPassword ? 'Changing...' : 'Change Password'}
+            </Button>
+          </CardContent>
+        </Card>
+
+        {/* Delete Account Card */}
+        <Card className="h-fit">
+          <CardHeader>
+            <CardTitle>Delete Account</CardTitle>
+            <CardDescription>Permanently delete your account and all associated data.</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <DeleteAccountDialog 
+              onDeleteAccount={handleDeleteAccount}
+              isDeleting={isDeletingAccount}
+            />
+          </CardContent>
+        </Card>
+      </div>
+    </div>
+  )
 }
+
