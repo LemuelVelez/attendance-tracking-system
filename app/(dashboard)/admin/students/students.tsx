@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import {
   Table,
   TableBody,
@@ -19,7 +19,6 @@ import {
   Pagination,
   PaginationContent,
   PaginationItem,
-  PaginationLink,
   PaginationNext,
   PaginationPrevious,
 } from "@/components/ui/pagination";
@@ -30,6 +29,15 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuLabel,
+  DropdownMenuRadioGroup,
+  DropdownMenuRadioItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { getAllUsers, updateUserRole, Student } from "@/lib/users/userService";
 import {
   Users,
@@ -43,6 +51,7 @@ import {
   Search,
   LayoutGrid,
   Loader2,
+  ArrowUpDown,
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import {
@@ -56,6 +65,11 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 
+type SortConfig = {
+  key: keyof Student;
+  direction: "asc" | "desc";
+} | null;
+
 export default function StudentTable() {
   const [students, setStudents] = useState<Student[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
@@ -66,6 +80,7 @@ export default function StudentTable() {
   const [studentsPerPage, setStudentsPerPage] = useState(10);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [selectedStudent, setSelectedStudent] = useState<Student | null>(null);
+  const [sortConfig, setSortConfig] = useState<SortConfig>(null);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -128,26 +143,68 @@ export default function StudentTable() {
     setDialogOpen(true);
   };
 
-  const filteredStudents = students.filter((student) =>
-    Object.values(student).some((value) =>
-      String(value)
-        .toLowerCase()
-        .includes(searchTerm.toLowerCase())
-    )
-  );
+  const sortedStudents = useMemo(() => {
+    const sortableStudents = [...students];
+    if (sortConfig !== null) {
+      sortableStudents.sort((a, b) => {
+        if (a[sortConfig.key] < b[sortConfig.key]) {
+          return sortConfig.direction === "asc" ? -1 : 1;
+        }
+        if (a[sortConfig.key] > b[sortConfig.key]) {
+          return sortConfig.direction === "asc" ? 1 : -1;
+        }
+        return 0;
+      });
+    }
+    return sortableStudents;
+  }, [students, sortConfig]);
+
+  const filteredStudents = useMemo(() => {
+    return sortedStudents.filter((student) =>
+      Object.values(student).some((value) =>
+        String(value)
+          .toLowerCase()
+          .includes(searchTerm.toLowerCase())
+      )
+    );
+  }, [sortedStudents, searchTerm]);
 
   const indexOfLastStudent = currentPage * studentsPerPage;
   const indexOfFirstStudent = indexOfLastStudent - studentsPerPage;
-  const currentStudents = filteredStudents.slice(
-    indexOfFirstStudent,
-    indexOfLastStudent
-  );
+  const currentStudents = useMemo(() => {
+    return filteredStudents.slice(indexOfFirstStudent, indexOfLastStudent);
+  }, [filteredStudents, indexOfFirstStudent, indexOfLastStudent]);
 
-  const paginate = (pageNumber: number) => setCurrentPage(pageNumber);
+  const paginate = (pageNumber: number) => {
+    if (
+      pageNumber >= 1 &&
+      pageNumber <= Math.ceil(filteredStudents.length / studentsPerPage)
+    ) {
+      setCurrentPage(pageNumber);
+    }
+  };
 
   const handleRowLimitChange = (value: string) => {
-    setStudentsPerPage(parseInt(value, 10));
-    setCurrentPage(1);
+    const newLimit = parseInt(value, 10);
+    if (!isNaN(newLimit) && newLimit > 0) {
+      setStudentsPerPage(newLimit);
+      setCurrentPage(1);
+    } else {
+      console.error("Invalid row limit:", value);
+      toast({
+        title: "Error",
+        description: "Invalid row limit selected.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleSort = (value: string) => {
+    const [key, direction] = value.split("-") as [
+      keyof Student,
+      "asc" | "desc"
+    ];
+    setSortConfig({ key, direction });
   };
 
   if (loading)
@@ -159,7 +216,7 @@ export default function StudentTable() {
   if (error) return <div className="p-4 text-red-500">Error: {error}</div>;
 
   return (
-    <Card className="w-full max-w-7xl mx-auto my-8 shadow-lg">
+    <Card className="w-full mx-auto max-w-xs sm:max-w-sm md:max-w-md lg:max-w-6xl my-8 shadow-lg">
       <CardHeader className="bg-gradient-to-r from-primary/95 to-purple-600">
         <CardTitle className="text-2xl font-bold flex items-center">
           <Users className="mr-2" />
@@ -178,11 +235,43 @@ export default function StudentTable() {
             />
           </div>
           <div className="flex items-center space-x-2">
-            <span className="text-sm font-medium text-gray-600">
-              Rows per page:
-            </span>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline" className="ml-auto">
+                  Sort By <ArrowUpDown className="ml-2 h-4 w-4" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-[200px]">
+                <DropdownMenuLabel>Sort by</DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                <DropdownMenuRadioGroup
+                  value={`${sortConfig?.key}-${sortConfig?.direction}`}
+                  onValueChange={handleSort}
+                >
+                  <DropdownMenuRadioItem value="name-asc">
+                    Name (A-Z)
+                  </DropdownMenuRadioItem>
+                  <DropdownMenuRadioItem value="name-desc">
+                    Name (Z-A)
+                  </DropdownMenuRadioItem>
+                  <DropdownMenuRadioItem value="studentId-asc">
+                    Student ID (Ascending)
+                  </DropdownMenuRadioItem>
+                  <DropdownMenuRadioItem value="studentId-desc">
+                    Student ID (Descending)
+                  </DropdownMenuRadioItem>
+                  <DropdownMenuRadioItem value="yearLevel-asc">
+                    Year (Ascending)
+                  </DropdownMenuRadioItem>
+                  <DropdownMenuRadioItem value="yearLevel-desc">
+                    Year (Descending)
+                  </DropdownMenuRadioItem>
+                </DropdownMenuRadioGroup>
+              </DropdownMenuContent>
+            </DropdownMenu>
+            <span className="text-sm font-medium text-gray-600">Rows:</span>
             <Select onValueChange={handleRowLimitChange} defaultValue="10">
-              <SelectTrigger className="w-[100px] rounded-md">
+              <SelectTrigger className="w-[65px] rounded-md">
                 <SelectValue placeholder="10" />
               </SelectTrigger>
               <SelectContent>
@@ -197,8 +286,8 @@ export default function StudentTable() {
         </div>
         <ScrollArea className="h-[400px] rounded-md border">
           <Table>
-            <TableHeader>
-              <TableRow className="hidden sm:table-row">
+            <TableHeader className="hidden sm:table-header-group">
+              <TableRow>
                 <TableHead className="w-[90px]">
                   <UserCircle className="inline-block mr-2" />
                   Avatar
@@ -239,140 +328,147 @@ export default function StudentTable() {
             </TableHeader>
             <TableBody>
               {currentStudents.map((student) => (
-                <TableRow
-                  key={student.userId}
-                  className="hover:bg-primary/40 transition-colors flex flex-col sm:table-row mb-4 sm:mb-0 border-b sm:border-b-0"
-                >
-                  <TableCell
-                    className="flex justify-center items-center p-2 sm:p-4 sm:table-cell"
-                    aria-label="Avatar"
-                  >
-                    <Avatar className="w-16 h-16 sm:w-10 sm:h-10">
-                      <AvatarImage src={student.avatar} alt={student.name} />
-                      <AvatarFallback className="text-lg sm:text-base">
-                        {student.name.charAt(0)}
-                      </AvatarFallback>
-                    </Avatar>
-                  </TableCell>
-                  <TableCell
-                    className="text-center sm:table-cell"
-                    aria-label="Name"
-                  >
-                    <span className="font-medium">{student.name}</span>
-                  </TableCell>
-                  <TableCell
-                    className="text-center sm:table-cell"
-                    aria-label="Student ID"
-                  >
-                    {student.studentId}
-                  </TableCell>
-                  <TableCell
-                    className="text-center sm:table-cell"
-                    aria-label="Degree Program"
-                  >
-                    {student.degreeProgram}
-                  </TableCell>
-                  <TableCell
-                    className="text-center sm:table-cell"
-                    aria-label="Year"
-                  >
-                    {student.yearLevel}
-                  </TableCell>
-                  <TableCell
-                    className="text-center sm:table-cell"
-                    aria-label="Section"
-                  >
-                    {student.section}
-                  </TableCell>
-                  <TableCell
-                    className="flex justify-center sm:table-cell"
-                    aria-label="Role"
-                  >
-                    <Badge
-                      variant={
-                        student.role === "admin" ? "default" : "secondary"
-                      }
-                      className="px-2 py-1 rounded-full text-xs font-semibold"
-                    >
-                      {student.role}
-                    </Badge>
-                  </TableCell>
-                  <TableCell
-                    className="text-center sm:table-cell"
-                    aria-label="Email"
-                  >
-                    {student.email}
-                  </TableCell>
-                  <TableCell
-                    className="flex justify-center sm:table-cell"
-                    aria-label="Actions"
-                  >
-                    <Button
-                      onClick={() => openConfirmDialog(student)}
-                      variant="outline"
-                      size="sm"
-                      disabled={isUpdating}
-                      className="text-xs px-2 py-1 rounded-full hover:bg-gray-400 transition-colors"
-                    >
-                      {isUpdating
-                        ? "Updating..."
-                        : student.role === "admin"
-                        ? "Make Student"
-                        : "Make Admin"}
-                    </Button>
-                  </TableCell>
-                </TableRow>
+                <React.Fragment key={student.userId}>
+                  {/* Desktop view */}
+                  <TableRow className="hidden sm:table-row hover:bg-primary/40 transition-colors">
+                    <TableCell className="font-medium">
+                      <Avatar className="w-10 h-10">
+                        <AvatarImage src={student.avatar} alt={student.name} />
+                        <AvatarFallback>
+                          {student.name.charAt(0)}
+                        </AvatarFallback>
+                      </Avatar>
+                    </TableCell>
+                    <TableCell>{student.name}</TableCell>
+                    <TableCell>{student.studentId}</TableCell>
+                    <TableCell>{student.degreeProgram}</TableCell>
+                    <TableCell>{student.yearLevel}</TableCell>
+                    <TableCell>{student.section}</TableCell>
+                    <TableCell>
+                      <Badge
+                        variant={
+                          student.role === "admin" ? "default" : "secondary"
+                        }
+                      >
+                        {student.role}
+                      </Badge>
+                    </TableCell>
+                    <TableCell>{student.email}</TableCell>
+                    <TableCell>
+                      <Button
+                        onClick={() => openConfirmDialog(student)}
+                        variant="outline"
+                        size="sm"
+                        className={`${
+                          isUpdating ? "opacity-50 cursor-not-allowed" : ""
+                        }`}
+                      >
+                        {isUpdating
+                          ? "Updating..."
+                          : student.role === "admin"
+                          ? "Make Student"
+                          : "Make Admin"}
+                      </Button>
+                    </TableCell>
+                  </TableRow>
+                  {/* Mobile view */}
+                  <TableRow className="sm:hidden flex flex-col p-4 border-b hover:bg-primary/40 transition-colors">
+                    <div className="flex items-center justify-between mb-2">
+                      <Avatar className="w-10 h-10">
+                        <AvatarImage src={student.avatar} alt={student.name} />
+                        <AvatarFallback>
+                          {student.name.charAt(0)}
+                        </AvatarFallback>
+                      </Avatar>
+                      <Badge
+                        variant={
+                          student.role === "admin" ? "default" : "secondary"
+                        }
+                      >
+                        {student.role}
+                      </Badge>
+                    </div>
+                    <div className="space-y-1">
+                      <p>
+                        <span className="font-semibold">Name:</span>{" "}
+                        {student.name}
+                      </p>
+                      <p>
+                        <span className="font-semibold">Student ID:</span>{" "}
+                        {student.studentId}
+                      </p>
+                      <p>
+                        <span className="font-semibold">Degree:</span>{" "}
+                        {student.degreeProgram}
+                      </p>
+                      <p>
+                        <span className="font-semibold">Year:</span>{" "}
+                        {student.yearLevel}
+                      </p>
+                      <p>
+                        <span className="font-semibold">Section:</span>{" "}
+                        {student.section}
+                      </p>
+                      <p>
+                        <span className="font-semibold">Email:</span>{" "}
+                        {student.email}
+                      </p>
+                    </div>
+                    <div className="mt-4">
+                      <Button
+                        onClick={() => openConfirmDialog(student)}
+                        variant="outline"
+                        size="sm"
+                        className={`w-full ${
+                          isUpdating ? "opacity-50 cursor-not-allowed" : ""
+                        }`}
+                      >
+                        {isUpdating
+                          ? "Updating..."
+                          : student.role === "admin"
+                          ? "Make Student"
+                          : "Make Admin"}
+                      </Button>
+                    </div>
+                  </TableRow>
+                </React.Fragment>
               ))}
             </TableBody>
           </Table>
         </ScrollArea>
-        <Pagination className="mt-6">
-          <PaginationContent>
-            <PaginationItem>
-              <PaginationPrevious
-                onClick={() => paginate(currentPage - 1)}
-                aria-disabled={currentPage === 1}
-                tabIndex={currentPage === 1 ? -1 : undefined}
-                className={
-                  currentPage === 1 ? "pointer-events-none opacity-50" : ""
-                }
-              />
-            </PaginationItem>
-            {[
-              ...Array(Math.ceil(filteredStudents.length / studentsPerPage)),
-            ].map((_, index) => (
-              <PaginationItem key={index}>
-                <PaginationLink
-                  onClick={() => paginate(index + 1)}
-                  isActive={currentPage === index + 1}
-                >
-                  {index + 1}
-                </PaginationLink>
+        <div className="flex justify-between items-center mt-6">
+          <Pagination>
+            <PaginationContent>
+              <PaginationItem>
+                {currentPage === 1 ? (
+                  <PaginationPrevious
+                    className="pointer-events-none opacity-50"
+                    aria-disabled="true"
+                  />
+                ) : (
+                  <PaginationPrevious
+                    onClick={() => paginate(currentPage - 1)}
+                  />
+                )}
               </PaginationItem>
-            ))}
-            <PaginationItem>
-              <PaginationNext
-                onClick={() => paginate(currentPage + 1)}
-                aria-disabled={
-                  currentPage ===
-                  Math.ceil(filteredStudents.length / studentsPerPage)
-                }
-                tabIndex={
-                  currentPage ===
-                  Math.ceil(filteredStudents.length / studentsPerPage)
-                    ? -1
-                    : undefined
-                }
-                className={
-                  currentPage ===
-                  Math.ceil(filteredStudents.length / studentsPerPage)
-                    ? "pointer-events-none opacity-50"
-                    : ""
-                }
-              />
-            </PaginationItem>
-          </PaginationContent>
-        </Pagination>
+              <span className="text-sm text-gray-600">
+                Page {currentPage} of{" "}
+                {Math.ceil(filteredStudents.length / studentsPerPage)}
+              </span>
+              <PaginationItem>
+                {currentPage ===
+                Math.ceil(filteredStudents.length / studentsPerPage) ? (
+                  <PaginationNext
+                    className="pointer-events-none opacity-50"
+                    aria-disabled="true"
+                  />
+                ) : (
+                  <PaginationNext onClick={() => paginate(currentPage + 1)} />
+                )}
+              </PaginationItem>
+            </PaginationContent>
+          </Pagination>
+        </div>
       </CardContent>
       <AlertDialog open={dialogOpen} onOpenChange={setDialogOpen}>
         <AlertDialogContent>
