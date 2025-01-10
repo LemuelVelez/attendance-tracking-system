@@ -42,10 +42,12 @@ export type Student = {
  */
 export const getAllUsers = async (): Promise<Student[]> => {
   try {
-    const response = await databases.listDocuments(
-      DATABASE_ID,
-      USERS_COLLECTION_ID,
-      [
+    let allUsers: Models.Document[] = [];
+    let lastId: string | undefined;
+
+    while (true) {
+      const queries = [
+        Query.limit(100),
         Query.select([
           "$id",
           "studentId",
@@ -57,9 +59,28 @@ export const getAllUsers = async (): Promise<Student[]> => {
           "email",
           "avatar",
         ]),
-      ]
-    );
-    return response.documents.map((doc: Models.Document) => ({
+      ];
+
+      if (lastId) {
+        queries.push(Query.cursorAfter(lastId));
+      }
+
+      const response = await databases.listDocuments(
+        DATABASE_ID,
+        USERS_COLLECTION_ID,
+        queries
+      );
+
+      allUsers = allUsers.concat(response.documents);
+
+      if (response.documents.length < 100) {
+        break;
+      }
+
+      lastId = response.documents[response.documents.length - 1].$id;
+    }
+
+    return allUsers.map((doc: Models.Document) => ({
       userId: doc.$id,
       studentId: doc.studentId,
       name: doc.name,

@@ -1,4 +1,4 @@
-import { Client, Databases, Models } from "appwrite";
+import { Client, Databases, Models, Query } from "appwrite";
 
 const client = new Client();
 client
@@ -75,53 +75,52 @@ export async function getAllData() {
 }
 
 async function getAllUsers(): Promise<User[]> {
-  try {
-    const response = await databases.listDocuments(
-      DATABASE_ID,
-      USERS_COLLECTION_ID
-    );
-    return response.documents as User[];
-  } catch (error) {
-    console.error("Error fetching users:", error);
-    throw error;
-  }
+  return fetchAllDocuments<User>(USERS_COLLECTION_ID);
 }
 
 async function getAllEvents(): Promise<Event[]> {
-  try {
-    const response = await databases.listDocuments(
-      DATABASE_ID,
-      EVENTS_COLLECTION_ID
-    );
-    return response.documents as Event[];
-  } catch (error) {
-    console.error("Error fetching events:", error);
-    throw error;
-  }
+  return fetchAllDocuments<Event>(EVENTS_COLLECTION_ID);
 }
 
 async function getAllAttendance(): Promise<Attendance[]> {
-  try {
-    const response = await databases.listDocuments(
-      DATABASE_ID,
-      GENERAL_ATTENDANCE_COLLECTION_ID
-    );
-    return response.documents as Attendance[];
-  } catch (error) {
-    console.error("Error fetching attendance:", error);
-    throw error;
-  }
+  return fetchAllDocuments<Attendance>(GENERAL_ATTENDANCE_COLLECTION_ID);
 }
 
 async function getAllFines(): Promise<FineDocument[]> {
-  try {
-    const response = await databases.listDocuments(
-      DATABASE_ID,
-      FINES_MANAGEMENT_COLLECTION_ID
-    );
-    return response.documents as FineDocument[];
-  } catch (error) {
-    console.error("Error fetching fines:", error);
-    throw error;
+  return fetchAllDocuments<FineDocument>(FINES_MANAGEMENT_COLLECTION_ID);
+}
+
+async function fetchAllDocuments<T extends Models.Document>(
+  collectionId: string
+): Promise<T[]> {
+  let allDocuments: T[] = [];
+  let lastId: string | undefined;
+
+  while (true) {
+    const queries = [Query.limit(100)];
+    if (lastId) {
+      queries.push(Query.cursorAfter(lastId));
+    }
+
+    try {
+      const response = await databases.listDocuments<T>(
+        DATABASE_ID,
+        collectionId,
+        queries
+      );
+
+      allDocuments = allDocuments.concat(response.documents);
+
+      if (response.documents.length < 100) {
+        break;
+      }
+
+      lastId = response.documents[response.documents.length - 1].$id;
+    } catch (error) {
+      console.error(`Error fetching documents from ${collectionId}:`, error);
+      throw error;
+    }
   }
+
+  return allDocuments;
 }

@@ -71,6 +71,7 @@ export default function StudentTable() {
   useEffect(() => {
     const fetchStudents = async () => {
       try {
+        setLoading(true);
         const users = await getAllUsers();
         setStudents(users);
         setLoading(false);
@@ -181,12 +182,15 @@ export default function StudentTable() {
               Rows per page:
             </span>
             <Select onValueChange={handleRowLimitChange} defaultValue="10">
-              <SelectTrigger className="w-[70px] rounded-md">
+              <SelectTrigger className="w-[100px] rounded-md">
                 <SelectValue placeholder="10" />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="10">10</SelectItem>
+                <SelectItem value="50">50</SelectItem>
                 <SelectItem value="100">100</SelectItem>
+                <SelectItem value="1000">1000</SelectItem>
+                <SelectItem value="10000">10,000</SelectItem>
               </SelectContent>
             </Select>
           </div>
