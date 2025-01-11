@@ -446,7 +446,7 @@ export default function StudentTable() {
                   <Button
                     variant="outline"
                     size="icon"
-                    className="w-8 h-8 sm:w-10 sm:h-10"
+                    className="w-8 h-8 sm:w-10 sm:h-10 mx-2"
                     onClick={() => paginate(1)}
                     disabled={currentPage === 1}
                   >
@@ -493,7 +493,7 @@ export default function StudentTable() {
                   <Button
                     variant="outline"
                     size="icon"
-                    className="w-8 h-8 sm:w-10 sm:h-10"
+                    className="w-8 h-8 sm:w-10 sm:h-10 mx-2"
                     onClick={() =>
                       paginate(
                         Math.ceil(filteredStudents.length / studentsPerPage)

@@ -7,6 +7,8 @@ import {
   Search,
   Trash2,
   Columns,
+  ChevronsLeft,
+  ChevronsRight,
 } from "lucide-react";
 import {
   ColumnDef,
@@ -19,6 +21,7 @@ import {
   getPaginationRowModel,
   getSortedRowModel,
   useReactTable,
+  PaginationState,
 } from "@tanstack/react-table";
 
 import { Button } from "@/components/ui/button";
@@ -165,7 +168,21 @@ export function CollegeAttendanceTable() {
   const [selectedCollege, setSelectedCollege] = React.useState<string>(
     collegeOptions[0].value
   );
+  const [{ pageIndex, pageSize }, setPagination] = React.useState<
+    PaginationState
+  >({
+    pageIndex: 0,
+    pageSize: 10,
+  });
   const { toast } = useToast();
+
+  const pagination = React.useMemo(
+    () => ({
+      pageIndex,
+      pageSize,
+    }),
+    [pageIndex, pageSize]
+  );
 
   const columns: ColumnDef<Attendance>[] = [
     {
@@ -337,6 +354,7 @@ export function CollegeAttendanceTable() {
     onColumnVisibilityChange: setColumnVisibility,
     onRowSelectionChange: setRowSelection,
     onGlobalFilterChange: setGlobalFilter,
+    onPaginationChange: setPagination,
     globalFilterFn: "includesString",
     state: {
       sorting,
@@ -344,8 +362,8 @@ export function CollegeAttendanceTable() {
       columnVisibility,
       rowSelection,
       globalFilter,
+      pagination,
     },
-    pageCount: Math.ceil(data.length / 10),
   });
 
   const handleDeleteAttendance = async () => {
@@ -385,7 +403,7 @@ export function CollegeAttendanceTable() {
   };
 
   return (
-    <div className="flex items-center justify-center min-h-screen p-2 sm:p-4 md:p-8">
+    <div className="flex flex-col items-center justify-center min-h-screen p-2 sm:p-4 md:p-8 space-y-4">
       <Card className="w-full max-w-[calc(100vw-2rem)] sm:max-w-2xl md:max-w-3xl lg:max-w-5xl xl:max-w-6xl">
         <CardHeader>
           <CardTitle className="text-2xl font-bold">
@@ -485,6 +503,41 @@ export function CollegeAttendanceTable() {
                   </DropdownMenu>
                 </div>
               </div>
+              <div className="flex items-center justify-between">
+                <span className="text-sm text-muted-foreground">
+                  Showing {table.getState().pagination.pageIndex * pageSize + 1}{" "}
+                  to{" "}
+                  {Math.min(
+                    (table.getState().pagination.pageIndex + 1) * pageSize,
+                    table.getFilteredRowModel().rows.length
+                  )}{" "}
+                  of {table.getFilteredRowModel().rows.length} entries
+                </span>
+                <div className="flex items-center justify-end space-x-2">
+                  <Select
+                    value={pageSize.toString()}
+                    onValueChange={(value) => {
+                      const newPageSize = Number(value);
+                      setPagination((prev) => ({
+                        ...prev,
+                        pageSize: newPageSize,
+                      }));
+                    }}
+                  >
+                    <SelectTrigger className="w-[95px]">
+                      <SelectValue placeholder={pageSize} />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {[10, 100, 1000].map((size) => (
+                        <SelectItem key={size} value={size.toString()}>
+                          {`${size} rows`}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+
               <ScrollArea
                 className="rounded-md border"
                 style={{
@@ -559,12 +612,20 @@ export function CollegeAttendanceTable() {
                   <Button
                     variant="outline"
                     size="sm"
+                    onClick={() => table.setPageIndex(0)}
+                    disabled={!table.getCanPreviousPage()}
+                  >
+                    <ChevronsLeft className="h-4 w-4" />
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
                     onClick={() => table.previousPage()}
                     disabled={!table.getCanPreviousPage()}
                   >
                     Previous
                   </Button>
-                  <span className="text-sm text-muted-foreground">
+                  <span className="text-xs lg:text-sm text-muted-foreground">
                     Page {table.getState().pagination.pageIndex + 1} of{" "}
                     {table.getPageCount()}
                   </span>
@@ -576,15 +637,23 @@ export function CollegeAttendanceTable() {
                   >
                     Next
                   </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => table.setPageIndex(table.getPageCount() - 1)}
+                    disabled={!table.getCanNextPage()}
+                  >
+                    <ChevronsRight className="h-4 w-4" />
+                  </Button>
                 </div>
               </div>
             </div>
           )}
+          <footer className="py-4 text-center">
+            <p className="text-sm">JESUS BE ALL THE GLORY!</p>
+            <p className="text-xs mt-1">© SSG QR Attendance</p>
+          </footer>
         </CardContent>
-        <footer className="py-4 text-center">
-          <p className="text-sm">JESUS BE ALL THE GLORY!</p>
-          <p className="text-xs mt-1">© SSG QR Attendance</p>
-        </footer>
       </Card>
     </div>
   );

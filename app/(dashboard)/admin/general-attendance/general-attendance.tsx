@@ -8,6 +8,10 @@ import {
   Trash2,
   Plus,
   Columns,
+  ChevronsLeft,
+  ChevronLeft,
+  ChevronRight,
+  ChevronsRight,
 } from "lucide-react";
 import {
   ColumnDef,
@@ -118,6 +122,18 @@ const collegeOptions = [
   },
 ];
 
+const EntriesInfo: React.FC<{ start: number; end: number; total: number }> = ({
+  start,
+  end,
+  total,
+}) => {
+  return (
+    <div className="text-sm text-muted-foreground">
+      Showing {start} to {end} of {total} entries
+    </div>
+  );
+};
+
 export function GeneralAttendanceTable() {
   const [sorting, setSorting] = React.useState<SortingState>([]);
   const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>(
@@ -134,6 +150,7 @@ export function GeneralAttendanceTable() {
   const [selectedCollege, setSelectedCollege] = React.useState<string | null>(
     null
   );
+  const [itemsPerPage, setItemsPerPage] = React.useState(10);
   const { toast } = useToast();
 
   const columns: ColumnDef<Attendance>[] = [
@@ -314,7 +331,11 @@ export function GeneralAttendanceTable() {
       rowSelection,
       globalFilter,
     },
-    pageCount: Math.ceil(data.length / 10),
+    initialState: {
+      pagination: {
+        pageSize: itemsPerPage,
+      },
+    },
   });
 
   const handleCreateCollegeAttendance = async () => {
@@ -584,6 +605,41 @@ export function GeneralAttendanceTable() {
                   </DropdownMenu>
                 </div>
               </div>
+              <div className="flex items-center justify-between">
+                <EntriesInfo
+                  start={
+                    table.getState().pagination.pageIndex *
+                      table.getState().pagination.pageSize +
+                    1
+                  }
+                  end={Math.min(
+                    (table.getState().pagination.pageIndex + 1) *
+                      table.getState().pagination.pageSize,
+                    table.getFilteredRowModel().rows.length
+                  )}
+                  total={table.getFilteredRowModel().rows.length}
+                />
+                <div className="flex items-center space-x-2">
+                  <Select
+                    value={itemsPerPage.toString()}
+                    onValueChange={(value) => {
+                      setItemsPerPage(Number(value));
+                      table.setPageSize(Number(value));
+                    }}
+                  >
+                    <SelectTrigger className="w-[95px]">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="10">10 rows</SelectItem>
+                      <SelectItem value="20">20 rows</SelectItem>
+                      <SelectItem value="30">30 rows</SelectItem>
+                      <SelectItem value="40">40 rows</SelectItem>
+                      <SelectItem value="50">50 rows</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
               <ScrollArea
                 className="rounded-md border"
                 style={{
@@ -658,10 +714,18 @@ export function GeneralAttendanceTable() {
                   <Button
                     variant="outline"
                     size="sm"
+                    onClick={() => table.setPageIndex(0)}
+                    disabled={!table.getCanPreviousPage()}
+                  >
+                    <ChevronsLeft className="h-4 w-4" />
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
                     onClick={() => table.previousPage()}
                     disabled={!table.getCanPreviousPage()}
                   >
-                    Previous
+                    <ChevronLeft className="h-4 w-4" />
                   </Button>
                   <span className="text-sm text-muted-foreground">
                     Page {table.getState().pagination.pageIndex + 1} of{" "}
@@ -673,7 +737,15 @@ export function GeneralAttendanceTable() {
                     onClick={() => table.nextPage()}
                     disabled={!table.getCanNextPage()}
                   >
-                    Next
+                    <ChevronRight className="h-4 w-4" />
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => table.setPageIndex(table.getPageCount() - 1)}
+                    disabled={!table.getCanNextPage()}
+                  >
+                    <ChevronsRight className="h-4 w-4" />
                   </Button>
                 </div>
               </div>

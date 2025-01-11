@@ -8,6 +8,8 @@ import {
   ChevronLeft,
   ChevronRight,
   PlusCircle,
+  ChevronsLeft,
+  ChevronsRight,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -77,40 +79,70 @@ interface PaginationProps {
   currentPage: number;
   totalPages: number;
   onPageChange: (page: number) => void;
+  itemsPerPage: number;
+  totalItems: number;
 }
 
 const Pagination: React.FC<PaginationProps> = ({
   currentPage,
   totalPages,
   onPageChange,
+  itemsPerPage,
+  totalItems,
 }) => {
+  const startItem = (currentPage - 1) * itemsPerPage + 1;
+  const endItem = Math.min(currentPage * itemsPerPage, totalItems);
+
   return (
-    <nav
-      className="flex items-center justify-center space-x-2"
-      aria-label="Pagination"
-    >
-      <Button
-        variant="outline"
-        size="sm"
-        onClick={() => onPageChange(Math.max(1, currentPage - 1))}
-        disabled={currentPage === 1}
-        aria-label="Previous page"
-      >
-        <ChevronLeft className="h-4 w-4" />
-      </Button>
-      <span className="text-sm font-medium">
-        Page {currentPage} of {totalPages}
+    <div className="flex flex-col sm:flex-row items-center justify-between space-y-2 sm:space-y-0">
+      <span className="text-sm text-gray-700">
+        Showing {startItem} to {endItem} of {totalItems} entries
       </span>
-      <Button
-        variant="outline"
-        size="sm"
-        onClick={() => onPageChange(Math.min(totalPages, currentPage + 1))}
-        disabled={currentPage === totalPages}
-        aria-label="Next page"
+      <nav
+        className="flex items-center justify-center space-x-2"
+        aria-label="Pagination"
       >
-        <ChevronRight className="h-4 w-4" />
-      </Button>
-    </nav>
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => onPageChange(1)}
+          disabled={currentPage === 1}
+          aria-label="First page"
+        >
+          <ChevronsLeft className="h-4 w-4" />
+        </Button>
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => onPageChange(Math.max(1, currentPage - 1))}
+          disabled={currentPage === 1}
+          aria-label="Previous page"
+        >
+          <ChevronLeft className="h-4 w-4" />
+        </Button>
+        <span className="text-sm text-gray-600 hidden sm:inline">
+          Page {currentPage} of {totalPages}
+        </span>
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => onPageChange(Math.min(totalPages, currentPage + 1))}
+          disabled={currentPage === totalPages}
+          aria-label="Next page"
+        >
+          <ChevronRight className="h-4 w-4" />
+        </Button>
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => onPageChange(totalPages)}
+          disabled={currentPage === totalPages}
+          aria-label="Last page"
+        >
+          <ChevronsRight className="h-4 w-4" />
+        </Button>
+      </nav>
+    </div>
   );
 };
 
@@ -575,6 +607,26 @@ export default function PrintableAttendanceDocument() {
               </div>
             </RadioGroup>
           </div>
+
+          <div className="flex items-center justify-between my-4 ">
+            <Select
+              value={itemsPerPage.toString()}
+              onValueChange={(value) => {
+                setItemsPerPage(Number(value));
+                setCurrentPage(1);
+              }}
+            >
+              <SelectTrigger className="w-[95px]">
+                <SelectValue placeholder="Select number of rows" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="10">10 rows</SelectItem>
+                <SelectItem value="100">100 rows</SelectItem>
+                <SelectItem value="1000">1000 rows</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
           <ScrollArea
             className="rounded-md border"
             style={{
@@ -641,11 +693,13 @@ export default function PrintableAttendanceDocument() {
             </Table>
             <ScrollBar orientation="horizontal" />
           </ScrollArea>
-          <div className="mt-4 flex justify-center">
+          <div className="mt-4">
             <Pagination
               currentPage={currentPage}
               totalPages={Math.ceil(filteredData.length / itemsPerPage)}
               onPageChange={handlePageChange}
+              itemsPerPage={itemsPerPage}
+              totalItems={filteredData.length}
             />
           </div>
         </CardContent>
