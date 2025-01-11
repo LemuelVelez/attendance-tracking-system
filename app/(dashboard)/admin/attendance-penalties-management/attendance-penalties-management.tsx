@@ -92,6 +92,7 @@ export default function SupplyFinesManagement() {
   const [isGeneratingFines, setIsGeneratingFines] = useState(false);
   const [generateDialogOpen, setGenerateDialogOpen] = useState(false);
   const [selectedFines, setSelectedFines] = useState<string[]>([]);
+  const [selectAll, setSelectAll] = useState(false);
 
   const fetchData = useCallback(async () => {
     try {
@@ -281,6 +282,11 @@ export default function SupplyFinesManagement() {
     (currentPage - 1) * rowsPerPage,
     currentPage * rowsPerPage
   );
+
+  const handleSelectAll = (checked: boolean) => {
+    setSelectAll(checked);
+    setSelectedFines(checked ? paginatedFines.map((fine) => fine.$id) : []);
+  };
 
   return (
     <div className="container mx-auto px-2 sm:px-4 py-4 sm:py-6">
@@ -482,12 +488,8 @@ export default function SupplyFinesManagement() {
                 <TableRow>
                   <TableHead className="w-[50px]">
                     <Checkbox
-                      checked={selectedFines.length === paginatedFines.length}
-                      onCheckedChange={(checked) => {
-                        setSelectedFines(
-                          checked ? paginatedFines.map((fine) => fine.$id) : []
-                        );
-                      }}
+                      checked={selectAll}
+                      onCheckedChange={handleSelectAll}
                     />
                   </TableHead>
                   <TableHead>Student ID</TableHead>
@@ -515,7 +517,6 @@ export default function SupplyFinesManagement() {
                     <TableRow key={fine.$id}>
                       <TableCell>
                         <Checkbox
-                          value={fine.$id}
                           checked={selectedFines.includes(fine.$id)}
                           onCheckedChange={(checked) => {
                             if (checked) {
@@ -606,6 +607,17 @@ export default function SupplyFinesManagement() {
 
           {/* Card view for small devices */}
           <div className="md:hidden">
+            <div className="mb-4 flex items-center justify-between">
+              <span className="text-sm font-medium">
+                <span className="mr-2 ">
+                  <Checkbox
+                    checked={selectAll}
+                    onCheckedChange={handleSelectAll}
+                  />
+                </span>
+                Select All
+              </span>
+            </div>
             <div className="space-y-4 max-h-[60vh] overflow-y-auto pr-2">
               {paginatedFines.map((fine) => {
                 const presences =

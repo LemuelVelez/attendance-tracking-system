@@ -1,5 +1,4 @@
-import { Client, Databases, ID, Models } from "appwrite";
-import { Query } from "appwrite";
+import { Client, Databases, ID, Models, Query } from "appwrite";
 
 const client = new Client();
 client
@@ -36,81 +35,6 @@ export interface User extends Models.Document {
   name: string;
   email: string;
 }
-
-export const getGeneralAttendance = async (): Promise<Attendance[]> => {
-  try {
-    if (!DATABASE_ID || !GENERAL_ATTENDANCE_COLLECTION_ID) {
-      throw new Error(
-        "Missing Appwrite environment variables. Please check your .env file."
-      );
-    }
-
-    const allDocuments = await databases.listDocuments(
-      DATABASE_ID,
-      GENERAL_ATTENDANCE_COLLECTION_ID,
-      [Query.orderDesc("$createdAt")]
-    );
-
-    const uniqueMap = new Map<string, Attendance>();
-    const duplicatesToDelete: string[] = [];
-
-    allDocuments.documents.forEach((doc: Models.Document) => {
-      const attendance = doc as Attendance;
-      const key = `${attendance.userId}-${attendance.eventName}-${attendance.date}`;
-      if (uniqueMap.has(key)) {
-        duplicatesToDelete.push(doc.$id);
-      } else {
-        uniqueMap.set(key, attendance);
-      }
-    });
-
-    await Promise.all(
-      duplicatesToDelete.map((id) =>
-        databases.deleteDocument(
-          DATABASE_ID,
-          GENERAL_ATTENDANCE_COLLECTION_ID,
-          id
-        )
-      )
-    );
-
-    console.log(`Deleted ${duplicatesToDelete.length} duplicate records.`);
-
-    const finalDocuments = await databases.listDocuments(
-      DATABASE_ID,
-      GENERAL_ATTENDANCE_COLLECTION_ID,
-      [Query.orderDesc("$createdAt")]
-    );
-
-    return finalDocuments.documents as Attendance[];
-  } catch (error) {
-    console.error("Error in getGeneralAttendance:", error);
-    throw error;
-  }
-};
-
-export const deleteGeneralAttendance = async (
-  documentId: string
-): Promise<void> => {
-  try {
-    if (!DATABASE_ID || !GENERAL_ATTENDANCE_COLLECTION_ID) {
-      throw new Error(
-        "Missing Appwrite environment variables. Please check your .env file."
-      );
-    }
-
-    await databases.deleteDocument(
-      DATABASE_ID,
-      GENERAL_ATTENDANCE_COLLECTION_ID,
-      documentId
-    );
-
-    console.log(`Successfully deleted document with ID: ${documentId}`);
-  } catch (error) {
-    console.error("Error in deleteGeneralAttendance:", error);
-    throw error;
-  }
-};
 
 export interface FineDocumentData {
   userId: string;
@@ -162,6 +86,93 @@ function isFineDocument(doc: unknown): doc is FineDocument {
 
   return true;
 }
+
+export const getGeneralAttendance = async (): Promise<Attendance[]> => {
+  try {
+    if (!DATABASE_ID || !GENERAL_ATTENDANCE_COLLECTION_ID) {
+      throw new Error(
+        "Missing Appwrite environment variables. Please check your .env file."
+      );
+    }
+
+    const allDocuments: Attendance[] = [];
+    let lastId: string | undefined;
+
+    while (true) {
+      const queries = [Query.orderDesc("$createdAt"), Query.limit(100)];
+      if (lastId) {
+        queries.push(Query.cursorAfter(lastId));
+      }
+
+      const response = await databases.listDocuments(
+        DATABASE_ID,
+        GENERAL_ATTENDANCE_COLLECTION_ID,
+        queries
+      );
+
+      const uniqueMap = new Map<string, Attendance>();
+      const duplicatesToDelete: string[] = [];
+
+      response.documents.forEach((doc: Models.Document) => {
+        const attendance = doc as Attendance;
+        const key = `${attendance.userId}-${attendance.eventName}-${attendance.date}`;
+        if (uniqueMap.has(key)) {
+          duplicatesToDelete.push(doc.$id);
+        } else {
+          uniqueMap.set(key, attendance);
+        }
+      });
+
+      await Promise.all(
+        duplicatesToDelete.map((id) =>
+          databases.deleteDocument(
+            DATABASE_ID,
+            GENERAL_ATTENDANCE_COLLECTION_ID,
+            id
+          )
+        )
+      );
+
+      console.log(`Deleted ${duplicatesToDelete.length} duplicate records.`);
+
+      allDocuments.push(...Array.from(uniqueMap.values()));
+
+      if (response.documents.length < 100) {
+        break;
+      }
+
+      lastId = response.documents[response.documents.length - 1].$id;
+    }
+
+    return allDocuments;
+  } catch (error) {
+    console.error("Error in getGeneralAttendance:", error);
+    throw error;
+  }
+};
+
+export const deleteGeneralAttendance = async (
+  documentId: string
+): Promise<void> => {
+  try {
+    if (!DATABASE_ID || !GENERAL_ATTENDANCE_COLLECTION_ID) {
+      throw new Error(
+        "Missing Appwrite environment variables. Please check your .env file."
+      );
+    }
+
+    await databases.deleteDocument(
+      DATABASE_ID,
+      GENERAL_ATTENDANCE_COLLECTION_ID,
+      documentId
+    );
+
+    console.log(`Successfully deleted document with ID: ${documentId}`);
+  } catch (error) {
+    console.error("Error in deleteGeneralAttendance:", error);
+    throw error;
+  }
+};
 
 export const createFineDocument = async (
   fineData: FineDocumentData
@@ -227,50 +238,36 @@ export const getFineDocuments = async (
       );
     }
 
-    const response = await databases.listDocuments(
-      DATABASE_ID,
-      FINES_MANAGEMENT_COLLECTION_ID,
-      queries
-    );
+    const allDocuments: FineDocument[] = [];
+    let lastId: string | undefined;
 
-    const uniqueMap = new Map<string, FineDocument>();
-    const duplicatesToDelete: string[] = [];
-
-    response.documents.forEach((doc: unknown) => {
-      if (isFineDocument(doc)) {
-        const key = `${doc.userId}-${doc.studentId}-${doc.dateIssued}`;
-        if (uniqueMap.has(key)) {
-          duplicatesToDelete.push(doc.$id);
-        } else {
-          uniqueMap.set(key, doc);
-        }
+    while (true) {
+      const currentQueries = [
+        ...queries,
+        Query.limit(100),
+        Query.orderDesc("$createdAt"),
+      ];
+      if (lastId) {
+        currentQueries.push(Query.cursorAfter(lastId));
       }
-    });
 
-    await Promise.all(
-      duplicatesToDelete.map((id) =>
-        databases.deleteDocument(
-          DATABASE_ID,
-          FINES_MANAGEMENT_COLLECTION_ID,
-          id
-        )
-      )
-    );
-
-    console.log(
-      `Deleted ${duplicatesToDelete.length} duplicate fine documents.`
-    );
-
-    const fineDocuments = Array.from(uniqueMap.values());
-
-    if (fineDocuments.length !== response.documents.length) {
-      console.warn(
-        `Found ${response.documents.length -
-          fineDocuments.length} invalid or duplicate fine documents.`
+      const response = await databases.listDocuments(
+        DATABASE_ID,
+        FINES_MANAGEMENT_COLLECTION_ID,
+        currentQueries
       );
+
+      const fineDocuments = response.documents.filter(isFineDocument);
+      allDocuments.push(...fineDocuments);
+
+      if (response.documents.length < 100) {
+        break;
+      }
+
+      lastId = response.documents[response.documents.length - 1].$id;
     }
 
-    return fineDocuments;
+    return allDocuments;
   } catch (error) {
     console.error("Error in getFineDocuments:", error);
     throw error;
@@ -306,18 +303,33 @@ export const getTotalUniqueEvents = async (): Promise<number> => {
       );
     }
 
-    const allDocuments = await databases.listDocuments(
-      DATABASE_ID,
-      GENERAL_ATTENDANCE_COLLECTION_ID
-    );
-
     const uniqueEvents = new Set<string>();
+    let lastId: string | undefined;
 
-    allDocuments.documents.forEach((doc: Models.Document) => {
-      if ((doc as Attendance).eventName) {
-        uniqueEvents.add((doc as Attendance).eventName);
+    while (true) {
+      const queries = [Query.limit(100)];
+      if (lastId) {
+        queries.push(Query.cursorAfter(lastId));
       }
-    });
+
+      const response = await databases.listDocuments(
+        DATABASE_ID,
+        GENERAL_ATTENDANCE_COLLECTION_ID,
+        queries
+      );
+
+      response.documents.forEach((doc: Models.Document) => {
+        if ((doc as Attendance).eventName) {
+          uniqueEvents.add((doc as Attendance).eventName);
+        }
+      });
+
+      if (response.documents.length < 100) {
+        break;
+      }
+
+      lastId = response.documents[response.documents.length - 1].$id;
+    }
 
     return uniqueEvents.size;
   } catch (error) {
@@ -334,12 +346,31 @@ export const getAllUsers = async (): Promise<User[]> => {
       );
     }
 
-    const response = await databases.listDocuments(
-      DATABASE_ID,
-      USERS_COLLECTION_ID
-    );
+    const allUsers: User[] = [];
+    let lastId: string | undefined;
 
-    return response.documents as User[];
+    while (true) {
+      const queries = [Query.limit(100)];
+      if (lastId) {
+        queries.push(Query.cursorAfter(lastId));
+      }
+
+      const response = await databases.listDocuments(
+        DATABASE_ID,
+        USERS_COLLECTION_ID,
+        queries
+      );
+
+      allUsers.push(...(response.documents as User[]));
+
+      if (response.documents.length < 100) {
+        break;
+      }
+
+      lastId = response.documents[response.documents.length - 1].$id;
+    }
+
+    return allUsers;
   } catch (error) {
     console.error("Error in getAllUsers:", error);
     throw error;
