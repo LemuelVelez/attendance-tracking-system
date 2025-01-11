@@ -19,8 +19,6 @@ import {
   Pagination,
   PaginationContent,
   PaginationItem,
-  PaginationNext,
-  PaginationPrevious,
 } from "@/components/ui/pagination";
 import {
   Select,
@@ -52,6 +50,10 @@ import {
   LayoutGrid,
   Loader2,
   ArrowUpDown,
+  ChevronsLeft,
+  ChevronsRight,
+  ChevronLeft,
+  ChevronRight,
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import {
@@ -436,38 +438,79 @@ export default function StudentTable() {
             </TableBody>
           </Table>
         </ScrollArea>
-        <div className="flex justify-between items-center mt-6">
+        <div className="flex flex-col sm:flex-row justify-between items-center mt-6 gap-4">
           <Pagination>
             <PaginationContent>
-              <PaginationItem>
-                {currentPage === 1 ? (
-                  <PaginationPrevious
-                    className="pointer-events-none opacity-50"
-                    aria-disabled="true"
-                  />
-                ) : (
-                  <PaginationPrevious
+              <div className="flex items-center space-x-1 sm:space-x-2">
+                <PaginationItem>
+                  <Button
+                    variant="outline"
+                    size="icon"
+                    className="w-8 h-8 sm:w-10 sm:h-10"
+                    onClick={() => paginate(1)}
+                    disabled={currentPage === 1}
+                  >
+                    <span className="sr-only">First page</span>
+                    <ChevronsLeft className="h-4 w-4" />
+                  </Button>
+                </PaginationItem>
+                <PaginationItem>
+                  <Button
+                    variant="outline"
+                    size="icon"
+                    className="w-8 h-8 sm:w-10 sm:h-10"
                     onClick={() => paginate(currentPage - 1)}
-                  />
-                )}
-              </PaginationItem>
-              <span className="text-sm text-gray-600">
-                Page {currentPage} of{" "}
-                {Math.ceil(filteredStudents.length / studentsPerPage)}
-              </span>
-              <PaginationItem>
-                {currentPage ===
-                Math.ceil(filteredStudents.length / studentsPerPage) ? (
-                  <PaginationNext
-                    className="pointer-events-none opacity-50"
-                    aria-disabled="true"
-                  />
-                ) : (
-                  <PaginationNext onClick={() => paginate(currentPage + 1)} />
-                )}
-              </PaginationItem>
+                    disabled={currentPage === 1}
+                  >
+                    <span className="sr-only">Previous page</span>
+                    <ChevronLeft className="h-4 w-4" />
+                  </Button>
+                </PaginationItem>
+                <span className="text-sm text-gray-600 hidden sm:inline">
+                  Page {currentPage} of{" "}
+                  {Math.ceil(filteredStudents.length / studentsPerPage)}
+                </span>
+                <PaginationItem>
+                  <Button
+                    variant="outline"
+                    size="icon"
+                    className="w-8 h-8 sm:w-10 sm:h-10"
+                    onClick={() => paginate(currentPage + 1)}
+                    disabled={
+                      currentPage ===
+                      Math.ceil(filteredStudents.length / studentsPerPage)
+                    }
+                  >
+                    <span className="sr-only">Next page</span>
+                    <ChevronRight className="h-4 w-4" />
+                  </Button>
+                </PaginationItem>
+                <PaginationItem>
+                  <Button
+                    variant="outline"
+                    size="icon"
+                    className="w-8 h-8 sm:w-10 sm:h-10"
+                    onClick={() =>
+                      paginate(
+                        Math.ceil(filteredStudents.length / studentsPerPage)
+                      )
+                    }
+                    disabled={
+                      currentPage ===
+                      Math.ceil(filteredStudents.length / studentsPerPage)
+                    }
+                  >
+                    <span className="sr-only">Last page</span>
+                    <ChevronsRight className="h-4 w-4" />
+                  </Button>
+                </PaginationItem>
+              </div>
             </PaginationContent>
           </Pagination>
+          <div className="text-sm text-gray-600 sm:hidden">
+            Page {currentPage} of{" "}
+            {Math.ceil(filteredStudents.length / studentsPerPage)}
+          </div>
         </div>
       </CardContent>
       <AlertDialog open={dialogOpen} onOpenChange={setDialogOpen}>
