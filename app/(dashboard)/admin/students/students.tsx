@@ -218,7 +218,7 @@ export default function StudentTable() {
   if (error) return <div className="p-4 text-red-500">Error: {error}</div>;
 
   return (
-    <Card className="w-full mx-auto max-w-xs sm:max-w-sm md:max-w-md lg:max-w-6xl my-8 shadow-lg">
+    <Card className="w-full mx-auto max-w-xs sm:max-w-sm md:max-w-md lg:max-w-7xl my-8 shadow-lg">
       <CardHeader className="bg-gradient-to-r from-primary/95 to-purple-600">
         <CardTitle className="text-2xl font-bold flex items-center">
           <Users className="mr-2" />
@@ -466,6 +466,10 @@ export default function StudentTable() {
                     <ChevronLeft className="h-4 w-4" />
                   </Button>
                 </PaginationItem>
+                <div className="text-sm text-gray-600 sm:hidden">
+                  Page {currentPage} of{" "}
+                  {Math.ceil(filteredStudents.length / studentsPerPage)}
+                </div>
                 <span className="text-sm text-gray-600 hidden sm:inline">
                   Page {currentPage} of{" "}
                   {Math.ceil(filteredStudents.length / studentsPerPage)}
@@ -507,10 +511,6 @@ export default function StudentTable() {
               </div>
             </PaginationContent>
           </Pagination>
-          <div className="text-sm text-gray-600 sm:hidden">
-            Page {currentPage} of{" "}
-            {Math.ceil(filteredStudents.length / studentsPerPage)}
-          </div>
         </div>
       </CardContent>
       <AlertDialog open={dialogOpen} onOpenChange={setDialogOpen}>
@@ -538,7 +538,11 @@ export default function StudentTable() {
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
-      </AlertDialog>
+      </AlertDialog>{" "}
+      <footer className="py-4 text-center">
+        <p className="text-sm">JESUS BE ALL THE GLORY!</p>
+        <p className="text-xs mt-1">© SSG QR Attendance</p>
+      </footer>
     </Card>
   );
 }

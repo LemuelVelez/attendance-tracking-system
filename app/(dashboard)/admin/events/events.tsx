@@ -480,6 +480,10 @@ export default function EventDisplay() {
                   </AlertDialogContent>
                 </AlertDialog>
               </CardFooter>
+              <footer className="py-4 text-center">
+                <p className="text-sm">JESUS BE ALL THE GLORY!</p>
+                <p className="text-xs mt-1">© SSG QR Attendance</p>
+              </footer>
             </Card>
           ))}
         </div>

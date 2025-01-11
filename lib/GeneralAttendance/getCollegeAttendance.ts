@@ -48,16 +48,35 @@ const getCollegeAttendance = async (collectionId: string): Promise<any[]> => {
       );
     }
 
-    const allDocuments = await databases.listDocuments(
-      DATABASE_ID,
-      collectionId,
-      [Query.orderDesc("$createdAt")]
-    );
+    let allDocuments: any[] = [];
+    let offset = 0;
+    const limit = 100; // Appwrite's maximum limit per request
+
+    while (true) {
+      const response = await databases.listDocuments(
+        DATABASE_ID,
+        collectionId,
+        [
+          Query.orderDesc("$createdAt"),
+          Query.limit(limit),
+          Query.offset(offset),
+        ]
+      );
+
+      allDocuments = [...allDocuments, ...response.documents];
+
+      if (response.documents.length < limit) {
+        // We've fetched all documents
+        break;
+      }
+
+      offset += limit;
+    }
 
     const uniqueMap = new Map();
     const duplicatesToDelete: string[] = [];
 
-    allDocuments.documents.forEach((doc: any) => {
+    allDocuments.forEach((doc: any) => {
       const key = `${doc.userId}-${doc.eventName}-${doc.date}`;
       if (uniqueMap.has(key)) {
         duplicatesToDelete.push(doc.$id);
@@ -74,13 +93,13 @@ const getCollegeAttendance = async (collectionId: string): Promise<any[]> => {
 
     console.log(`Deleted ${duplicatesToDelete.length} duplicate records.`);
 
-    const finalDocuments = await databases.listDocuments(
-      DATABASE_ID,
-      collectionId,
-      [Query.orderDesc("$createdAt")]
+    // Convert the uniqueMap values back to an array and sort by createdAt
+    const finalDocuments = Array.from(uniqueMap.values()).sort(
+      (a, b) =>
+        new Date(b.$createdAt).getTime() - new Date(a.$createdAt).getTime()
     );
 
-    return finalDocuments.documents.map((doc: any) => ({
+    return finalDocuments.map((doc: any) => ({
       ...doc,
       Created: doc.$createdAt,
     }));
@@ -165,6 +184,7 @@ export const deleteComputingStudiesAttendance = (documentId: string) =>
     COLLEGE_ATTENDANCE_COLLECTION_IDS.ComputingStudies,
     documentId
   );
+
 export type AttendanceType = "general" | "college";
 
 export type CollegeType =

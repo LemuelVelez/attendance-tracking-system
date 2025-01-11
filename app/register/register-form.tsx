@@ -1,3 +1,5 @@
+"use client";
+
 import { useEffect, useRef, useState } from "react";
 import { Eye, EyeOff, Moon, Sun } from "lucide-react";
 import Swal from "sweetalert2";
@@ -162,8 +164,8 @@ export function SignUpForm() {
           Create a new account by filling in the details below.
         </CardDescription>
       </CardHeader>
-      <CardContent className="overflow-auto max-h-[75vh] scrollbar-hidden">
-        <ScrollArea className="h-[80vh] pr-4">
+      <ScrollArea className="h-[75vh] ">
+        <CardContent>
           <div ref={formRef}>
             <form className="space-y-4" onSubmit={handleSubmit}>
               <div className="grid gap-2">
@@ -320,8 +322,8 @@ export function SignUpForm() {
               <p className="text-xs mt-1">© SSG QR Attendance</p>
             </footer>
           </div>
-        </ScrollArea>
-      </CardContent>
+        </CardContent>
+      </ScrollArea>
     </Card>
   );
 }

@@ -299,8 +299,8 @@ export default function Profile() {
                 </Button>
               </div>
             </div>
-            <Button 
-              className="w-full" 
+            <Button
+              className="w-full"
               onClick={handleChangePassword}
               disabled={isChangingPassword}
             >
@@ -316,13 +316,17 @@ export default function Profile() {
             <CardDescription>Permanently delete your account and all associated data.</CardDescription>
           </CardHeader>
           <CardContent>
-            <DeleteAccountDialog 
+            <DeleteAccountDialog
               onDeleteAccount={handleDeleteAccount}
               isDeleting={isDeletingAccount}
             />
           </CardContent>
         </Card>
       </div>
+      <footer className="py-4 text-center">
+        <p className="text-sm">JESUS BE ALL THE GLORY!</p>
+        <p className="text-xs mt-1">© SSG QR Attendance</p>
+      </footer>
     </div>
   )
 }
