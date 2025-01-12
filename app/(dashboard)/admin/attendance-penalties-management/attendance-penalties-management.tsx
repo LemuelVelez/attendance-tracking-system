@@ -21,14 +21,16 @@ import {
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog";
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import { useToast } from "@/hooks/use-toast";
 import { Toaster } from "@/components/ui/toaster";
 import {
@@ -368,8 +370,11 @@ export default function SupplyFinesManagement() {
         </Card>
       </div>
 
-      <Dialog open={generateDialogOpen} onOpenChange={setGenerateDialogOpen}>
-        <DialogTrigger asChild>
+      <AlertDialog
+        open={generateDialogOpen}
+        onOpenChange={setGenerateDialogOpen}
+      >
+        <AlertDialogTrigger asChild>
           <Button className="mb-4" disabled={isGeneratingFines}>
             {isGeneratingFines ? (
               <>
@@ -383,45 +388,42 @@ export default function SupplyFinesManagement() {
               </>
             )}
           </Button>
-        </DialogTrigger>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Confirm Fine Generation</DialogTitle>
-            <DialogDescription>
+        </AlertDialogTrigger>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Confirm Fine Generation</AlertDialogTitle>
+            <AlertDialogDescription>
               Are you sure you want to generate fines? This action cannot be
               undone.
-            </DialogDescription>
-          </DialogHeader>
-
-          <Button
-            onClick={() => {
-              handleGenerateFines();
-              setGenerateDialogOpen(false);
-            }}
-            disabled={isGeneratingFines}
-          >
-            {isGeneratingFines ? (
-              <>
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                Generating...
-              </>
-            ) : (
-              "Confirm"
-            )}
-          </Button>
-          <Button
-            variant="outline"
-            onClick={() => setGenerateDialogOpen(false)}
-            className="my-[-10]"
-          >
-            Cancel
-          </Button>
-        </DialogContent>
-      </Dialog>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => setGenerateDialogOpen(false)}>
+              Cancel
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                handleGenerateFines();
+                setGenerateDialogOpen(false);
+              }}
+              disabled={isGeneratingFines}
+            >
+              {isGeneratingFines ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Generating...
+                </>
+              ) : (
+                "Confirm"
+              )}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       <div className="mb-4">
-        <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
-          <DialogTrigger asChild>
+        <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+          <AlertDialogTrigger asChild>
             <Button
               variant="destructive"
               disabled={selectedFines.length === 0 || isDeleting}
@@ -438,38 +440,35 @@ export default function SupplyFinesManagement() {
                 </>
               )}
             </Button>
-          </DialogTrigger>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>Confirm Deletion</DialogTitle>
-              <DialogDescription>
+          </AlertDialogTrigger>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Confirm Deletion</AlertDialogTitle>
+              <AlertDialogDescription>
                 Are you sure you want to delete {selectedFines.length} selected
                 fine(s)? This action cannot be undone.
-              </DialogDescription>
-            </DialogHeader>
-            <Button
-              variant="destructive"
-              onClick={handleDeleteFines}
-              disabled={isDeleting}
-            >
-              {isDeleting ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Deleting...
-                </>
-              ) : (
-                "Delete"
-              )}
-            </Button>
-            <Button
-              variant="outline"
-              onClick={() => setDeleteDialogOpen(false)}
-              className="my-[-10]"
-            >
-              Cancel
-            </Button>
-          </DialogContent>
-        </Dialog>
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel onClick={() => setDeleteDialogOpen(false)}>
+                Cancel
+              </AlertDialogCancel>
+              <AlertDialogAction
+                onClick={handleDeleteFines}
+                disabled={isDeleting}
+              >
+                {isDeleting ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Deleting...
+                  </>
+                ) : (
+                  "Delete"
+                )}
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </div>
 
       <Card>
@@ -550,34 +549,35 @@ export default function SupplyFinesManagement() {
                       </TableCell>
                       <TableCell>
                         {fine.status === "Pending" ? (
-                          <Dialog
+                          <AlertDialog
                             open={dialogOpen}
                             onOpenChange={setDialogOpen}
                           >
-                            <DialogTrigger asChild>
+                            <AlertDialogTrigger asChild>
                               <Button
                                 onClick={() => setSelectedFineId(fine.$id)}
                                 size="sm"
                               >
                                 Mark as Cleared
                               </Button>
-                            </DialogTrigger>
-                            <DialogContent>
-                              <DialogHeader>
-                                <DialogTitle>Confirm Action</DialogTitle>
-                                <DialogDescription>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent>
+                              <AlertDialogHeader>
+                                <AlertDialogTitle>
+                                  Confirm Action
+                                </AlertDialogTitle>
+                                <AlertDialogDescription>
                                   Are you sure you want to mark this fine as
                                   cleared?
-                                </DialogDescription>
-                              </DialogHeader>
-                              <DialogFooter>
-                                <Button
-                                  variant="outline"
+                                </AlertDialogDescription>
+                              </AlertDialogHeader>
+                              <AlertDialogFooter>
+                                <AlertDialogCancel
                                   onClick={() => setDialogOpen(false)}
                                 >
                                   Cancel
-                                </Button>
-                                <Button
+                                </AlertDialogCancel>
+                                <AlertDialogAction
                                   onClick={() => {
                                     if (selectedFineId) {
                                       handleSubmitSupplies(selectedFineId);
@@ -586,10 +586,10 @@ export default function SupplyFinesManagement() {
                                   }}
                                 >
                                   Confirm
-                                </Button>
-                              </DialogFooter>
-                            </DialogContent>
-                          </Dialog>
+                                </AlertDialogAction>
+                              </AlertDialogFooter>
+                            </AlertDialogContent>
+                          </AlertDialog>
                         ) : (
                           <Badge variant="outline" className="text-green-600">
                             <Check className="w-4 h-4 mr-1" />
@@ -670,11 +670,11 @@ export default function SupplyFinesManagement() {
                       ))}
                       <div className="col-span-2 mt-2">
                         {fine.status === "Pending" ? (
-                          <Dialog
+                          <AlertDialog
                             open={dialogOpen}
                             onOpenChange={setDialogOpen}
                           >
-                            <DialogTrigger asChild>
+                            <AlertDialogTrigger asChild>
                               <Button
                                 onClick={() => setSelectedFineId(fine.$id)}
                                 size="sm"
@@ -682,23 +682,24 @@ export default function SupplyFinesManagement() {
                               >
                                 Mark as Cleared
                               </Button>
-                            </DialogTrigger>
-                            <DialogContent className="max-w-[90vw] sm:max-w-[425px]">
-                              <DialogHeader>
-                                <DialogTitle>Confirm Action</DialogTitle>
-                                <DialogDescription>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent className="max-w-[90vw] sm:max-w-[425px]">
+                              <AlertDialogHeader>
+                                <AlertDialogTitle>
+                                  Confirm Action
+                                </AlertDialogTitle>
+                                <AlertDialogDescription>
                                   Are you sure you want to mark this fine as
                                   cleared?
-                                </DialogDescription>
-                              </DialogHeader>
-                              <DialogFooter>
-                                <Button
-                                  variant="outline"
+                                </AlertDialogDescription>
+                              </AlertDialogHeader>
+                              <AlertDialogFooter>
+                                <AlertDialogCancel
                                   onClick={() => setDialogOpen(false)}
                                 >
                                   Cancel
-                                </Button>
-                                <Button
+                                </AlertDialogCancel>
+                                <AlertDialogAction
                                   onClick={() => {
                                     if (selectedFineId) {
                                       handleSubmitSupplies(selectedFineId);
@@ -707,10 +708,10 @@ export default function SupplyFinesManagement() {
                                   }}
                                 >
                                   Confirm
-                                </Button>
-                              </DialogFooter>
-                            </DialogContent>
-                          </Dialog>
+                                </AlertDialogAction>
+                              </AlertDialogFooter>
+                            </AlertDialogContent>
+                          </AlertDialog>
                         ) : (
                           <Badge
                             variant="outline"
