@@ -649,16 +649,16 @@ export default function PrintableAttendanceDocument() {
                     />
                   </TableHead>
                   <TableHead className="text-xs sm:text-base">Name</TableHead>
-                  <TableHead className="text-xs sm:text-base">
+                  <TableHead className="text-xs sm:text-base min-w-[150px]">
                     Student ID
                   </TableHead>
-                  <TableHead className="text-xs sm:text-base">
+                  <TableHead className="text-xs sm:text-base min-w-[150px]">
                     Degree Program
                   </TableHead>
-                  <TableHead className="text-xs sm:text-base">
+                  <TableHead className="text-xs sm:text-base min-w-[120px]">
                     Year Level
                   </TableHead>
-                  <TableHead className="text-xs sm:text-base">
+                  <TableHead className="text-xs sm:text-base ">
                     Section
                   </TableHead>
                 </TableRow>
