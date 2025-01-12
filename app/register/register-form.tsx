@@ -165,8 +165,8 @@ export function SignUpForm() {
         </CardDescription>
       </CardHeader>
       <form className="space-y-4" onSubmit={handleSubmit}>
-        <ScrollArea className="h-[40vh] ">
-          <CardContent className="h-[60vh]">
+        <ScrollArea className="h-[30vh] ">
+          <CardContent>
             <div ref={formRef}>
               <div className="space-y-4">
                 <div className="grid gap-2">
@@ -310,7 +310,7 @@ export function SignUpForm() {
             </div>
           </CardContent>
         </ScrollArea>
-        <div className="max-w-[255px] lg:max-w-[325px] mx-auto">
+        <div className="max-w-[240px] lg:max-w-[332px] mx-auto">
           <Button type="submit" className="w-full" disabled={loading}>
             {loading ? "Creating Account..." : "Sign Up"}
           </Button>

@@ -9,6 +9,8 @@ import {
   Columns,
   ChevronsLeft,
   ChevronsRight,
+  ChevronLeft,
+  ChevronRight,
 } from "lucide-react";
 import {
   ColumnDef,
@@ -623,19 +625,21 @@ export function CollegeAttendanceTable() {
                     onClick={() => table.previousPage()}
                     disabled={!table.getCanPreviousPage()}
                   >
-                    Previous
+                    <ChevronLeft className="h-4 w-4" />
                   </Button>
-                  <span className="text-xs lg:text-sm text-muted-foreground">
-                    Page {table.getState().pagination.pageIndex + 1} of{" "}
-                    {table.getPageCount()}
-                  </span>
+                  <div className="flex items-center space-x-2">
+                    <span className=" text-sm text-muted-foreground">
+                      Page {table.getState().pagination.pageIndex + 1} of{" "}
+                      {table.getPageCount()}
+                    </span>
+                  </div>
                   <Button
                     variant="outline"
                     size="sm"
                     onClick={() => table.nextPage()}
                     disabled={!table.getCanNextPage()}
                   >
-                    Next
+                    <ChevronRight className="h-4 w-4" />
                   </Button>
                   <Button
                     variant="outline"

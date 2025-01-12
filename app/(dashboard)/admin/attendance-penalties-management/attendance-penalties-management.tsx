@@ -392,30 +392,30 @@ export default function SupplyFinesManagement() {
               undone.
             </DialogDescription>
           </DialogHeader>
-          <DialogFooter>
-            <Button
-              variant="outline"
-              onClick={() => setGenerateDialogOpen(false)}
-            >
-              Cancel
-            </Button>
-            <Button
-              onClick={() => {
-                handleGenerateFines();
-                setGenerateDialogOpen(false);
-              }}
-              disabled={isGeneratingFines}
-            >
-              {isGeneratingFines ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Generating...
-                </>
-              ) : (
-                "Confirm"
-              )}
-            </Button>
-          </DialogFooter>
+
+          <Button
+            onClick={() => {
+              handleGenerateFines();
+              setGenerateDialogOpen(false);
+            }}
+            disabled={isGeneratingFines}
+          >
+            {isGeneratingFines ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Generating...
+              </>
+            ) : (
+              "Confirm"
+            )}
+          </Button>
+          <Button
+            variant="outline"
+            onClick={() => setGenerateDialogOpen(false)}
+            className="my-[-10]"
+          >
+            Cancel
+          </Button>
         </DialogContent>
       </Dialog>
 
@@ -447,28 +447,27 @@ export default function SupplyFinesManagement() {
                 fine(s)? This action cannot be undone.
               </DialogDescription>
             </DialogHeader>
-            <DialogFooter>
-              <Button
-                variant="outline"
-                onClick={() => setDeleteDialogOpen(false)}
-              >
-                Cancel
-              </Button>
-              <Button
-                variant="destructive"
-                onClick={handleDeleteFines}
-                disabled={isDeleting}
-              >
-                {isDeleting ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Deleting...
-                  </>
-                ) : (
-                  "Delete"
-                )}
-              </Button>
-            </DialogFooter>
+            <Button
+              variant="destructive"
+              onClick={handleDeleteFines}
+              disabled={isDeleting}
+            >
+              {isDeleting ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Deleting...
+                </>
+              ) : (
+                "Delete"
+              )}
+            </Button>
+            <Button
+              variant="outline"
+              onClick={() => setDeleteDialogOpen(false)}
+              className="my-[-10]"
+            >
+              Cancel
+            </Button>
           </DialogContent>
         </Dialog>
       </div>
@@ -632,7 +631,7 @@ export default function SupplyFinesManagement() {
                 return (
                   <Card key={fine.$id} className="p-3">
                     <div className="grid grid-cols-2 gap-2 text-sm">
-                      <div className="col-span-2 flex items-center justify-between">
+                      <div className="col-span-2 flex items-center justify-between mb-2">
                         <Checkbox
                           checked={selectedFines.includes(fine.$id)}
                           onCheckedChange={(checked) => {
@@ -656,30 +655,19 @@ export default function SupplyFinesManagement() {
                           {fine.status}
                         </Badge>
                       </div>
-                      <div>
-                        <p className="font-semibold">Student ID:</p>
-                        <p className="truncate">{fine.studentId}</p>
-                      </div>
-                      <div>
-                        <p className="font-semibold">Name:</p>
-                        <p className="truncate">{fine.name}</p>
-                      </div>
-                      <div>
-                        <p className="font-semibold">Presences:</p>
-                        <p>{presences}</p>
-                      </div>
-                      <div>
-                        <p className="font-semibold">Absences:</p>
-                        <p>{fine.absences}</p>
-                      </div>
-                      <div className="col-span-2">
-                        <p className="font-semibold">Required Supplies:</p>
-                        <p className="text-xs">{fine.penalties}</p>
-                      </div>
-                      <div>
-                        <p className="font-semibold">Date Issued:</p>
-                        <p className="text-xs">{fine.dateIssued}</p>
-                      </div>
+                      {[
+                        { label: "Student ID", value: fine.studentId },
+                        { label: "Name", value: fine.name },
+                        { label: "Presences", value: presences },
+                        { label: "Absences", value: fine.absences },
+                        { label: "Required Supplies", value: fine.penalties },
+                        { label: "Date Issued", value: fine.dateIssued },
+                      ].map(({ label, value }) => (
+                        <div key={label} className="col-span-2 flex flex-col">
+                          <p className="font-semibold text-xs">{label}:</p>
+                          <p className="text-sm truncate">{value}</p>
+                        </div>
+                      ))}
                       <div className="col-span-2 mt-2">
                         {fine.status === "Pending" ? (
                           <Dialog
