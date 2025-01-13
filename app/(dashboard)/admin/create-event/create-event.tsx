@@ -163,7 +163,7 @@ export default function CreateEvent() {
 
   return (
     <div className="container mx-auto py-10">
-      <Card className="max-w-2xl mx-auto">
+      <Card className="w-full max-w-xs lg:max-w-2xl mx-auto">
         <CardHeader>
           <CardTitle>Create New Event</CardTitle>
           <CardDescription>
