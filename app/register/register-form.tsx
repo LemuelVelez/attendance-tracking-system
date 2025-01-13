@@ -138,7 +138,7 @@ export function SignUpForm() {
   };
 
   return (
-    <Card ref={cardRef} className="mx-auto w-full max-w-sm min-h-fit">
+    <Card ref={cardRef} className="mx-auto my-auto w-full max-w-sm">
       <CardHeader>
         <div className="flex items-center justify-between">
           <CardTitle className="text-2xl">Sign Up</CardTitle>
@@ -306,7 +306,6 @@ export function SignUpForm() {
                   </div>
                 </div>
               </div>
-              <br />
             </div>
           </CardContent>
         </ScrollArea>
