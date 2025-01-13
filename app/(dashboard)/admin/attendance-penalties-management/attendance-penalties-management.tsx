@@ -33,21 +33,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { useToast } from "@/hooks/use-toast";
 import { Toaster } from "@/components/ui/toaster";
-import {
-  ChevronLeft,
-  ChevronRight,
-  ChevronsLeft,
-  ChevronsRight,
-  Search,
-  Check,
-  Calendar,
-  Filter,
-  Users,
-  Rows,
-  Loader2,
-  AlertTriangle,
-  Trash2,
-} from "lucide-react";
+import { ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, Search, Check, Calendar, Filter, Users, Rows, Loader2, AlertTriangle, Trash2 } from 'lucide-react';
 import {
   getGeneralAttendance,
   createFineDocument,
@@ -273,10 +259,10 @@ export default function SupplyFinesManagement() {
     ...new Set(attendances.map((a) => a.eventName)),
   ];
 
-  const filteredFines = fines.filter(
-    (fine) =>
-      fine.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      fine.studentId.toLowerCase().includes(searchTerm.toLowerCase())
+  const filteredFines = fines.filter((fine) =>
+    Object.values(fine).some((value) =>
+      String(value).toLowerCase().includes(searchTerm.toLowerCase())
+    )
   );
 
   const totalPages = Math.ceil(filteredFines.length / rowsPerPage);
@@ -347,7 +333,7 @@ export default function SupplyFinesManagement() {
           <CardContent className="space-y-4">
             <div className="relative">
               <Input
-                placeholder="Search by name or ID"
+                placeholder="Search all fields"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 className="pl-10"
@@ -789,3 +775,4 @@ export default function SupplyFinesManagement() {
     </div>
   );
 }
+
