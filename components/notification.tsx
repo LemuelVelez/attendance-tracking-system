@@ -35,6 +35,14 @@ import {
   getAllEventsFromEventsCollection,
 } from "@/lib/eventNotification/eventNotification";
 
+const formatTo12Hour = (time: string): string => {
+  const [hour, minute] = time.split(":");
+  const hourNum = parseInt(hour, 10);
+  const ampm = hourNum >= 12 ? "PM" : "AM";
+  const hour12 = hourNum % 12 || 12;
+  return `${hour12}:${minute} ${ampm}`;
+};
+
 interface Event {
   id: string;
   userId: string;
@@ -373,7 +381,7 @@ function NotificationCard({
               {`${event.day}, ${new Date(event.date).toLocaleDateString(
                 "en-US",
                 { month: "2-digit", day: "2-digit", year: "numeric" }
-              )} at ${event.time}`}
+              )} at ${formatTo12Hour(event.time)}`}
             </p>
           </div>
           <div className="flex items-center space-x-2 w-full sm:w-auto justify-between sm:justify-start">
