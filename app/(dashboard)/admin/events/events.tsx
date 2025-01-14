@@ -93,7 +93,7 @@ const QRCodeDisplay: React.FC<{ event: Event }> = ({ event }) => {
 
   return (
     <img
-      src={qrCodeSrc}
+      src={qrCodeSrc || "/placeholder.svg"}
       alt={`QR Code for ${event.eventName}`}
       width={200}
       height={200}
@@ -602,7 +602,6 @@ function isEvent(obj: unknown): obj is Event {
     "date" in obj &&
     "time" in obj &&
     "day" in obj &&
-    "location" in obj &&
-    "description" in obj
+    "location" in obj
   );
 }

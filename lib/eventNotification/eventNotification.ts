@@ -1,4 +1,4 @@
-import { Client, Account, Databases, Query, AppwriteException } from "appwrite";
+import { Client, Account, Databases, Query, ID } from "appwrite";
 
 // Initialize the Appwrite Client
 const client = new Client();
@@ -31,13 +31,14 @@ const validateEnvVariables = () => {
 };
 
 interface EventNotification {
+  id: string;
   userId: string;
   eventName: string;
   location: string;
   date: string;
   day: string;
   time: string;
-  status: "read" | "unread";
+  status: "read" | "unread" | "deleted";
 }
 
 export const getCurrentUser = async (): Promise<string | null> => {
@@ -50,7 +51,7 @@ export const getCurrentUser = async (): Promise<string | null> => {
   }
 };
 
-export const createNotification = async (): Promise<void> => {
+export const createNotifications = async (events: Omit<EventNotification, 'id' | 'userId' | 'status'>[]): Promise<void> => {
   try {
     validateEnvVariables();
     const userId = await getCurrentUser();
@@ -58,108 +59,132 @@ export const createNotification = async (): Promise<void> => {
       throw new Error("No authenticated user found");
     }
 
-    // Check if a notification already exists for the user
-    try {
-      await databases.getDocument(
+    // Fetch existing notifications for the user
+    const existingNotifications = await databases.listDocuments(
+      DATABASE_ID,
+      EVENTS_NOTIFICATION_COLLECTION_ID,
+      [Query.equal("userId", userId)]
+    );
+
+    const existingEventNames = new Set(existingNotifications.documents.map(doc => doc.eventName));
+
+    for (const eventData of events) {
+      // Check if a notification with the same event name already exists for the user
+      if (existingEventNames.has(eventData.eventName)) {
+        console.log("Notification with this event name already exists for user:", userId);
+        continue;
+      }
+
+      // Create new notification
+      const notificationData: Omit<EventNotification, 'id'> = {
+        userId,
+        ...eventData,
+        status: "unread",
+      };
+
+      await databases.createDocument(
         DATABASE_ID,
         EVENTS_NOTIFICATION_COLLECTION_ID,
-        userId
+        ID.unique(),
+        notificationData
       );
-      console.log("Notification already exists for user:", userId);
-      return; // Exit if notification already exists
-    } catch (error) {
-      // If the document doesn't exist, continue with creation
-      if (error instanceof AppwriteException && error.code === 404) {
-        // Fetch the latest event from EVENTS_COLLECTION_ID
-        const eventResponse = await databases.listDocuments(
-          DATABASE_ID,
-          EVENTS_COLLECTION_ID,
-          [Query.orderDesc("$createdAt"), Query.limit(1)]
-        );
 
-        if (eventResponse.documents.length === 0) {
-          console.log("No events found to create notification.");
-          return;
-        }
-
-        const latestEvent = eventResponse.documents[0];
-
-        // Create notification in EVENTS_NOTIFICATION_COLLECTION_ID
-        const notificationData: EventNotification = {
-          userId: userId,
-          eventName: latestEvent.eventName,
-          location: latestEvent.location,
-          date: latestEvent.date,
-          day: latestEvent.day,
-          time: latestEvent.time,
-          status: "unread",
-        };
-
-        await databases.createDocument(
-          DATABASE_ID,
-          EVENTS_NOTIFICATION_COLLECTION_ID,
-          userId, // Using userId as the document ID
-          notificationData
-        );
-
-        console.log("Notification created for user:", userId);
-      } else {
-        throw error; // Re-throw if it's a different error
-      }
+      console.log("Notification created for user:", userId, "Event:", eventData.eventName);
+      existingEventNames.add(eventData.eventName);
     }
   } catch (error) {
-    console.error("Error in createNotification:", error);
+    console.error("Error in createNotifications:", error);
     throw error;
   }
 };
 
-export const getNotification = async (): Promise<EventNotification | null> => {
+export const getAllEventsFromEventsCollection = async (): Promise<Omit<EventNotification, 'id' | 'userId' | 'status'>[]> => {
+  try {
+    validateEnvVariables();
+    const response = await databases.listDocuments(
+      DATABASE_ID,
+      EVENTS_COLLECTION_ID,
+      [Query.orderDesc("$createdAt")]
+    );
+
+    return response.documents.map(event => ({
+      eventName: event.eventName,
+      location: event.location,
+      date: event.date,
+      day: event.day,
+      time: event.time,
+    }));
+  } catch (error) {
+    console.error("Error fetching events:", error);
+    return [];
+  }
+};
+
+export const getNotifications = async (): Promise<EventNotification[]> => {
   try {
     validateEnvVariables();
     const userId = await getCurrentUser();
     if (!userId) {
       console.log("No authenticated user found");
-      return null;
+      return [];
     }
 
-    try {
-      const response = await databases.getDocument(
-        DATABASE_ID,
-        EVENTS_NOTIFICATION_COLLECTION_ID,
-        userId
-      );
+    const response = await databases.listDocuments(
+      DATABASE_ID,
+      EVENTS_NOTIFICATION_COLLECTION_ID,
+      [Query.equal("userId", userId), Query.notEqual("status", "deleted"), Query.orderDesc("$createdAt")]
+    );
 
-      if (!response || response.eventName === "") {
-        console.log("No active notification found for user:", userId);
-        return null;
+    const notifications: EventNotification[] = response.documents.map(doc => ({
+      id: doc.$id,
+      userId: doc.userId,
+      eventName: doc.eventName,
+      location: doc.location,
+      date: doc.date,
+      day: doc.day,
+      time: doc.time,
+      status: doc.status,
+    }));
+
+    // Group notifications by eventName
+    const groupedNotifications = notifications.reduce((acc, notification) => {
+      if (!acc[notification.eventName]) {
+        acc[notification.eventName] = [];
       }
+      acc[notification.eventName].push(notification);
+      return acc;
+    }, {} as Record<string, EventNotification[]>);
 
-      const notification: EventNotification = {
-        userId: response.userId,
-        eventName: response.eventName,
-        location: response.location,
-        date: response.date,
-        day: response.day,
-        time: response.time,
-        status: response.status,
-      };
-
-      console.log("Notification fetched for user:", userId);
-      return notification;
-    } catch (error) {
-      if (error instanceof AppwriteException && error.code === 404) {
-        console.log("No notification found for user:", userId);
-        return null;
+    // Delete duplicate notifications, keeping only the most recent one
+    for (const eventName in groupedNotifications) {
+      const notificationsForEvent = groupedNotifications[eventName];
+      if (notificationsForEvent.length > 1) {
+        // Sort by date, most recent first
+        notificationsForEvent.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+        
+        // Keep the first (most recent) notification, delete the rest
+        for (let i = 1; i < notificationsForEvent.length; i++) {
+          await databases.deleteDocument(
+            DATABASE_ID,
+            EVENTS_NOTIFICATION_COLLECTION_ID,
+            notificationsForEvent[i].id
+          );
+        }
       }
-      throw error; // Re-throw other errors
     }
+
+    // Return only the most recent notification for each eventName
+    const uniqueNotifications = Object.values(groupedNotifications).map(group => group[0]);
+
+    console.log("Notifications fetched and duplicates removed for user:", userId);
+    return uniqueNotifications;
   } catch (error) {
-    console.error("Error in getNotification:", error);
-    return null; // Return null instead of throwing the error
+    console.error("Error in getNotifications:", error);
+    return [];
   }
 };
 
-export const deleteNotification = async (): Promise<boolean> => {
+export const deleteNotification = async (notificationId: string): Promise<boolean> => {
   try {
     validateEnvVariables();
     const userId = await getCurrentUser();
@@ -167,24 +192,14 @@ export const deleteNotification = async (): Promise<boolean> => {
       throw new Error("No authenticated user found");
     }
 
-    // Update the document with empty strings instead of null
-    const updateObject: Partial<EventNotification> = {
-      eventName: "",
-      location: "",
-      date: "",
-      day: "",
-      time: "",
-      status: "read", // Set to "read" as a default state after deletion
-    };
-
     await databases.updateDocument(
       DATABASE_ID,
       EVENTS_NOTIFICATION_COLLECTION_ID,
-      userId,
-      updateObject
+      notificationId,
+      { status: "deleted" }
     );
 
-    console.log("Notification content deleted for user:", userId);
+    console.log("Notification marked as deleted for user:", userId);
     return true;
   } catch (error) {
     console.error("Error in deleteNotification:", error);
@@ -193,6 +208,7 @@ export const deleteNotification = async (): Promise<boolean> => {
 };
 
 export const updateStatusNotification = async (
+  notificationId: string,
   status: "read" | "unread"
 ): Promise<EventNotification> => {
   try {
@@ -205,11 +221,12 @@ export const updateStatusNotification = async (
     const updatedNotification = await databases.updateDocument(
       DATABASE_ID,
       EVENTS_NOTIFICATION_COLLECTION_ID,
-      userId,
+      notificationId,
       { status: status }
     );
 
     const notification: EventNotification = {
+      id: updatedNotification.$id,
       userId: updatedNotification.userId,
       eventName: updatedNotification.eventName,
       location: updatedNotification.location,
@@ -229,3 +246,4 @@ export const updateStatusNotification = async (
 
 // Export initialized services for reusability in other modules
 export { client, databases, account };
+

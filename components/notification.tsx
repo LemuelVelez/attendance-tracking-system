@@ -29,20 +29,21 @@ import { useToast } from "@/hooks/use-toast";
 import {
   updateStatusNotification,
   deleteNotification,
-  getNotification,
+  getNotifications,
   getCurrentUser,
-  createNotification,
+  createNotifications,
+  getAllEventsFromEventsCollection,
 } from "@/lib/eventNotification/eventNotification";
-import { AppwriteException } from "appwrite";
 
 interface Event {
+  id: string;
   userId: string;
   eventName: string;
   location: string;
   date: string;
   day: string;
   time: string;
-  status: "read" | "unread";
+  status: "read" | "unread" | "deleted";
 }
 
 export default function Notification() {
@@ -63,36 +64,30 @@ export default function Notification() {
           throw new Error("No authenticated user found");
         }
 
-        // Try to create a new notification, but don't throw an error if it already exists
-        try {
-          await createNotification();
-        } catch (error) {
-          if (error instanceof AppwriteException && error.code === 409) {
-            // Document already exists, which is fine
-            console.log("Notification already exists for user");
-          } else {
-            // For other errors, we still want to log them
-            console.error("Error creating notification:", error);
+        // Fetch all events and create notifications if they don't exist
+        const allEvents = await getAllEventsFromEventsCollection();
+        if (allEvents.length > 0) {
+          try {
+            await createNotifications(allEvents);
+          } catch (error) {
+            console.error("Error creating notifications:", error);
           }
         }
 
-        // Fetch the notification
-        const notification = await getNotification();
-        if (notification) {
-          setEvents([notification]);
+        // Fetch the notifications
+        const notifications = await getNotifications();
+        if (notifications.length > 0) {
+          setEvents(notifications);
         } else {
           setEvents([]);
         }
       } catch (error) {
         console.error("Error fetching notifications:", error);
-        // Only show toast for errors other than the "already exists" error
-        if (!(error instanceof AppwriteException) || error.code !== 409) {
-          toast({
-            title: "Error",
-            description: "Failed to fetch notifications.",
-            variant: "destructive",
-          });
-        }
+        toast({
+          title: "Error",
+          description: "Failed to fetch notifications.",
+          variant: "destructive",
+        });
       }
       setIsLoading(false);
     };
@@ -107,10 +102,10 @@ export default function Notification() {
     setIsOpen(true);
   };
 
-  const handleDeleteNotification = async () => {
+  const handleDeleteNotification = async (id: string) => {
     try {
-      await deleteNotification();
-      setEvents([]);
+      await deleteNotification(id);
+      setEvents(events.filter((event) => event.id !== id));
       toast({
         title: "Notification deleted",
         description: "The notification has been successfully removed.",
@@ -126,10 +121,12 @@ export default function Notification() {
     }
   };
 
-  const handleMarkAsRead = async () => {
+  const handleMarkAsRead = async (id: string) => {
     try {
-      const updatedNotification = await updateStatusNotification("read");
-      setEvents([updatedNotification]);
+      const updatedNotification = await updateStatusNotification(id, "read");
+      setEvents(
+        events.map((event) => (event.id === id ? updatedNotification : event))
+      );
       toast({
         title: "Marked as read",
         description: "The notification has been marked as read.",
@@ -148,8 +145,17 @@ export default function Notification() {
   const handleMarkAllAsRead = async () => {
     setIsMarkAllAsReadLoading(true);
     try {
-      const updatedNotification = await updateStatusNotification("read");
-      setEvents([updatedNotification]);
+      const updatedNotifications = await Promise.all(
+        events
+          .filter((event) => event.status === "unread")
+          .map((event) => updateStatusNotification(event.id, "read"))
+      );
+      setEvents(
+        events.map((event) => {
+          const updated = updatedNotifications.find((n) => n.id === event.id);
+          return updated || event;
+        })
+      );
       toast({
         title: "All notifications marked as read",
         description: "All notifications have been marked as read.",
@@ -170,7 +176,7 @@ export default function Notification() {
   const handleDeleteAll = async () => {
     setIsDeleteAllLoading(true);
     try {
-      await deleteNotification();
+      await Promise.all(events.map((event) => deleteNotification(event.id)));
       setEvents([]);
       setIsDeleteAllDialogOpen(false);
       toast({
@@ -282,8 +288,7 @@ export default function Notification() {
                   <div className="flex justify-center items-center h-full">
                     <Loader2 className="h-8 w-8 animate-spin" />
                   </div>
-                ) : events.length === 0 ||
-                  (events.length > 0 && events[0].eventName === "") ? (
+                ) : events.length === 0 ? (
                   <p className="text-center text-gray-500 py-4">
                     No notifications
                   </p>
@@ -296,10 +301,12 @@ export default function Notification() {
                           .filter((event) => event.status === "unread")
                           .map((event) => (
                             <NotificationCard
-                              key={event.userId}
+                              key={event.id}
                               event={event}
-                              onDelete={handleDeleteNotification}
-                              onMarkAsRead={handleMarkAsRead}
+                              onDelete={() =>
+                                handleDeleteNotification(event.id)
+                              }
+                              onMarkAsRead={() => handleMarkAsRead(event.id)}
                             />
                           ))}
                         <Separator className="my-4" />
@@ -310,10 +317,10 @@ export default function Notification() {
                       .filter((event) => event.status === "read")
                       .map((event) => (
                         <NotificationCard
-                          key={event.userId}
+                          key={event.id}
                           event={event}
-                          onDelete={handleDeleteNotification}
-                          onMarkAsRead={handleMarkAsRead}
+                          onDelete={() => handleDeleteNotification(event.id)}
+                          onMarkAsRead={() => handleMarkAsRead(event.id)}
                         />
                       ))}
                   </>
