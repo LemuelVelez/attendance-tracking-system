@@ -22,6 +22,7 @@ const validateEnvVariables = () => {
     );
   }
 };
+
 validateEnvVariables();
 
 /**
@@ -38,20 +39,42 @@ export const createEvent = async (data: {
   try {
     validateEnvVariables();
 
+    // Log the incoming date for debugging
+    console.log('Incoming date:', data.date);
+
+    // Extract date components without creating a Date object
+    const [year, month, day] = data.date.split('-').map(Number);
+    
+    // Keep the exact date string as received
+    const formattedDate = data.date;
+
+    // For day name, create a Date object at noon to avoid any date shifting
+    // Use explicit UTC components to prevent timezone conversion
+    const dateForDayName = new Date(Date.UTC(year, month - 1, day, 12, 0, 0));
+    const dayName = new Intl.DateTimeFormat('en-US', { 
+      weekday: 'long',
+      timeZone: 'Asia/Manila' // Explicitly use Philippines timezone
+    }).format(dateForDayName);
+
+    // Log the final date being saved
+    console.log('Date being saved:', formattedDate);
+    console.log('Day name calculated:', dayName);
+
     const eventDocument = await databases.createDocument(
       DATABASE_ID,
       EVENTS_COLLECTION_ID,
-      ID.unique(), // Appwrite will generate a unique ID
+      ID.unique(),
       {
         eventName: data.eventName,
-        date: data.date,
+        date: formattedDate,
         time: data.time,
-        day: data.day,
+        day: dayName,
         location: data.location,
       }
     );
 
-    console.log("Event document created:", eventDocument);
+    // Log the created document's date
+    console.log("Created event date:", eventDocument.date);
     return eventDocument;
   } catch (error) {
     console.error("Error in createEvent:", error);
@@ -89,7 +112,6 @@ export const getAllEvents = async (): Promise<Event[]> => {
       location: doc.location,
     }));
 
-    console.log("All events fetched:", events);
     return events;
   } catch (error) {
     console.error("Error in getAllEvents:", error);
@@ -120,7 +142,6 @@ export const editEvent = async (
       location: eventDocument.location,
     };
 
-    console.log("Event document updated:", updatedEvent);
     return updatedEvent;
   } catch (error) {
     console.error("Error in editEvent:", error);
@@ -128,17 +149,10 @@ export const editEvent = async (
   }
 };
 
-/**
- * Delete an event from the events collection.
- * @param eventId - The ID of the event to delete
- */
 export const deleteEvent = async (eventId: string): Promise<boolean> => {
   try {
     validateEnvVariables();
-
     await databases.deleteDocument(DATABASE_ID, EVENTS_COLLECTION_ID, eventId);
-
-    console.log("Event document deleted:", eventId);
     return true;
   } catch (error) {
     console.error("Error in deleteEvent:", error);
@@ -148,3 +162,4 @@ export const deleteEvent = async (eventId: string): Promise<boolean> => {
 
 // Export initialized services for reusability in other modules
 export { client, databases };
+

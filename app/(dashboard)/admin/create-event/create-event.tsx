@@ -106,10 +106,20 @@ export default function CreateEvent() {
           throw new Error("Date is required");
         }
 
+        // Format the date components directly, preserving the exact selected date
+        const year = date.getFullYear();
+        const month = String(date.getMonth() + 1).padStart(2, "0");
+        const day = String(date.getDate()).padStart(2, "0");
+        const formattedDate = `${year}-${month}-${day}`;
+
+        // Log the date components for verification
+        console.log("Selected date:", date);
+        console.log("Formatted date:", formattedDate);
+
         const eventData = {
           eventName: formFields.eventName.value,
-          date: date.toISOString().split("T")[0], // Format date as YYYY-MM-DD
-          time: formFields.eventTime.value, // This is now in 24-hour format
+          date: formattedDate,
+          time: formFields.eventTime.value,
           day: date.toLocaleDateString("en-US", { weekday: "long" }),
           location: formFields.location.value,
           description: formFields.description.value,
@@ -122,8 +132,8 @@ export default function CreateEvent() {
           title: "Success",
           description: `Event "${
             createdEvent.eventName
-          }" created successfully for ${eventData.date} at ${formatTime(
-            eventData.time
+          }" created successfully for ${createdEvent.date} at ${formatTime(
+            createdEvent.time
           )}!`,
         });
 
