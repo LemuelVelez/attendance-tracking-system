@@ -173,11 +173,6 @@ export default function SupplyFinesManagement() {
           variant: "default",
           className: "border-yellow-500 text-yellow-700 bg-yellow-50",
         });
-      } else {
-        toast({
-          title: "Success",
-          description: `Successfully generated ${result.newFinesCount} new fines.`,
-        });
       }
     } catch (error) {
       console.error("Error generating fines:", error);
