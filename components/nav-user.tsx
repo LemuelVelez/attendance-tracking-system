@@ -22,12 +22,14 @@ import {
 import {
   AlertDialog,
   AlertDialogAction,
+  AlertDialogCancel,
   AlertDialogContent,
   AlertDialogDescription,
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { useToast } from "@/hooks/use-toast";
 
 import { logoutStudentUser } from "@/lib/auth/login";
 import { getUserAvatar, getCurrentSessionUser } from "@/lib/profile/profile";
@@ -43,6 +45,7 @@ interface NavUserProps {
 export function NavUser({ user: userProp }: NavUserProps) {
   const router = useRouter();
   const { isMobile } = useSidebar();
+  const { toast } = useToast();
 
   const [user, setUser] = useState({
     name: "",
@@ -50,12 +53,7 @@ export function NavUser({ user: userProp }: NavUserProps) {
     avatar: "https://github.com/shadcn.png",
   });
 
-  const [alertState, setAlertState] = useState({
-    isOpen: false,
-    title: "",
-    description: "",
-    onConfirm: () => {},
-  });
+  const [isLogoutDialogOpen, setIsLogoutDialogOpen] = useState(false);
 
   useEffect(() => {
     const fetchUserData = async () => {
@@ -74,38 +72,31 @@ export function NavUser({ user: userProp }: NavUserProps) {
           ...prev,
           avatar: "https://github.com/shadcn.png",
         }));
-        setAlertState({
-          isOpen: true,
+        toast({
+          variant: "destructive",
           title: "Failed to fetch user data",
           description: "Unable to retrieve user information. Please try again.",
-          onConfirm: () =>
-            setAlertState((prev) => ({ ...prev, isOpen: false })),
         });
       }
     };
 
     fetchUserData();
-  }, [userProp]);
+  }, [userProp, toast]);
 
   const handleLogout = async () => {
     try {
       await logoutStudentUser();
-      setAlertState({
-        isOpen: true,
+      toast({
         title: "Logged out successfully!",
         description: "You have been logged out.",
-        onConfirm: () => {
-          setAlertState((prev) => ({ ...prev, isOpen: false }));
-          router.push("/");
-        },
       });
+      router.push("/");
     } catch (error) {
       console.error("Error logging out:", error);
-      setAlertState({
-        isOpen: true,
+      toast({
+        variant: "destructive",
         title: "Logout Failed",
         description: "An error occurred while logging out. Please try again.",
-        onConfirm: () => setAlertState((prev) => ({ ...prev, isOpen: false })),
       });
     }
   };
@@ -154,7 +145,7 @@ export function NavUser({ user: userProp }: NavUserProps) {
                 </div>
               </DropdownMenuLabel>
               <DropdownMenuSeparator />
-              <DropdownMenuItem onClick={handleLogout}>
+              <DropdownMenuItem onClick={() => setIsLogoutDialogOpen(true)}>
                 <LogOut className="mr-2 h-4 w-4" />
                 Log out
               </DropdownMenuItem>
@@ -164,21 +155,22 @@ export function NavUser({ user: userProp }: NavUserProps) {
       </SidebarMenu>
 
       <AlertDialog
-        open={alertState.isOpen}
-        onOpenChange={(isOpen) =>
-          setAlertState((prev) => ({ ...prev, isOpen }))
-        }
+        open={isLogoutDialogOpen}
+        onOpenChange={setIsLogoutDialogOpen}
       >
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>{alertState.title}</AlertDialogTitle>
+            <AlertDialogTitle>
+              Are you sure you want to log out?
+            </AlertDialogTitle>
             <AlertDialogDescription>
-              {alertState.description}
+              This action will end your current session.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogAction onClick={alertState.onConfirm}>
-              OK
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleLogout}>
+              Log out
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
