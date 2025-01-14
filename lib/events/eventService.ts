@@ -66,7 +66,6 @@ export interface Event {
   time: string;
   day: string;
   location: string;
-  description: string;
 }
 
 /**
@@ -88,7 +87,6 @@ export const getAllEvents = async (): Promise<Event[]> => {
       time: doc.time,
       day: doc.day,
       location: doc.location,
-      description: doc.description,
     }));
 
     console.log("All events fetched:", events);
@@ -120,7 +118,6 @@ export const editEvent = async (
       time: eventDocument.time,
       day: eventDocument.day,
       location: eventDocument.location,
-      description: eventDocument.description,
     };
 
     console.log("Event document updated:", updatedEvent);
