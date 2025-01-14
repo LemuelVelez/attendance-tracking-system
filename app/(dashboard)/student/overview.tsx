@@ -53,6 +53,7 @@ import {
   List,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
+import Notification from "@/components/notification";
 
 interface OverviewData {
   users: User[];
@@ -176,6 +177,10 @@ export default function Overview() {
   return (
     <div className="p-4 sm:p-8 space-y-4 sm:space-y-8 min-h-screen bg-gradient-to-br from-background to-secondary/20">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div>
+          {" "}
+          <Notification />
+        </div>
         <h1 className="text-3xl sm:text-4xl font-bold text-primary">
           Overview
         </h1>
