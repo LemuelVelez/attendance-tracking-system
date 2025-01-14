@@ -200,7 +200,7 @@ export default function Notification() {
           <Bell className="h-6 w-6" />
           {unreadCount > 0 && (
             <Badge
-              className="absolute -top-2 -right-2 px-2 py-1 text-xs"
+              className="absolute -top-1 -right-1 px-1.5 py-0.5 text-[10px] min-w-[1.2rem] h-[1.2rem] flex items-center justify-center"
               variant="destructive"
             >
               {unreadCount}
@@ -211,7 +211,7 @@ export default function Notification() {
 
       <Dialog open={isOpen} onOpenChange={setIsOpen}>
         <DialogContent
-          className="sm:max-w-[425px] w-[95vw] max-h-[90vh] h-[90vh] flex flex-col"
+          className="sm:max-w-[425px] w-[95vw] max-h-[90vh] h-auto flex flex-col"
           aria-describedby="notification-description"
         >
           <DialogHeader className="flex flex-row items-center justify-between">
@@ -224,7 +224,7 @@ export default function Notification() {
             </DialogDescription>
           </DialogHeader>
           <div id="notification-content">
-            <div className="flex justify-end mb-4 space-x-2">
+            <div className="flex flex-col sm:flex-row justify-end mb-4 space-y-2 sm:space-y-0 sm:space-x-2">
               <Button
                 variant="outline"
                 size="sm"
@@ -276,7 +276,7 @@ export default function Notification() {
                 </AlertDialogContent>
               </AlertDialog>
             </div>
-            <ScrollArea className="flex-grow pr-4 h-full -mr-4 overflow-y-auto">
+            <ScrollArea className="flex-grow pr-4 h-full -mr-4 overflow-y-auto max-h-[60vh] sm:max-h-none">
               <div className="h-full overflow-y-auto">
                 {isLoading ? (
                   <div className="flex justify-center items-center h-full">
@@ -362,7 +362,12 @@ function NotificationCard({
           <div className="flex-grow mb-2 sm:mb-0">
             <h3 className="font-semibold text-lg">{event.eventName}</h3>
             <p className="text-sm text-gray-600">{event.location}</p>
-            <p className="text-sm text-gray-600">{`${event.day}, ${event.date} at ${event.time}`}</p>
+            <p className="text-sm text-gray-600">
+              {`${event.day}, ${new Date(event.date).toLocaleDateString(
+                "en-US",
+                { month: "2-digit", day: "2-digit", year: "numeric" }
+              )} at ${event.time}`}
+            </p>
           </div>
           <div className="flex items-center space-x-2 w-full sm:w-auto justify-between sm:justify-start">
             {event.status === "unread" && (

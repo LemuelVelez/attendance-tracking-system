@@ -42,8 +42,8 @@ interface EventNotification {
 
 export const getCurrentUser = async (): Promise<string | null> => {
   try {
-    const session = await account.getSession("current");
-    return session.userId;
+    const user = await account.get();
+    return user.$id;
   } catch (error) {
     console.error("Error getting current user:", error);
     return null;
@@ -118,39 +118,44 @@ export const getNotification = async (): Promise<EventNotification | null> => {
     validateEnvVariables();
     const userId = await getCurrentUser();
     if (!userId) {
-      throw new Error("No authenticated user found");
-    }
-
-    const response = await databases.getDocument(
-      DATABASE_ID,
-      EVENTS_NOTIFICATION_COLLECTION_ID,
-      userId
-    );
-
-    if (!response || response.eventName === "") {
-      console.log("No active notification found for user:", userId);
+      console.log("No authenticated user found");
       return null;
     }
 
-    const notification: EventNotification = {
-      userId: response.userId,
-      eventName: response.eventName,
-      location: response.location,
-      date: response.date,
-      day: response.day,
-      time: response.time,
-      status: response.status,
-    };
+    try {
+      const response = await databases.getDocument(
+        DATABASE_ID,
+        EVENTS_NOTIFICATION_COLLECTION_ID,
+        userId
+      );
 
-    console.log("Notification fetched for user:", userId);
-    return notification;
+      if (!response || response.eventName === "") {
+        console.log("No active notification found for user:", userId);
+        return null;
+      }
+
+      const notification: EventNotification = {
+        userId: response.userId,
+        eventName: response.eventName,
+        location: response.location,
+        date: response.date,
+        day: response.day,
+        time: response.time,
+        status: response.status,
+      };
+
+      console.log("Notification fetched for user:", userId);
+      return notification;
+    } catch (error) {
+      if (error instanceof AppwriteException && error.code === 404) {
+        console.log("No notification found for user:", userId);
+        return null;
+      }
+      throw error; // Re-throw other errors
+    }
   } catch (error) {
-    if (error instanceof AppwriteException && error.code === 404) {
-      console.log("No notification found for user");
-      return null;
-    }
     console.error("Error in getNotification:", error);
-    throw error;
+    return null; // Return null instead of throwing the error
   }
 };
 
