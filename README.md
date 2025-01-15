@@ -1,7 +1,7 @@
 <div align="center">
 
 # SSG Attendance and Participation Tracking System
----
+
 <img src="./public/attendancetracking.png" alt="Attendance Tracking Logo" width="200"/>
 
 [![Next.js](https://img.shields.io/badge/Next.js-15.0.3-blueviolet.svg)](https://nextjs.org/)
@@ -14,6 +14,8 @@
 <img src="./public/ssg-logo.jpg" alt="SSG Logo" width="150"/>
 
 </div>
+
+---
 
 ## 🎯 Objective
 
