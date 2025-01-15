@@ -1,8 +1,8 @@
 <div align="center">
 
 # SSG Attendance and Participation Tracking System
-
-![Attendance Tracking Logo](./public/attendancetracking.png)
+---
+<img src="./public/attendancetracking.png" alt="Attendance Tracking Logo" width="200"/>
 
 [![Next.js](https://img.shields.io/badge/Next.js-15.0.3-blueviolet.svg)](https://nextjs.org/)
 [![React](https://img.shields.io/badge/React-19.0.0--rc-61DAFB.svg)](https://reactjs.org/)
@@ -11,7 +11,8 @@
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.6.3-3178C6.svg)](https://www.typescriptlang.org/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-![SSG Logo](./public/ssg-logo.jpg)
+<img src="./public/ssg-logo.jpg" alt="SSG Logo" width="150"/>
+
 </div>
 
 ## 🎯 Objective
@@ -55,26 +56,27 @@ Design and implement a comprehensive web application for the Supreme Student Gov
 - **🔄 Flexible Event Management**:
   - Create, edit, and delete events
   - Set attendance requirements and deadlines
-
+---
 ## 📸 Screenshots
 
 <div align="center">
 
 ### Authentication
-![LogIn](/public/AuthLogin.png)
-![SignUp](/public/AuthSignUp.png)
+<img src="./public/AuthLogin.png" alt="LogIn" width="350"/>
+<img src="./public/AuthSignUp.png" alt="SignUp" width="350"/>
 
 ### Password Recovery
-![Recovery](/public/Recovery.png)
-![Reset Password](/public/ResetPassword.png)
+<img src="./public/Recovery.png" alt="Recovery" width="350"/>
+<img src="./public/ResetPassword.png" alt="Reset Password" width="350"/>
 
 ### Student Dashboard
-![Student Dashboard](/public/StudentDashboard1.png)
-![Student Dashboard](/public/StudentDashboard2.png)
+<img src="./public/StudentDashboard1.png" alt="Student Dashboard" width="350"/>
+<img src="./public/StudentDashboard2.png" alt="Student Dashboard" width="350"/>
 
 ### Admin Dashboard
-![Admin Dashboard](/public/AdminDashboard1.png)
-![Admin Dashboard](/public/AdminDashboard2.png)
+<img src="./public/AdminDashboard1.png" alt="Admin Dashboard" width="350"/>
+<img src="./public/AdminDashboard2.png" alt="Admin Dashboard" width="350"/>
+
 </div>
 
 ## 🚀 Tech Stack
@@ -116,7 +118,7 @@ Design and implement a comprehensive web application for the Supreme Student Gov
 - **[@babylonjs/core](https://www.babylonjs.com/)** (v7.35.2): 3D engine based on WebGL
 - **[@tanstack/react-table](https://tanstack.com/table/v8)** (v8.20.6): Headless UI for building powerful tables & datagrids
 - **[next-themes](https://github.com/pacocoursey/next-themes)** (v0.4.3): Perfect dark mode in Next.js
-
+---
 ## 🚀 Getting Started
 
 ### Prerequisites
@@ -143,6 +145,37 @@ yarn install
 ```
 
 3. Set up environment variables:
+Here's the updated section with dummy data for security purposes:
+
+---
+
+### 🔧 Environment Variables
+
+To run the application, configure the following environment variables in the `.env.local` file at the root of your project:
+
+```env
+NEXT_PUBLIC_APPWRITE_ENDPOINT=https://dummy.endpoint/v1
+NEXT_PUBLIC_APPWRITE_PROJECT_ID=project_id_dummy
+NEXT_PUBLIC_APPWRITE_DATABASE_ID=database_id_dummy
+NEXT_PUBLIC_APPWRITE_USERS_COLLECTION_ID=users_collection_id_dummy
+NEXT_PUBLIC_APPWRITE_EVENTS_COLLECTION_ID=events_collection_id_dummy
+NEXT_PUBLIC_APP_URL=https://dummy-app-url.vercel.app
+NEXT_PUBLIC_APPWRITE_AVATAR_BUCKET_ID=avatar_bucket_id_dummy
+NEXT_PUBLIC_APPWRITE_GENERAL_ATTENDANCE_COLLECTION_ID=general_attendance_collection_id_dummy
+NEXT_PUBLIC_APPWRITE_CollegeOfTeacherEducation_Attendance_COLLECTION_ID=teacher_education_attendance_id_dummy
+NEXT_PUBLIC_APPWRITE_CollegeOfEngineering_Attendance_COLLECTION_ID=engineering_attendance_id_dummy
+NEXT_PUBLIC_APPWRITE_CollegeOfCriminalJusticeEducation_Attendance_COLLECTION_ID=criminal_justice_attendance_id_dummy
+NEXT_PUBLIC_APPWRITE_CollegeOfBusinessAdministration_Attendance_COLLECTION_ID=business_admin_attendance_id_dummy
+NEXT_PUBLIC_APPWRITE_CollegeOfArtsAndSciences_Attendance_COLLECTION_ID=arts_sciences_attendance_id_dummy
+NEXT_PUBLIC_APPWRITE_CollegeOfAgricultureAndForestry_Attendance_COLLECTION_ID=agriculture_forestry_attendance_id_dummy
+NEXT_PUBLIC_APPWRITE_CollegeOfComputingStudies_Attendance_COLLECTION_ID=computing_studies_attendance_id_dummy
+NEXT_PUBLIC_APPWRITE_FINES_MANAGEMENT_COLLECTION_ID=fines_management_collection_id_dummy
+NEXT_PUBLIC_APPWRITE_EVENTS_NOTIFICATION_COLLECTION_ID=events_notification_collection_id_dummy
+```
+
+#### Notes:
+- Replace these dummy values with your actual Appwrite configuration data during setup.
+- Ensure the `.env.local` file is **not** committed to your repository to protect sensitive information.
 
 - Copy the `.env.example` file to `.env.local`
 - Fill in the required Appwrite credentials and other configuration details
@@ -156,7 +189,7 @@ yarn dev
 ```
 
 5. Open [http://localhost:3000](http://localhost:3000) in your browser to see the application.
-
+---
 ## 📖 Usage
 
 Detailed usage instructions and documentation can be found in the [User Guide](docs/USER_GUIDE.md).
