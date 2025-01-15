@@ -171,7 +171,6 @@ We welcome contributions to improve the SSG Attendance and Participation Trackin
 4. Push to the branch: `git push origin feature/AmazingFeature`
 5. Open a pull request
 
-For more details, please read our [Contributing Guidelines](CONTRIBUTING.md).
 
 ## 📄 License
 
@@ -180,4 +179,3 @@ This project is licensed under the MIT License - see the [LICENSE](https://opens
 ## 🙏 Acknowledgements
 
 - [Supreme Student Government](https://www.facebook.com/profile.php?id=61566578300898) for their support and feedback
-- All contributors who have helped shape this project
