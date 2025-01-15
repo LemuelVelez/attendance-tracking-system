@@ -46,7 +46,7 @@ export interface FineDocument extends Models.Document {
   penalties: string;
   dateIssued: string;
   datePaid?: string;
-  status: "Pending" | "Submitted" | "Cleared";
+  status: "Pending" | "penaltyCleared" | "Cleared";
 }
 
 export const getCurrentUser = async (): Promise<User | null> => {
@@ -175,3 +175,4 @@ export const getUserAvatar = async (userId: string): Promise<string | null> => {
     return null;
   }
 };
+

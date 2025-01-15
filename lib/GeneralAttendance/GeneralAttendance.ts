@@ -44,8 +44,7 @@ export interface FineDocumentData {
   presences: string;
   penalties: string;
   dateIssued: string;
-  datePaid?: string;
-  status: "Pending" | "Submitted" | "Cleared";
+  status: "Pending" | "Cleared" | "penaltyCleared";
 }
 
 export interface FineDocument extends FineDocumentData, Models.Document {}
@@ -77,8 +76,8 @@ function isFineDocument(doc: unknown): doc is FineDocument {
 
   if (
     fineDoc.status !== "Pending" &&
-    fineDoc.status !== "Submitted" &&
-    fineDoc.status !== "Cleared"
+    fineDoc.status !== "Cleared" &&
+    fineDoc.status !== "penaltyCleared"
   ) {
     console.log("Invalid status:", fineDoc.status);
     return false;
@@ -195,33 +194,51 @@ export const createFineDocument = async (
     );
 
     if (existingDocuments.documents.length > 0) {
-      console.log("Duplicate fine document found. Not creating a new one.");
       const existingDoc = existingDocuments.documents[0];
       if (isFineDocument(existingDoc)) {
-        return existingDoc;
+        // Update the existing document
+        const updatedDoc = await databases.updateDocument(
+          DATABASE_ID,
+          FINES_MANAGEMENT_COLLECTION_ID,
+          existingDoc.$id,
+          fineData
+        );
+        console.log("Updated existing fine document:", updatedDoc);
+        if (isFineDocument(updatedDoc)) {
+          return updatedDoc;
+        } else {
+          throw new Error(
+            "Updated document does not match FineDocument structure"
+          );
+        }
       } else {
         throw new Error(
           "Existing document does not match FineDocument structure"
         );
       }
+    } else {
+      // Create a new document
+      const response = await databases.createDocument(
+        DATABASE_ID,
+        FINES_MANAGEMENT_COLLECTION_ID,
+        ID.unique(),
+        fineData
+      );
+
+      console.log("Created new fine document:", response);
+
+      if (!isFineDocument(response)) {
+        console.error("Document structure mismatch:", response);
+        throw new Error(
+          "Created document does not match FineDocument structure"
+        );
+      }
+
+      console.log(
+        `Successfully created fine document with ID: ${response.$id}`
+      );
+      return response;
     }
-
-    const response = await databases.createDocument(
-      DATABASE_ID,
-      FINES_MANAGEMENT_COLLECTION_ID,
-      ID.unique(),
-      fineData
-    );
-
-    console.log("Created document:", response);
-
-    if (!isFineDocument(response)) {
-      console.error("Document structure mismatch:", response);
-      throw new Error("Created document does not match FineDocument structure");
-    }
-
-    console.log(`Successfully created fine document with ID: ${response.$id}`);
-    return response;
   } catch (error) {
     console.error("Error in createFineDocument:", error);
     throw error;
@@ -258,7 +275,24 @@ export const getFineDocuments = async (
       );
 
       const fineDocuments = response.documents.filter(isFineDocument);
-      allDocuments.push(...fineDocuments);
+
+      // Check for duplicates and delete them
+      const uniqueFines = new Map<string, FineDocument>();
+      for (const fine of fineDocuments) {
+        const key = `${fine.userId}-${fine.dateIssued}`;
+        if (uniqueFines.has(key)) {
+          // Delete the duplicate
+          await databases.deleteDocument(
+            DATABASE_ID,
+            FINES_MANAGEMENT_COLLECTION_ID,
+            fine.$id
+          );
+        } else {
+          uniqueFines.set(key, fine);
+        }
+      }
+
+      allDocuments.push(...Array.from(uniqueFines.values()));
 
       if (response.documents.length < 100) {
         break;
@@ -373,6 +407,101 @@ export const getAllUsers = async (): Promise<User[]> => {
     return allUsers;
   } catch (error) {
     console.error("Error in getAllUsers:", error);
+    throw error;
+  }
+};
+
+const PENALTIES_MAP: Record<number, string> = {
+  0: "No penalty",
+  1: "1 pad grade 1 paper, 1 pencil",
+  2: "2 pads Grade 2 paper, 2 pencils, 1 eraser",
+  3: "3 Pads Grade 3 paper, 3 pencils, 2 eraser, 1 sharpener",
+  4: "2 pads grade 4 paper 2 pencils, 2 ball pen, 1 crayon, 1 sharpener, 1 eraser",
+  5: "2 Pads intermediate paper, 2 notebooks, 2 ball pen, 1 crayon",
+  6: "2 Pads intermediate paper, 2 notebooks, 2 ball pen, 1 crayon, 2 pencils",
+  7: "1 plastic envelop with handle, 2 Pads intermediate paper, 2 notebooks",
+  8: "1 plastic envelop with handle, 2 Pads intermediate paper, 2 notebooks",
+  9: "1 plastic envelop with handle, 2 Pads intermediate paper, 3 notebooks 2 pencils, 2 eraser, 1 sharpener",
+  10: "1 plastic envelop with handle, 2 Pads intermediate paper, 3 notebooks 3 pencils, 2 eraser, 3 sharpener, 3 ball pen, 1 crayon",
+};
+
+export const updateAttendance = async (): Promise<void> => {
+  try {
+    if (
+      !DATABASE_ID ||
+      !GENERAL_ATTENDANCE_COLLECTION_ID ||
+      !FINES_MANAGEMENT_COLLECTION_ID
+    ) {
+      throw new Error(
+        "Missing Appwrite environment variables. Please check your .env file."
+      );
+    }
+
+    const generalAttendance = await getGeneralAttendance();
+    const fineDocuments = await getFineDocuments();
+    const users = await getAllUsers();
+    const totalEvents = await getTotalUniqueEvents();
+
+    for (const user of users) {
+      const userAttendance = generalAttendance.filter(
+        (a) => a.userId === user.$id
+      );
+      const userFine = fineDocuments.find((f) => f.userId === user.$id);
+
+      const presences = userAttendance.length;
+      const currentAbsences = Math.max(0, totalEvents - presences);
+
+      let absencesToCount = currentAbsences;
+      let newStatus: "Cleared" | "Pending" | "penaltyCleared" = "Pending";
+
+      if (userFine) {
+        const previousAbsences = parseInt(userFine.absences);
+
+        if (userFine.status === "penaltyCleared") {
+          if (currentAbsences <= previousAbsences) {
+            // No new absences, keep the status as penaltyCleared
+            newStatus = "penaltyCleared";
+            absencesToCount = 0;
+          } else {
+            // New absences detected, count only the new ones
+            absencesToCount = currentAbsences - previousAbsences;
+            newStatus = "Pending";
+          }
+        } else {
+          // For other statuses, count all current absences
+          absencesToCount = currentAbsences;
+        }
+      }
+
+      const penalties = PENALTIES_MAP[absencesToCount] || PENALTIES_MAP[10];
+
+      const fineData: FineDocumentData = {
+        userId: user.$id,
+        studentId: user.studentId,
+        name: user.name,
+        absences: currentAbsences.toString(), // Always store the total absences
+        presences: presences.toString(),
+        penalties,
+        dateIssued: new Date().toISOString().split("T")[0],
+        status: penalties === "No penalty" ? "Cleared" : newStatus,
+      };
+
+      if (userFine) {
+        // Update existing fine document
+        await createFineDocument({
+          ...fineData,
+          status:
+            newStatus === "penaltyCleared" ? userFine.status : fineData.status,
+        });
+      } else {
+        // Create new fine document
+        await createFineDocument(fineData);
+      }
+    }
+
+    console.log("Attendance and fines updated successfully");
+  } catch (error) {
+    console.error("Error in updateAttendance:", error);
     throw error;
   }
 };

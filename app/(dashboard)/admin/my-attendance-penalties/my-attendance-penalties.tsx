@@ -143,19 +143,24 @@ export function SupplyFinesManagement() {
                         <td className="p-2">
                           <Badge
                             variant={
-                              fine.status === "Cleared"
+                              fine.status === "Cleared" ||
+                              fine.status === "penaltyCleared"
                                 ? "default"
                                 : fine.status === "Pending"
                                 ? "destructive"
                                 : "secondary"
                             }
                             className={
-                              fine.status === "Cleared"
+                              fine.status === "Cleared" ||
+                              fine.status === "penaltyCleared"
                                 ? "bg-green-500 hover:bg-green-600 text-white"
                                 : ""
                             }
                           >
-                            {fine.status}
+                            {fine.status === "Cleared" ||
+                            fine.status === "penaltyCleared"
+                              ? "Cleared"
+                              : fine.status}
                           </Badge>
                         </td>
                       </tr>
@@ -180,19 +185,24 @@ export function SupplyFinesManagement() {
                       <div>
                         <Badge
                           variant={
-                            fine.status === "Cleared"
+                            fine.status === "Cleared" ||
+                            fine.status === "penaltyCleared"
                               ? "default"
                               : fine.status === "Pending"
                               ? "destructive"
                               : "secondary"
                           }
                           className={
-                            fine.status === "Cleared"
+                            fine.status === "Cleared" ||
+                            fine.status === "penaltyCleared"
                               ? "bg-green-500 hover:bg-green-600 text-white"
                               : ""
                           }
                         >
-                          {fine.status}
+                          {fine.status === "Cleared" ||
+                          fine.status === "penaltyCleared"
+                            ? "Cleared"
+                            : fine.status}
                         </Badge>
                       </div>
                     </div>
