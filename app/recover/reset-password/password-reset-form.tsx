@@ -113,7 +113,7 @@ export function PasswordResetForm() {
   }, []);
 
   return (
-    <Card ref={cardRef} className="mx-auto max-w-sm">
+    <Card ref={cardRef} className="mx-auto w-full max-w-sm">
       <CardHeader>
         <div className="flex items-center justify-between gap-4">
           <CardTitle className="text-2xl">Reset Password</CardTitle>

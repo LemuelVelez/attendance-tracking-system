@@ -1,129 +1,183 @@
+<div align="center">
+
 # SSG Attendance and Participation Tracking System
 
-## Objective
-Design and implement a web application for the Supreme Student Government (SSG) to efficiently manage attendance at events and meetings. This system allows students to register, log in using their student ID and password, and track attendance via QR codes. It supports offline functionality, automated attendance reports, fine calculations for absences, and export options (PDF/CSV).
+![Attendance Tracking Logo](./public/attendancetracking.png)
 
-## Features
+[![Next.js](https://img.shields.io/badge/Next.js-15.0.3-blueviolet.svg)](https://nextjs.org/)
+[![React](https://img.shields.io/badge/React-19.0.0--rc-61DAFB.svg)](https://reactjs.org/)
+[![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-3.4.15-38B2AC.svg)](https://tailwindcss.com/)
+[![Appwrite](https://img.shields.io/badge/Appwrite-16.0.2-FF4F64.svg)](https://appwrite.io/)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5.6.3-3178C6.svg)](https://www.typescriptlang.org/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-### 1. Core Features
-- **Student Registration:**  
-  Students can register by providing their personal information (name, student ID, password), which is stored in the database for login authentication.
+![SSG Logo](./public/ssg-logo.jpg)
+</div>
 
-- **Student Login:**  
-  After registration, students can log in using their student ID and password, with successful login redirecting them to their personalized dashboard.
+## 🎯 Objective
 
-- **Student Dashboard:**  
-  Displays the student’s event participation, attendance history, and upcoming events.
+Design and implement a comprehensive web application for the Supreme Student Government (SSG) to streamline attendance management at events and meetings. This system empowers students with easy registration, QR code-based check-ins, and personalized dashboards, while providing administrators with powerful tools for event management and reporting.
 
-- **Event QR Code Generation:**  
-  Admins can generate unique QR codes for each event, which students can scan to check in.
+## ✨ Features
 
-- **Personal QR Code Generation:**  
-  Each student can opt to generate a unique QR code that is used for event check-ins, helping with attendance tracking.
+### Core Functionality
 
-- **QR Code Scanning:**  
-  Students can scan the event QR code or the admins scan their personal QR code to check in. This ensures easy access and authentication.
+- **🔐 Secure Authentication**:
+  - Student registration with personal information
+  - Login system with role-based access (student/admin)
 
-- **Attendance Reports:**  
-  Generate automatic attendance reports, listing attendees with check-in timestamps, and allowing export in PDF or CSV format.
+- **👤 Personalized Dashboards**:
+  - Student view: Event participation, attendance history, notifications
+  - Admin view: Event management, reporting tools, system settings
 
-- **Time-Limited Access:**  
-  Implement a time limit for event check-ins to ensure students are marked absent if they fail to check in on time.
+- **📱 QR Code Integration**:
+  - Generate unique QR codes for events
+  - Personal QR codes for students
+  - Seamless check-in process via QR scanning
 
-### 2. Anti-Cheating Measures
-- **Kiosk Scanning:**  
-  Dedicated kiosks are available for students to scan QR codes for event check-ins.
+- **📊 Comprehensive Reporting**:
+  - Detailed attendance reports
+  - Export options (PDF/CSV)
+  - Visual data representation with charts in dashboard overview
 
-- **Single Scan Per Student:**  
-  Each student can only scan once or twice per event. Multiple scans are prevented.
+### Enhanced User Experience
 
-- **Physical Presence Verification:**  
-  Using Geolocation API, the system verifies that the student is physically present at the event location when they scan the QR code.
+- **🌄 Dark Mode**: Toggle between light and dark themes
+- **📱 Responsive Design**: Optimized for both desktop and mobile devices
+- **⏱️ Time-Limited Access**: Enforce check-in time limits for accurate attendance tracking
 
-- **Monitoring Attendance Timing:**  
-  The system logs the scan timestamp and flags any scans that occur outside the allowed event window.
+### Administrative Tools
 
-- **Notifications to Students:**  
-  Push notifications or in-app alerts remind students about attendance time limits and procedures.
+- **💰 Automated Fine System**:
+  - Set custom fines for event absences
+  - Automatic calculation and tracking
 
-### 3. Absence Fines
-- **Customizable Absence Fines:**  
-  Admins can set different fines for events. These fines are customizable based on event importance.
+- **🔄 Flexible Event Management**:
+  - Create, edit, and delete events
+  - Set attendance requirements and deadlines
 
-- **Overall Fines Calculation:**  
-  Admins can calculate the overall fines for individual students based on their absences, with reports available for download in PDF/CSV format.
+## 📸 Screenshots
 
-### 4. Mobile-Friendly
-- **Responsive Design:**  
-  The system is optimized for mobile devices, allowing students to easily scan QR codes for check-ins and access their attendance reports.
+<div align="center">
 
-## Tech Stack
+### Authentication
+![LogIn](/public/AuthLogin.png)
+![SignUp](/public/AuthSignUp.png)
 
-### Frontend:
-- **Next.js** (v15.x): For server-side rendering and React-based frontend.
-- **Shadcn UI**: For reusable and accessible UI components.
-- **Tailwind CSS**: For responsive and customizable styling.
-- **GSAP**: For smooth animations and transitions.
-- **TypeScript**: For type-safe development.
+### Password Recovery
+![Recovery](/public/Recovery.png)
+![Reset Password](/public/ResetPassword.png)
 
-### Backend:
-- **Node.js**: For server-side logic, QR code generation, scanning processes, and attendance fine tracking.
-- **Appwrite**: For database management (handling student data, attendance logs, event details) and file storage (for PDFs and CSV reports).
-- **QR Code Generation**: Use the `qrcode` library in Node.js to generate QR codes.
+### Student Dashboard
+![Student Dashboard](/public/StudentDashboard1.png)
+![Student Dashboard](/public/StudentDashboard2.png)
 
-### Additional Libraries/Tools:
-- **next-pwa**: To add Progressive Web App (PWA) features and offline capabilities.
-- **IndexedDB** or **localStorage**: For offline storage of check-ins and syncing data.
-- **pdf-lib**: For generating exportable PDF reports.
-- **Geolocation API**: For physical presence verification during QR code scanning.
+### Admin Dashboard
+![Admin Dashboard](/public/AdminDashboard1.png)
+![Admin Dashboard](/public/AdminDashboard2.png)
+</div>
 
-## Workflow and Flow
+## 🚀 Tech Stack
 
-1. **Student Registration & QR Code Generation:**  
-   Students register via the admin panel. A unique personal QR code is generated for each student.
+### Frontend
 
-2. **Student Login:**  
-   After registration, students log in with their student ID and password. They are redirected to their personalized dashboard.
+- **[Next.js](https://nextjs.org/)** (v15.0.3): React framework for server-side rendering and static site generation
+- **[React](https://reactjs.org/)** (v19.0.0-rc): A JavaScript library for building user interfaces
+- **[Tailwind CSS](https://tailwindcss.com/)** (v3.4.15): Utility-first CSS framework
+- **[Radix UI](https://www.radix-ui.com/)**: Unstyled, accessible components for building high‑quality design systems
+- **[Lucide React](https://lucide.dev/)** (v0.460.0): Beautiful & consistent icon set
+- **[Framer Motion](https://www.framer.com/motion/)** (v11.15.0): Animation library for React
+- **[GSAP](https://greensock.com/gsap/)** (v3.12.5): Professional-grade animation for the modern web
+- **[Recharts](https://recharts.org/)** (v2.15.0): Composable charting library for React
+- **[QRCode.react](https://github.com/zpao/qrcode.react)** (v4.2.0): QR code component for React
+- **[React Webcam](https://github.com/mozmorris/react-webcam)** (v7.2.0): Webcam component for React
+- **[SweetAlert2](https://sweetalert2.github.io/)** (v11.14.5): Beautiful, responsive, customizable alert dialogs
 
-3. **Event QR Code Generation:**  
-   Admins create events via the admin panel, and the system generates a unique event QR code.
+### Backend
 
-4. **Event Check-in:**  
-   Students scan both the event QR code and their personal QR code to check in. The system validates the QR code and logs attendance.
+- **[Appwrite](https://appwrite.io/)** (v16.0.2): Open-source backend server for database management and authentication
 
-5. **Reports and Fines:**  
-   Attendance reports are automatically generated and can be exported. Fines are tracked based on absences.
+### Data Processing & Utilities
 
-6. **Admin Dashboard:**  
-   Admins can manage events, view attendance reports, and monitor attendance fines.
+- **[date-fns](https://date-fns.org/)** (v4.1.0): Modern JavaScript date utility library
+- **[jsPDF](https://github.com/MrRio/jsPDF)** (v2.5.2) & **jsPDF-AutoTable** (v3.8.4): Client-side PDF generation
+- **[xlsx](https://github.com/SheetJS/sheetjs)** (v0.18.5): Parser and writer for various spreadsheet formats
+- **[jsQR](https://github.com/cozmo/jsQR)** (v1.4.0): A pure javascript QR code reading library
 
-## Deployment
+### Development Tools
 
-- **Hosting**: Use Vercel for easy deployment of the Next.js application.
-- **Database**: Use Appwrite as the backend service for authentication, file storage, and database management.
-- **PWA**: With next-pwa, the app functions as a Progressive Web App, ensuring offline functionality.
+- **[TypeScript](https://www.typescriptlang.org/)** (v5.6.3): Typed superset of JavaScript
+- **[ESLint](https://eslint.org/)** (v8.57.1): Pluggable linting utility for JavaScript and TypeScript
+- **[Autoprefixer](https://github.com/postcss/autoprefixer)** (v10.4.20): PostCSS plugin to parse CSS and add vendor prefixes
+- **[PostCSS](https://postcss.org/)** (v8.4.49): Tool for transforming CSS with JavaScript
 
-## Running Locally
+### Additional Libraries
 
-1. Clone this repository.
-   ```bash
-   git clone https://github.com/your-username/ssg-attendance-tracking.git
-   ```
+- **[@babylonjs/core](https://www.babylonjs.com/)** (v7.35.2): 3D engine based on WebGL
+- **[@tanstack/react-table](https://tanstack.com/table/v8)** (v8.20.6): Headless UI for building powerful tables & datagrids
+- **[next-themes](https://github.com/pacocoursey/next-themes)** (v0.4.3): Perfect dark mode in Next.js
 
-2. Install dependencies.
-   ```bash
-   cd ssg-attendance-tracking
-   npm install
-   ```
+## 🚀 Getting Started
 
-3. Set up environment variables in a `.env` file based on the configuration in the documentation.
+### Prerequisites
 
-4. Run the development server.
-   ```bash
-   npm run dev
-   ```
+- Node.js (v14 or later)
+- npm or yarn
+- Git
 
-5. Navigate to `http://localhost:3000` to access the application locally.
+### Installation
 
-## License
-This project is licensed under the MIT License
+1. Clone the repository:
+
+```bash
+git clone https://github.com/your-username/ssg-attendance-tracking.git
+cd ssg-attendance-tracking
+```
+
+2. Install dependencies:
+
+```bash
+npm install
+# or
+yarn install
+```
+
+3. Set up environment variables:
+
+- Copy the `.env.example` file to `.env.local`
+- Fill in the required Appwrite credentials and other configuration details
+
+4. Run the development server:
+
+```bash
+npm run dev
+# or
+yarn dev
+```
+
+5. Open [http://localhost:3000](http://localhost:3000) in your browser to see the application.
+
+## 📖 Usage
+
+Detailed usage instructions and documentation can be found in the [User Guide](docs/USER_GUIDE.md).
+
+## 🤝 Contributing
+
+We welcome contributions to improve the SSG Attendance and Participation Tracking System! Please follow these steps:
+
+1. Fork the repository
+2. Create your feature branch: `git checkout -b feature/AmazingFeature`
+3. Commit your changes: `git commit -m 'Add some AmazingFeature'`
+4. Push to the branch: `git push origin feature/AmazingFeature`
+5. Open a pull request
+
+For more details, please read our [Contributing Guidelines](CONTRIBUTING.md).
+
+## 📄 License
+
+This project is licensed under the MIT License - see the [LICENSE](https://opensource.org/licenses/MIT) file for details.
+
+## 🙏 Acknowledgements
+
+- [Supreme Student Government](https://www.facebook.com/profile.php?id=61566578300898) for their support and feedback
+- All contributors who have helped shape this project
