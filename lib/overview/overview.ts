@@ -52,7 +52,7 @@ export interface FineDocument extends Models.Document {
   penalties: string;
   dateIssued: string;
   datePaid?: string;
-  status: "Pending" | "Submitted" | "Cleared";
+  status: "Pending" | "penaltyCleared" | "Cleared";
 }
 
 export async function getAllData() {
