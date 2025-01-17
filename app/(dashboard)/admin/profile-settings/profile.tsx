@@ -243,21 +243,27 @@ export default function Profile() {
   }
 
   const handleConfirmPasswordChange = async (currentPassword: string, newPassword: string) => {
-    setIsChangingPassword(true)
+    setIsChangingPassword(true);
     try {
-      await changePassword(currentPassword, newPassword)
+      await changePassword(currentPassword, newPassword);
       toast({
         title: "Success",
         description: "Password changed successfully.",
-      })
-      setIsPasswordChangeModalOpen(false)
+        variant: "default",
+      });
+      setIsPasswordChangeModalOpen(false);
     } catch (error) {
-      console.error("Error changing password:", error)
-      throw error
+      console.error("Error changing password:", error);
+      toast({
+        title: "Error",
+        description: error instanceof Error ? error.message : "Failed to change password. Please try again.",
+        variant: "destructive",
+      });
+      throw error;
     } finally {
-      setIsChangingPassword(false)
+      setIsChangingPassword(false);
     }
-  }
+  };
 
   const handleDeleteAccount = async (password: string) => {
     setIsDeletingAccount(true);
