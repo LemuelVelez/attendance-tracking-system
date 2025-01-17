@@ -37,11 +37,14 @@ export const getCurrentSessionUser = async () => {
   }
 };
 
-export const changePassword = async (newPassword: string) => {
+export const changePassword = async (oldPassword: string, newPassword: string) => {
   try {
-    await account.updatePassword(newPassword);
+    await account.updatePassword(newPassword, oldPassword);
   } catch (error) {
     console.error("Error changing password:", error);
+    if (error instanceof AppwriteException && error.code === 401) {
+      throw new Error("Invalid current password. Please check and try again.");
+    }
     throw error;
   }
 };
@@ -196,3 +199,4 @@ export const deleteAccount = async (password: string) => {
     throw error;
   }
 };
+

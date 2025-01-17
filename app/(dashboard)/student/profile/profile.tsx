@@ -10,6 +10,16 @@ import { Button } from "@/components/ui/button"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { DeleteAccountDialog } from "@/components/delete-account-dialog"
 import { useToast } from "@/hooks/use-toast"
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog"
 
 import {
   getCurrentSessionUser,
@@ -21,17 +31,131 @@ import {
   type UserData,
 } from "@/lib/profile/profile"
 
+function AlertDialogPasswordChange({ isOpen, onClose, onConfirm }: { isOpen: boolean, onClose: () => void, onConfirm: (currentPassword: string, newPassword: string) => Promise<void> }) {
+  const [currentPassword, setCurrentPassword] = useState('')
+  const [newPassword, setNewPassword] = useState('')
+  const [confirmPassword, setConfirmPassword] = useState('')
+  const [showCurrentPassword, setShowCurrentPassword] = useState(false)
+  const [showNewPassword, setShowNewPassword] = useState(false)
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false)
+  const [isConfirming, setIsConfirming] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+
+  const handleConfirm = async () => {
+    if (newPassword !== confirmPassword) {
+      setError("New passwords do not match.")
+      return
+    }
+    setIsConfirming(true)
+    setError(null)
+    try {
+      await onConfirm(currentPassword, newPassword)
+      onClose()
+    } catch (error) {
+      setError(error instanceof Error ? error.message : "An error occurred. Please try again.")
+    } finally {
+      setIsConfirming(false)
+    }
+  }
+
+  return (
+    <AlertDialog open={isOpen} onOpenChange={onClose}>
+      <AlertDialogContent className="sm:max-w-[425px]">
+        <AlertDialogHeader>
+          <AlertDialogTitle>Change Password</AlertDialogTitle>
+          <AlertDialogDescription>
+            Enter your current password and choose a new password to update your account.
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <div className="grid gap-4 py-4">
+          <div className="grid gap-2">
+            <Label htmlFor="current-password">Current Password</Label>
+            <div className="relative">
+              <Input
+                id="current-password"
+                type={showCurrentPassword ? "text" : "password"}
+                value={currentPassword}
+                onChange={(e) => setCurrentPassword(e.target.value)}
+              />
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon"
+                className="absolute inset-y-0 right-0"
+                onClick={() => setShowCurrentPassword(!showCurrentPassword)}
+              >
+                {showCurrentPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+              </Button>
+            </div>
+          </div>
+          <div className="grid gap-2">
+            <Label htmlFor="new-password">New Password</Label>
+            <div className="relative">
+              <Input
+                id="new-password"
+                type={showNewPassword ? "text" : "password"}
+                value={newPassword}
+                onChange={(e) => setNewPassword(e.target.value)}
+              />
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon"
+                className="absolute inset-y-0 right-0"
+                onClick={() => setShowNewPassword(!showNewPassword)}
+              >
+                {showNewPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+              </Button>
+            </div>
+          </div>
+          <div className="grid gap-2">
+            <Label htmlFor="confirm-password">Confirm New Password</Label>
+            <div className="relative">
+              <Input
+                id="confirm-password"
+                type={showConfirmPassword ? "text" : "password"}
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)}
+              />
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon"
+                className="absolute inset-y-0 right-0"
+                onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+              >
+                {showConfirmPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+              </Button>
+            </div>
+          </div>
+          {error && <p className="text-sm text-red-500">{error}</p>}
+        </div>
+        <AlertDialogFooter>
+          <AlertDialogCancel onClick={onClose}>Cancel</AlertDialogCancel>
+          <AlertDialogAction onClick={handleConfirm} disabled={isConfirming}>
+            {isConfirming ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Changing...
+              </>
+            ) : (
+              'Change Password'
+            )}
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
+  )
+}
+
 export default function Profile() {
   const [userData, setUserData] = useState<UserData | null>(null)
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null)
-  const [newPassword, setNewPassword] = useState("")
-  const [confirmPassword, setConfirmPassword] = useState("")
-  const [showNewPassword, setShowNewPassword] = useState(false)
-  const [showConfirmPassword, setShowConfirmPassword] = useState(false)
   const [isChangingPassword, setIsChangingPassword] = useState(false)
   const [isDeletingAccount, setIsDeletingAccount] = useState(false)
   const [isUpdatingProfile, setIsUpdatingProfile] = useState(false)
   const [isUploadingAvatar, setIsUploadingAvatar] = useState(false)
+  const [isPasswordChangeModalOpen, setIsPasswordChangeModalOpen] = useState(false)
   const { toast } = useToast()
 
   useEffect(() => {
@@ -114,31 +238,22 @@ export default function Profile() {
     }
   }
 
-  const handleChangePassword = async () => {
-    if (newPassword !== confirmPassword) {
-      toast({
-        title: "Error",
-        description: "New password and confirm password do not match.",
-        variant: "destructive",
-      })
-      return
-    }
+  const handleChangePassword = () => {
+    setIsPasswordChangeModalOpen(true)
+  }
+
+  const handleConfirmPasswordChange = async (currentPassword: string, newPassword: string) => {
     setIsChangingPassword(true)
     try {
-      await changePassword(newPassword)
+      await changePassword(currentPassword, newPassword)
       toast({
         title: "Success",
         description: "Password changed successfully.",
       })
-      setNewPassword("")
-      setConfirmPassword("")
+      setIsPasswordChangeModalOpen(false)
     } catch (error) {
       console.error("Error changing password:", error)
-      toast({
-        title: "Error",
-        description: "Failed to change password. Please try again.",
-        variant: "destructive",
-      })
+      throw error
     } finally {
       setIsChangingPassword(false)
     }
@@ -317,55 +432,8 @@ export default function Profile() {
             <CardTitle>Change Password</CardTitle>
             <CardDescription>Update your account password.</CardDescription>
           </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="newPassword">New Password</Label>
-              <div className="relative">
-                <Input
-                  id="newPassword"
-                  type={showNewPassword ? "text" : "password"}
-                  value={newPassword}
-                  onChange={(e) => setNewPassword(e.target.value)}
-                />
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="icon"
-                  className="absolute inset-y-0 right-0"
-                  onClick={() => setShowNewPassword(!showNewPassword)}
-                >
-                  {showNewPassword ? (
-                    <EyeOff className="h-4 w-4" />
-                  ) : (
-                    <Eye className="h-4 w-4" />
-                  )}
-                </Button>
-              </div>
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="confirmPassword">Confirm Password</Label>
-              <div className="relative">
-                <Input
-                  id="confirmPassword"
-                  type={showConfirmPassword ? "text" : "password"}
-                  value={confirmPassword}
-                  onChange={(e) => setConfirmPassword(e.target.value)}
-                />
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="icon"
-                  className="absolute inset-y-0 right-0"
-                  onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                >
-                  {showConfirmPassword ? (
-                    <EyeOff className="h-4 w-4" />
-                  ) : (
-                    <Eye className="h-4 w-4" />
-                  )}
-                </Button>
-              </div>
-            </div>
+          <CardContent>
+            <p className="mb-4">Changing your password helps keep your account secure. Click the button below to start the process.</p>
             <Button 
               className="w-full" 
               onClick={handleChangePassword}
@@ -374,7 +442,7 @@ export default function Profile() {
               {isChangingPassword ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Changing...
+                  Changing Password...
                 </>
               ) : (
                 'Change Password'
@@ -398,6 +466,11 @@ export default function Profile() {
         </Card>
      
       </div>
+      <AlertDialogPasswordChange
+        isOpen={isPasswordChangeModalOpen}
+        onClose={() => setIsPasswordChangeModalOpen(false)}
+        onConfirm={handleConfirmPasswordChange}
+      />
       <footer className="py-4 text-center">
         <p className="text-sm">JESUS BE ALL THE GLORY!</p>
         <p className="text-xs mt-1">© SSG QR Attendance</p>
