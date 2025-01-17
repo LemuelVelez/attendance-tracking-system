@@ -41,7 +41,6 @@ import {
   Search,
   Check,
   Calendar,
-  Filter,
   Users,
   Rows,
   Loader2,
@@ -81,7 +80,6 @@ const PENALTIES_MAP: Record<number, string> = {
 export default function SupplyFinesManagement() {
   const [attendances, setAttendances] = useState<Attendance[]>([]);
   const [fines, setFines] = useState<FineDocument[]>([]);
-  const [selectedEvent, setSelectedEvent] = useState<string>("All Events");
   const [totalEvents, setTotalEvents] = useState<number>(0);
   const [allUsers, setAllUsers] = useState<User[]>([]);
   const [currentPage, setCurrentPage] = useState(1);
@@ -101,6 +99,7 @@ export default function SupplyFinesManagement() {
   const [isUpdatingFines, setIsUpdatingFines] = useState(false);
   const [updateDialogOpen, setUpdateDialogOpen] = useState(false);
   const [isLoadingFines, setIsLoadingFines] = useState(false);
+  const [eventNames, setEventNames] = useState<string[]>([]);
 
   const fetchData = useCallback(async () => {
     try {
@@ -115,6 +114,12 @@ export default function SupplyFinesManagement() {
 
       const usersData = await getAllUsers();
       setAllUsers(usersData);
+
+      // Get unique event names
+      const uniqueEventNames = [
+        ...new Set(attendanceData.map((a) => a.eventName)),
+      ];
+      setEventNames(uniqueEventNames);
     } catch (error) {
       console.error("Error fetching data:", error);
       toast({
@@ -356,11 +361,6 @@ export default function SupplyFinesManagement() {
     }
   };
 
-  const uniqueEvents = [
-    "All Events",
-    ...new Set(attendances.map((a) => a.eventName)),
-  ];
-
   const filteredFines = fines.filter((fine) =>
     Object.values(fine).some((value) =>
       String(value)
@@ -386,7 +386,7 @@ export default function SupplyFinesManagement() {
         Attendance Penalties Management
       </h1>
 
-      <div className="grid gap-6 md:grid-cols-3 mb-8">
+      <div className="grid gap-6 md:grid-cols-2 mb-8">
         <Card className="md:col-span-1">
           <CardHeader>
             <CardTitle className="flex items-center text-lg">
@@ -395,35 +395,18 @@ export default function SupplyFinesManagement() {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="text-xl font-semibold">
+            <p className="text-xl font-semibold mb-2">
               Total required events: {totalEvents}
             </p>
-          </CardContent>
-        </Card>
-
-        <Card className="md:col-span-1">
-          <CardHeader>
-            <CardTitle className="flex items-center text-lg">
-              <Filter className="w-5 h-5 mr-2" />
-              Event Filter
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <Select
-              onValueChange={setSelectedEvent}
-              defaultValue={selectedEvent}
-            >
-              <SelectTrigger className="w-full">
-                <SelectValue placeholder="Select Event" />
-              </SelectTrigger>
-              <SelectContent>
-                {uniqueEvents.map((event) => (
-                  <SelectItem key={event} value={event}>
-                    {event}
-                  </SelectItem>
+            <div className="max-h-40 overflow-y-auto">
+              <ul className="list-disc list-inside">
+                {eventNames.map((eventName, index) => (
+                  <li key={index} className="text-sm">
+                    {eventName}
+                  </li>
                 ))}
-              </SelectContent>
-            </Select>
+              </ul>
+            </div>
           </CardContent>
         </Card>
 
