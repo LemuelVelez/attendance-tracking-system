@@ -10,6 +10,9 @@ import {
 import { AppwriteException } from "appwrite";
 
 export interface UserData {
+  firstname?: string;
+  middlename?: string;
+  lastname?: string;
   name?: string;
   email?: string;
   studentId?: string;
@@ -34,12 +37,9 @@ export const getCurrentSessionUser = async () => {
   }
 };
 
-export const changePassword = async (
-  currentPassword: string,
-  newPassword: string
-) => {
+export const changePassword = async (newPassword: string) => {
   try {
-    await account.updatePassword(newPassword, currentPassword);
+    await account.updatePassword(newPassword);
   } catch (error) {
     console.error("Error changing password:", error);
     throw error;
@@ -109,7 +109,13 @@ export const editUserData = async (updatedData: Partial<UserData>) => {
       DATABASE_ID,
       USERS_COLLECTION_ID,
       session.$id,
-      updatedData
+      {
+        ...updatedData,
+        name:
+          updatedData.name ||
+          `${updatedData.firstname || ""} ${updatedData.middlename ||
+            ""} ${updatedData.lastname || ""}`.trim(),
+      }
     );
     return updatedDocument;
   } catch (error) {

@@ -14,7 +14,7 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Trash2, Eye, EyeOff } from "lucide-react";
+import { Trash2, Eye, EyeOff, Loader2 } from "lucide-react";
 
 interface DeleteAccountDialogProps {
   onDeleteAccount: (password: string) => Promise<void>;
@@ -102,7 +102,17 @@ export function DeleteAccountDialog({
             onClick={handleDeleteAccount}
             disabled={isDeleting}
           >
-            {isDeleting ? "Deleting..." : "Delete Account"}
+            {isDeleting ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Deleting...
+              </>
+            ) : (
+              <>
+                <Trash2 className="mr-2 h-4 w-4" />
+                Delete Account
+              </>
+            )}
           </Button>
         </DialogFooter>
       </DialogContent>

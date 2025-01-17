@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { Upload, Eye, EyeOff } from 'lucide-react'
+import { Upload, Eye, EyeOff, Loader2 } from 'lucide-react'
 
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card"
 import { Label } from "@/components/ui/label"
@@ -24,14 +24,14 @@ import {
 export default function Profile() {
   const [userData, setUserData] = useState<UserData | null>(null)
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null)
-  const [currentPassword, setCurrentPassword] = useState("")
   const [newPassword, setNewPassword] = useState("")
   const [confirmPassword, setConfirmPassword] = useState("")
-  const [showCurrentPassword, setShowCurrentPassword] = useState(false)
   const [showNewPassword, setShowNewPassword] = useState(false)
   const [showConfirmPassword, setShowConfirmPassword] = useState(false)
   const [isChangingPassword, setIsChangingPassword] = useState(false)
   const [isDeletingAccount, setIsDeletingAccount] = useState(false)
+  const [isUpdatingProfile, setIsUpdatingProfile] = useState(false)
+  const [isUploadingAvatar, setIsUploadingAvatar] = useState(false)
   const { toast } = useToast()
 
   useEffect(() => {
@@ -39,12 +39,14 @@ export default function Profile() {
       try {
         const user = await getCurrentSessionUser()
         const userData: UserData = {
-          name: user.name,
-          email: user.email,
+          firstname: user.firstname,
+          middlename: user.middlename,
+          lastname: user.lastname,
           studentId: user.studentId,
           degreeProgram: user.degreeProgram,
           yearLevel: user.yearLevel,
           section: user.section,
+          name: `${user.firstname} ${user.middlename} ${user.lastname}`.trim()
         }
         setUserData(userData)
 
@@ -65,8 +67,13 @@ export default function Profile() {
   const handleEditUserData = async () => {
     if (!userData) return
 
+    setIsUpdatingProfile(true)
     try {
-      await editUserData(userData)
+      const updatedData = {
+        ...userData,
+        name: `${userData.firstname || ''} ${userData.middlename || ''} ${userData.lastname || ''}`.trim()
+      }
+      await editUserData(updatedData)
       toast({
         title: "Success",
         description: "Profile updated successfully.",
@@ -78,6 +85,8 @@ export default function Profile() {
         description: "Failed to update profile. Please try again.",
         variant: "destructive",
       })
+    } finally {
+      setIsUpdatingProfile(false)
     }
   }
 
@@ -85,6 +94,7 @@ export default function Profile() {
     const file = event.target.files?.[0]
     if (!file) return
 
+    setIsUploadingAvatar(true)
     try {
       const newAvatarUrl = await setUserAvatar(file)
       setAvatarUrl(newAvatarUrl)
@@ -99,6 +109,8 @@ export default function Profile() {
         description: "Failed to update avatar. Please try again.",
         variant: "destructive",
       })
+    } finally {
+      setIsUploadingAvatar(false)
     }
   }
 
@@ -113,12 +125,11 @@ export default function Profile() {
     }
     setIsChangingPassword(true)
     try {
-      await changePassword(currentPassword, newPassword)
+      await changePassword(newPassword)
       toast({
         title: "Success",
         description: "Password changed successfully.",
       })
-      setCurrentPassword("")
       setNewPassword("")
       setConfirmPassword("")
     } catch (error) {
@@ -188,13 +199,17 @@ export default function Profile() {
               <Avatar className="h-24 w-24">
                 <AvatarImage src={avatarUrl || undefined} alt="User Avatar" />
                 <AvatarFallback className="text-2xl">
-                  {userData?.name?.charAt(0) || "U"}
+                  {userData?.firstname?.charAt(0) || "U"}
                 </AvatarFallback>
               </Avatar>
               <Label htmlFor="avatar-upload" className="cursor-pointer">
                 <div className="flex h-7 items-center space-x-2 rounded-md bg-primary px-4 py-2 text-primary-foreground hover:bg-primary/90">
-                  <Upload className="h-4 w-4" />
-                  <span>Upload New Picture</span>
+                  {isUploadingAvatar ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <Upload className="h-4 w-4" />
+                  )}
+                  <span>{isUploadingAvatar ? 'Uploading...' : 'Upload New Picture'}</span>
                 </div>
                 <Input
                   id="avatar-upload"
@@ -202,20 +217,30 @@ export default function Profile() {
                   className="hidden"
                   accept="image/*"
                   onChange={handleAvatarUpload}
+                  disabled={isUploadingAvatar}
                 />
               </Label>
             </div>
-            <div className="grid gap-4 sm:grid-cols-2">
+            <div className="grid gap-4 sm:grid-cols-3">
               <div className="space-y-2">
-                <Label htmlFor="name">Name</Label>
+                <Label htmlFor="fullName">Full Name</Label>
                 <Input
-                  id="name"
-                  value={userData?.name || ""}
-                  onChange={(e) =>
-                    setUserData((prev) => ({ ...prev, name: e.target.value }))
-                  }
+                  id="fullName"
+                  value={`${userData?.firstname || ''} ${userData?.middlename || ''} ${userData?.lastname || ''}`.trim()}
+                  onChange={(e) => {
+                    const [firstname = '', middlename = '', ...lastnameParts] = e.target.value.split(' ');
+                    const lastname = lastnameParts.join(' ');
+                    setUserData((prev) => ({
+                      ...prev,
+                      firstname,
+                      middlename,
+                      lastname,
+                      name: e.target.value.trim()
+                    }));
+                  }}
                 />
               </div>
+              
               <div className="space-y-2">
                 <Label htmlFor="studentId">Student ID</Label>
                 <Input
@@ -269,8 +294,19 @@ export default function Profile() {
                 />
               </div>
             </div>
-            <Button className="w-full" onClick={handleEditUserData}>
-              Save Changes
+            <Button 
+              className="w-full" 
+              onClick={handleEditUserData}
+              disabled={isUpdatingProfile}
+            >
+              {isUpdatingProfile ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Saving...
+                </>
+              ) : (
+                'Save Changes'
+              )}
             </Button>
           </CardContent>
         </Card>
@@ -282,30 +318,6 @@ export default function Profile() {
             <CardDescription>Update your account password.</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="currentPassword">Current Password</Label>
-              <div className="relative">
-                <Input
-                  id="currentPassword"
-                  type={showCurrentPassword ? "text" : "password"}
-                  value={currentPassword}
-                  onChange={(e) => setCurrentPassword(e.target.value)}
-                />
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="icon"
-                  className="absolute inset-y-0 right-0"
-                  onClick={() => setShowCurrentPassword(!showCurrentPassword)}
-                >
-                  {showCurrentPassword ? (
-                    <EyeOff className="h-4 w-4" />
-                  ) : (
-                    <Eye className="h-4 w-4" />
-                  )}
-                </Button>
-              </div>
-            </div>
             <div className="space-y-2">
               <Label htmlFor="newPassword">New Password</Label>
               <div className="relative">
@@ -359,7 +371,14 @@ export default function Profile() {
               onClick={handleChangePassword}
               disabled={isChangingPassword}
             >
-              {isChangingPassword ? 'Changing...' : 'Change Password'}
+              {isChangingPassword ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Changing...
+                </>
+              ) : (
+                'Change Password'
+              )}
             </Button>
           </CardContent>
         </Card>
