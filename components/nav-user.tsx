@@ -89,6 +89,7 @@ export function NavUser({ user: userProp }: NavUserProps) {
       toast({
         title: "Logged out successfully!",
         description: "You have been logged out.",
+        className: "bg-green-500 text-white",
       });
       router.push("/");
     } catch (error) {
