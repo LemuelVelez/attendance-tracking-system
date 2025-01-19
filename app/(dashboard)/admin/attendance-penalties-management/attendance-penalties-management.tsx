@@ -101,6 +101,8 @@ export default function SupplyFinesManagement() {
   const [isLoadingFines, setIsLoadingFines] = useState(false);
   const [eventNames, setEventNames] = useState<string[]>([]);
 
+  const [hasDocuments, setHasDocuments] = useState(false);
+
   const fetchData = useCallback(async () => {
     try {
       const attendanceData = await getGeneralAttendance();
@@ -108,6 +110,7 @@ export default function SupplyFinesManagement() {
 
       const finesData = await getFineDocuments();
       setFines(finesData);
+      setHasDocuments(finesData.length > 0);
 
       const totalEventsCount = await getTotalUniqueEvents();
       setTotalEvents(totalEventsCount);
@@ -255,8 +258,9 @@ export default function SupplyFinesManagement() {
         title: "Fines Generation Complete",
         description: message,
         variant: "default",
-        className: "border-yellow-500 text-yellow-700 bg-yellow-50",
+        className: "border-green-500 text-green-700 bg-green-50",
       });
+      setHasDocuments(true);
     } catch (error) {
       console.error("Error generating fines:", error);
       toast({
@@ -286,6 +290,7 @@ export default function SupplyFinesManagement() {
       // Fetch updated fines data
       const updatedFinesData = await getFineDocuments();
       setFines(updatedFinesData);
+      setHasDocuments(updatedFinesData.length > 0);
     } catch (error) {
       console.error("Error updating fines:", error);
       toast({
@@ -323,6 +328,8 @@ export default function SupplyFinesManagement() {
       toast({
         title: "Success",
         description: "Fine has been marked as cleared.",
+        variant: "default",
+        className: "border-green-500 text-green-700 bg-green-50",
       });
     } catch (error) {
       console.error("Error updating fine document:", error);
@@ -347,7 +354,10 @@ export default function SupplyFinesManagement() {
       toast({
         title: "Success",
         description: `Successfully deleted ${selectedFines.length} fine(s).`,
+        variant: "default",
+        className: "border-blue-500 text-blue-700 bg-blue-50",
       });
+      setHasDocuments(fines.length > selectedFines.length);
     } catch (error) {
       console.error("Error deleting fines:", error);
       toast({
@@ -449,7 +459,9 @@ export default function SupplyFinesManagement() {
           onOpenChange={setGenerateDialogOpen}
         >
           <AlertDialogTrigger asChild>
-            <Button disabled={isGeneratingFines || isUpdatingFines}>
+            <Button
+              disabled={isGeneratingFines || isUpdatingFines || hasDocuments}
+            >
               {isGeneratingFines ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -497,7 +509,9 @@ export default function SupplyFinesManagement() {
 
         <AlertDialog open={updateDialogOpen} onOpenChange={setUpdateDialogOpen}>
           <AlertDialogTrigger asChild>
-            <Button disabled={isGeneratingFines || isUpdatingFines}>
+            <Button
+              disabled={isGeneratingFines || isUpdatingFines || !hasDocuments}
+            >
               {isUpdatingFines ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />

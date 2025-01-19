@@ -278,19 +278,30 @@ export const getFineDocuments = async (
 
       // Check for duplicates and delete them
       const uniqueFines = new Map<string, FineDocument>();
+      const duplicatesToDelete: string[] = [];
+
       for (const fine of fineDocuments) {
         const key = `${fine.userId}-${fine.dateIssued}`;
         if (uniqueFines.has(key)) {
-          // Delete the duplicate
-          await databases.deleteDocument(
-            DATABASE_ID,
-            FINES_MANAGEMENT_COLLECTION_ID,
-            fine.$id
-          );
+          // Mark the duplicate for deletion
+          duplicatesToDelete.push(fine.$id);
         } else {
           uniqueFines.set(key, fine);
         }
       }
+
+      // Delete duplicates
+      await Promise.all(
+        duplicatesToDelete.map((id) =>
+          databases.deleteDocument(
+            DATABASE_ID,
+            FINES_MANAGEMENT_COLLECTION_ID,
+            id
+          )
+        )
+      );
+
+      console.log(`Deleted ${duplicatesToDelete.length} duplicate fine(s).`);
 
       allDocuments.push(...Array.from(uniqueFines.values()));
 
