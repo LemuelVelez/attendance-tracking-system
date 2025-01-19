@@ -450,8 +450,17 @@ export default function EventDisplay() {
                       className="w-full sm:w-auto"
                       disabled={loadingActions[event.$id] === "delete"}
                     >
-                      <Trash className="mr-2 h-4 w-4" />
-                      Delete
+                      {loadingActions[event.$id] === "delete" ? (
+                        <>
+                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                          Deleting...
+                        </>
+                      ) : (
+                        <>
+                          <Trash className="mr-2 h-4 w-4" />
+                          Delete
+                        </>
+                      )}
                     </Button>
                   </AlertDialogTrigger>
                   <AlertDialogContent>
