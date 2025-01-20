@@ -374,12 +374,13 @@ export function GeneralAttendanceTable() {
         toast({
           title: "Success",
           description: `Created ${createdCount} new attendance record(s). ${existingCount} record(s) were already recorded for the same user and event, and were skipped.`,
+          variant: "success",
         })
       } else {
         toast({
           title: "Info",
           description: `All ${existingCount} selected record(s) were already recorded for the same user and event. No new records were created.`,
-          variant: "default",
+          variant: "info",
         })
       }
     } catch (error) {
@@ -416,6 +417,7 @@ export function GeneralAttendanceTable() {
       toast({
         title: "Success",
         description: `${selectedRows.length} attendance record(s) deleted successfully.`,
+        variant: "success",
       })
     } catch (error) {
       console.error("Error deleting attendance records:", error)

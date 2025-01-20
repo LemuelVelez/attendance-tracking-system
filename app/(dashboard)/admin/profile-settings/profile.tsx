@@ -201,6 +201,7 @@ export default function Profile() {
       toast({
         title: "Success",
         description: "Profile updated successfully.",
+        variant: "success",
       })
     } catch (error) {
       console.error("Error updating profile:", error)
@@ -225,6 +226,7 @@ export default function Profile() {
       toast({
         title: "Success",
         description: "Avatar updated successfully.",
+        variant: "success",
       })
     } catch (error) {
       console.error("Error updating avatar:", error)
@@ -249,7 +251,7 @@ export default function Profile() {
       toast({
         title: "Success",
         description: "Password changed successfully.",
-        variant: "default",
+        variant: "info",
       });
       setIsPasswordChangeModalOpen(false);
     } catch (error) {
@@ -272,6 +274,7 @@ export default function Profile() {
       toast({
         title: "Success",
         description: "Your account has been deleted.",
+        variant: "success",
       });
       // Redirect to home page or login page after successful deletion
       window.location.href = '/';

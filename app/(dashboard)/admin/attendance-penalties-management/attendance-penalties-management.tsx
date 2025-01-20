@@ -257,7 +257,7 @@ export default function SupplyFinesManagement() {
       toast({
         title: "Fines Generation Complete",
         description: message,
-        variant: "default",
+        variant: "info",
         className: "border-green-500 text-green-700 bg-green-50",
       });
       setHasDocuments(true);
@@ -283,7 +283,7 @@ export default function SupplyFinesManagement() {
       toast({
         title: "Fines Update Complete",
         description: "Attendance and fines have been updated successfully.",
-        variant: "default",
+        variant: "info",
         className: "border-blue-500 text-blue-700 bg-blue-50",
       });
 
@@ -328,7 +328,7 @@ export default function SupplyFinesManagement() {
       toast({
         title: "Success",
         description: "Fine has been marked as cleared.",
-        variant: "default",
+        variant: "success",
         className: "border-green-500 text-green-700 bg-green-50",
       });
     } catch (error) {
@@ -354,7 +354,7 @@ export default function SupplyFinesManagement() {
       toast({
         title: "Success",
         description: `Successfully deleted ${selectedFines.length} fine(s).`,
-        variant: "default",
+        variant: "success",
         className: "border-blue-500 text-blue-700 bg-blue-50",
       });
       setHasDocuments(fines.length > selectedFines.length);

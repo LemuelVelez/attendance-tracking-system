@@ -142,7 +142,7 @@ export default function EventDisplay() {
       toast({
         title: "Event Deleted",
         description: "The event has been successfully deleted.",
-        variant: "default",
+        variant: "success",
       });
     } catch (error) {
       console.error("Error deleting event:", error);
@@ -175,7 +175,7 @@ export default function EventDisplay() {
         toast({
           title: "Event Updated",
           description: "The event has been successfully updated.",
-          variant: "default",
+          variant: "success",
         });
       } else {
         throw new Error("Saved event is not of type Event");
@@ -313,7 +313,7 @@ export default function EventDisplay() {
     toast({
       title: "Attendance Recorded",
       description: "The attendance has been successfully recorded.",
-      variant: "default",
+      variant: "success",
     });
   }, [toast]);
 

@@ -345,6 +345,7 @@ export function SegregatedAttendanceTable() {
       toast({
         title: "Success",
         description: `${selectedRows.length} attendance record(s) deleted successfully.`,
+        variant: "success",
       })
     } catch (error) {
       console.error("Error deleting attendance records:", error)

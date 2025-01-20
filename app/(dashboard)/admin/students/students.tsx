@@ -123,7 +123,7 @@ export default function StudentTable() {
       toast({
         title: "Role updated successfully",
         description: `User role has been changed to ${newRole}.`,
-        variant: "default",
+        variant: "success",
       });
     } catch (err) {
       console.error("Error updating user role:", err);

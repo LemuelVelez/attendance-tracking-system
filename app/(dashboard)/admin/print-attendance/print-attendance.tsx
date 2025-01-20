@@ -213,6 +213,9 @@ const collegeAttendanceFunctions: Record<
       section: record.section || "G",
     }));
   },
+  JRMSUTCOrganizations: function(): Promise<ExtendedAttendanceRecord[]> {
+    throw new Error("Function not implemented.");
+  },
 };
 
 function convertTo12HourFormat(time24: string): string {
@@ -351,6 +354,7 @@ export default function PrintableAttendanceDocument() {
       toast({
         title: "Academic Year Added",
         description: `Successfully added ${newAcademicYear} to the list of academic years.`,
+        variant: "success",
       });
     }
   }, [newAcademicYear, academicYears, toast]);
@@ -547,6 +551,7 @@ export default function PrintableAttendanceDocument() {
                 toast({
                   title: "Academic Year Changed",
                   description: `Successfully changed the academic year to ${value}.`,
+                  variant: "success",
                 });
               }}
             >
