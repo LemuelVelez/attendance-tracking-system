@@ -162,6 +162,7 @@ export function SegregatedAttendanceTable() {
     pageIndex: 0,
     pageSize: 10,
   })
+  const [isDeleting, setIsDeleting] = React.useState(false) // Added delete loading state
   const { toast } = useToast()
 
   const pagination = React.useMemo(
@@ -334,6 +335,7 @@ export function SegregatedAttendanceTable() {
       return
     }
 
+    setIsDeleting(true)
     try {
       for (const row of selectedRows) {
         await deleteCollegeAttendance(selectedCollege, row.original.$id)
@@ -351,6 +353,8 @@ export function SegregatedAttendanceTable() {
         description: "Failed to delete some or all attendance records. Please try again.",
         variant: "destructive",
       })
+    } finally {
+      setIsDeleting(false)
     }
   }
 
@@ -402,9 +406,13 @@ export function SegregatedAttendanceTable() {
                       <Button
                         variant="destructive"
                         className="w-full sm:w-[200px]"
-                        disabled={table.getFilteredSelectedRowModel().rows.length === 0 || isLoading}
+                        disabled={table.getFilteredSelectedRowModel().rows.length === 0 || isLoading || isDeleting}
                       >
-                        <Trash2 className="mr-2 h-4 w-4" />
+                        {isDeleting ? (
+                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        ) : (
+                          <Trash2 className="mr-2 h-4 w-4" />
+                        )}
                         Delete
                       </Button>
                     </AlertDialogTrigger>
@@ -417,7 +425,16 @@ export function SegregatedAttendanceTable() {
                       </AlertDialogHeader>
                       <AlertDialogFooter>
                         <AlertDialogCancel>Cancel</AlertDialogCancel>
-                        <AlertDialogAction onClick={handleDeleteAttendance}>Delete</AlertDialogAction>
+                        <AlertDialogAction onClick={handleDeleteAttendance} disabled={isDeleting}>
+                          {isDeleting ? (
+                            <>
+                              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                              Deleting...
+                            </>
+                          ) : (
+                            "Delete"
+                          )}
+                        </AlertDialogAction>
                       </AlertDialogFooter>
                     </AlertDialogContent>
                   </AlertDialog>

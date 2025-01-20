@@ -292,4 +292,8 @@ export const createJRMSUTCOrganizationsAttendance = async (
   );
 };
 
-export { getCurrentSession, getCurrentUser, createCollegeAttendance };
+export {
+  getCurrentSession,
+  getCurrentUser,
+  createCollegeAttendance,
+};

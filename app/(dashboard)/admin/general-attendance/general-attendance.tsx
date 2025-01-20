@@ -1,6 +1,6 @@
-"use client";
+"use client"
 
-import * as React from "react";
+import * as React from "react"
 import {
   ChevronDown,
   ArrowUpDown,
@@ -12,43 +12,34 @@ import {
   ChevronLeft,
   ChevronRight,
   ChevronsRight,
-} from "lucide-react";
+  Loader2,
+} from "lucide-react"
 import {
-  ColumnDef,
-  ColumnFiltersState,
-  SortingState,
-  VisibilityState,
+  type ColumnDef,
+  type ColumnFiltersState,
+  type SortingState,
+  type VisibilityState,
   flexRender,
   getCoreRowModel,
   getFilteredRowModel,
   getPaginationRowModel,
   getSortedRowModel,
   useReactTable,
-} from "@tanstack/react-table";
+} from "@tanstack/react-table"
 
-import { Button } from "@/components/ui/button";
-import { Checkbox } from "@/components/ui/checkbox";
+import { Button } from "@/components/ui/button"
+import { Checkbox } from "@/components/ui/checkbox"
 import {
   DropdownMenu,
   DropdownMenuCheckboxItem,
   DropdownMenuContent,
   DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import { Input } from "@/components/ui/input";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
-import {
-  getGeneralAttendance,
-  deleteGeneralAttendance,
-} from "@/lib/GeneralAttendance/GeneralAttendance";
+} from "@/components/ui/dropdown-menu"
+import { Input } from "@/components/ui/input"
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area"
+import { getGeneralAttendance, deleteGeneralAttendance } from "@/lib/GeneralAttendance/GeneralAttendance"
 import {
   createCTEAttendance,
   createCOEAttendance,
@@ -57,7 +48,8 @@ import {
   createCASAttendance,
   createCAFAttendance,
   createCCSAttendance,
-} from "@/lib/attendance/college";
+  createJRMSUTCOrganizationsAttendance,
+} from "@/lib/attendance/college"
 import {
   AlertDialog,
   AlertDialogAction,
@@ -68,31 +60,25 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
   AlertDialogTrigger,
-} from "@/components/ui/alert-dialog";
-import { useToast } from "@/hooks/use-toast";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+} from "@/components/ui/alert-dialog"
+import { useToast } from "@/hooks/use-toast"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 
 export type Attendance = {
-  $id: string;
-  userId: string;
-  studentId: string;
-  name: string;
-  degreeProgram: string;
-  yearLevel: string;
-  section: string;
-  eventName: string;
-  location: string;
-  date: string;
-  day: string;
-  time: string;
-  Created: string;
-};
+  $id: string
+  userId: string
+  studentId: string
+  name: string
+  degreeProgram: string
+  yearLevel: string
+  section: string
+  eventName: string
+  location: string
+  date: string
+  day: string
+  time: string
+  Created: string
+}
 
 const collegeOptions = [
   {
@@ -120,38 +106,34 @@ const collegeOptions = [
     value: "CCS_ATTENDANCE_COLLECTION_ID",
     label: "College of Computing Studies",
   },
-];
+  {
+    value: "JRMSU_TC_ORGANIZATIONS_ATTENDANCE_COLLECTION_ID",
+    label: "JRMSU TC Organizations",
+  },
+]
 
-const EntriesInfo: React.FC<{ start: number; end: number; total: number }> = ({
-  start,
-  end,
-  total,
-}) => {
+const EntriesInfo: React.FC<{ start: number; end: number; total: number }> = ({ start, end, total }) => {
   return (
     <div className="text-sm text-muted-foreground">
       Showing {start} to {end} of {total} entries
     </div>
-  );
-};
+  )
+}
 
 export function GeneralAttendanceTable() {
-  const [sorting, setSorting] = React.useState<SortingState>([]);
-  const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>(
-    []
-  );
-  const [columnVisibility, setColumnVisibility] = React.useState<
-    VisibilityState
-  >({});
-  const [rowSelection, setRowSelection] = React.useState({});
-  const [globalFilter, setGlobalFilter] = React.useState("");
-  const [data, setData] = React.useState<Attendance[]>([]);
-  const [isLoading, setIsLoading] = React.useState(true);
-  const [error, setError] = React.useState<string | null>(null);
-  const [selectedCollege, setSelectedCollege] = React.useState<string | null>(
-    null
-  );
-  const [itemsPerPage, setItemsPerPage] = React.useState(10);
-  const { toast } = useToast();
+  const [sorting, setSorting] = React.useState<SortingState>([])
+  const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>([])
+  const [columnVisibility, setColumnVisibility] = React.useState<VisibilityState>({})
+  const [rowSelection, setRowSelection] = React.useState({})
+  const [globalFilter, setGlobalFilter] = React.useState("")
+  const [data, setData] = React.useState<Attendance[]>([])
+  const [error, setError] = React.useState<string | null>(null)
+  const [selectedCollege, setSelectedCollege] = React.useState<string | null>(null)
+  const [itemsPerPage, setItemsPerPage] = React.useState(10)
+  const [isLoadingData, setIsLoadingData] = React.useState(false)
+  const { toast } = useToast()
+  const [isCreatingAttendance, setIsCreatingAttendance] = React.useState(false)
+  const [isDeletingAttendance, setIsDeletingAttendance] = React.useState(false)
 
   const columns: ColumnDef<Attendance>[] = [
     {
@@ -176,140 +158,109 @@ export function GeneralAttendanceTable() {
     {
       accessorKey: "studentId",
       header: "Student ID",
-      cell: ({ row }) => (
-        <div className="min-w-[150px]">{row.getValue("studentId")}</div>
-      ),
+      cell: ({ row }) => <div className="min-w-[150px]">{row.getValue("studentId")}</div>,
     },
     {
       accessorKey: "name",
       header: ({ column }) => {
         return (
-          <Button
-            variant="ghost"
-            onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
-          >
+          <Button variant="ghost" onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}>
             Name
             <ArrowUpDown className="ml-2 h-4 w-4" />
           </Button>
-        );
+        )
       },
-      cell: ({ row }) => (
-        <div className="min-w-[150px]">{row.getValue("name")}</div>
-      ),
+      cell: ({ row }) => <div className="min-w-[150px]">{row.getValue("name")}</div>,
     },
     {
       accessorKey: "degreeProgram",
       header: "Degree Program",
-      cell: ({ row }) => (
-        <div className="min-w-[150px]">{row.getValue("degreeProgram")}</div>
-      ),
+      cell: ({ row }) => <div className="min-w-[150px]">{row.getValue("degreeProgram")}</div>,
     },
     {
       accessorKey: "yearLevel",
       header: "Year Level",
-      cell: ({ row }) => (
-        <div className="min-w-[120px]">{row.getValue("yearLevel")}</div>
-      ),
+      cell: ({ row }) => <div className="min-w-[120px]">{row.getValue("yearLevel")}</div>,
     },
     {
       accessorKey: "section",
       header: "Section",
-      cell: ({ row }) => (
-        <div className="min-w-[90px]">{row.getValue("section")}</div>
-      ),
+      cell: ({ row }) => <div className="min-w-[90px]">{row.getValue("section")}</div>,
     },
     {
       accessorKey: "eventName",
       header: "Event Name",
-      cell: ({ row }) => (
-        <div className="min-w-[150px]">{row.getValue("eventName")}</div>
-      ),
+      cell: ({ row }) => <div className="min-w-[150px]">{row.getValue("eventName")}</div>,
     },
     {
       accessorKey: "location",
       header: "Location",
-      cell: ({ row }) => (
-        <div className="min-w-[150px]">{row.getValue("location")}</div>
-      ),
+      cell: ({ row }) => <div className="min-w-[150px]">{row.getValue("location")}</div>,
     },
     {
       accessorKey: "date",
       header: ({ column }) => {
         return (
-          <Button
-            variant="ghost"
-            onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
-          >
+          <Button variant="ghost" onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}>
             Date
             <ArrowUpDown className="ml-2 h-4 w-4" />
           </Button>
-        );
+        )
       },
-      cell: ({ row }) => (
-        <div className="min-w-[100px]">{row.getValue("date")}</div>
-      ),
+      cell: ({ row }) => <div className="min-w-[100px]">{row.getValue("date")}</div>,
     },
     {
       accessorKey: "day",
       header: "Day",
-      cell: ({ row }) => (
-        <div className="min-w-[90px]">{row.getValue("day")}</div>
-      ),
+      cell: ({ row }) => <div className="min-w-[90px]">{row.getValue("day")}</div>,
     },
     {
       accessorKey: "time",
       header: "Time",
       cell: ({ row }) => {
-        const time24 = row.getValue("time") as string;
-        const [hours, minutes] = time24.split(":");
-        const hours12 = ((parseInt(hours) + 11) % 12) + 1;
-        const amPm = parseInt(hours) >= 12 ? "PM" : "AM";
-        const time12 = `${hours12}:${minutes} ${amPm}`;
-        return <div className="min-w-[100px]">{time12}</div>;
+        const time24 = row.getValue("time") as string
+        const [hours, minutes] = time24.split(":")
+        const hours12 = ((Number.parseInt(hours) + 11) % 12) + 1
+        const amPm = Number.parseInt(hours) >= 12 ? "PM" : "AM"
+        const time12 = `${hours12}:${minutes} ${amPm}`
+        return <div className="min-w-[100px]">{time12}</div>
       },
     },
     {
       accessorKey: "Created",
       header: ({ column }) => {
         return (
-          <Button
-            variant="ghost"
-            onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
-          >
+          <Button variant="ghost" onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}>
             Created
             <ArrowUpDown className="ml-2 h-4 w-4" />
           </Button>
-        );
+        )
       },
-      cell: ({ row }) => (
-        <div className="min-w-[150px]">
-          {new Date(row.getValue("Created")).toLocaleString()}
-        </div>
-      ),
+      cell: ({ row }) => <div className="min-w-[150px]">{new Date(row.getValue("Created")).toLocaleString()}</div>,
     },
-  ];
+  ]
 
   React.useEffect(() => {
     const fetchData = async () => {
       try {
-        setIsLoading(true);
-        const attendanceData = await getGeneralAttendance();
+        setIsLoadingData(true)
+        const attendanceData = await getGeneralAttendance()
         setData(
           attendanceData.map((record) => ({
             ...record,
             Created: record.Created || record.$createdAt,
-          }))
-        );
+          })),
+        )
       } catch (err) {
-        console.error("Error fetching attendance data:", err);
-        setError("Failed to load attendance data. Please try again later.");
+        console.error("Error fetching attendance data:", err)
+        setError("Failed to load attendance data. Please try again later.")
       } finally {
-        setIsLoading(false);
+        setIsLoadingData(false)
       }
-    };
+    }
 
-    fetchData();
-  }, []);
+    fetchData()
+  }, [])
 
   const table = useReactTable({
     data,
@@ -336,7 +287,7 @@ export function GeneralAttendanceTable() {
         pageSize: itemsPerPage,
       },
     },
-  });
+  })
 
   const handleCreateCollegeAttendance = async () => {
     if (!selectedCollege) {
@@ -344,34 +295,35 @@ export function GeneralAttendanceTable() {
         title: "Error",
         description: "Please select a college before creating attendance.",
         variant: "destructive",
-      });
-      return;
+      })
+      return
     }
 
-    const selectedRows = table.getFilteredSelectedRowModel().rows;
+    const selectedRows = table.getFilteredSelectedRowModel().rows
     if (selectedRows.length === 0) {
       toast({
         title: "Error",
-        description:
-          "Please select at least one row before creating attendance.",
+        description: "Please select at least one row before creating attendance.",
         variant: "destructive",
-      });
-      return;
+      })
+      return
     }
 
+    setIsCreatingAttendance(true)
+
     try {
-      let createdCount = 0;
-      let existingCount = 0;
+      let createdCount = 0
+      let existingCount = 0
 
       for (const row of selectedRows) {
-        const attendanceData = row.original;
+        const attendanceData = row.original
         const eventData = {
           eventName: attendanceData.eventName,
           location: attendanceData.location,
           date: attendanceData.date,
           day: attendanceData.day,
           time: attendanceData.time,
-        };
+        }
         const userData = {
           userId: attendanceData.userId,
           studentId: attendanceData.studentId,
@@ -379,39 +331,42 @@ export function GeneralAttendanceTable() {
           degreeProgram: attendanceData.degreeProgram,
           yearLevel: attendanceData.yearLevel,
           section: attendanceData.section,
-        };
+        }
 
-        let result;
+        let result
         switch (selectedCollege) {
           case "CTE_ATTENDANCE_COLLECTION_ID":
-            result = await createCTEAttendance(eventData, userData);
-            break;
+            result = await createCTEAttendance(eventData, userData)
+            break
           case "COE_ATTENDANCE_COLLECTION_ID":
-            result = await createCOEAttendance(eventData, userData);
-            break;
+            result = await createCOEAttendance(eventData, userData)
+            break
           case "CCJE_ATTENDANCE_COLLECTION_ID":
-            result = await createCCJEAttendance(eventData, userData);
-            break;
+            result = await createCCJEAttendance(eventData, userData)
+            break
           case "CBA_ATTENDANCE_COLLECTION_ID":
-            result = await createCBAAttendance(eventData, userData);
-            break;
+            result = await createCBAAttendance(eventData, userData)
+            break
           case "CAS_ATTENDANCE_COLLECTION_ID":
-            result = await createCASAttendance(eventData, userData);
-            break;
+            result = await createCASAttendance(eventData, userData)
+            break
           case "CAF_ATTENDANCE_COLLECTION_ID":
-            result = await createCAFAttendance(eventData, userData);
-            break;
+            result = await createCAFAttendance(eventData, userData)
+            break
           case "CCS_ATTENDANCE_COLLECTION_ID":
-            result = await createCCSAttendance(eventData, userData);
-            break;
+            result = await createCCSAttendance(eventData, userData)
+            break
+          case "JRMSU_TC_ORGANIZATIONS_ATTENDANCE_COLLECTION_ID":
+            result = await createJRMSUTCOrganizationsAttendance(eventData, userData)
+            break
           default:
-            throw new Error("Invalid college selected");
+            throw new Error("Invalid college selected")
         }
 
         if (result === null) {
-          existingCount++;
+          existingCount++
         } else {
-          createdCount++;
+          createdCount++
         }
       }
 
@@ -419,73 +374,69 @@ export function GeneralAttendanceTable() {
         toast({
           title: "Success",
           description: `Created ${createdCount} new attendance record(s). ${existingCount} record(s) were already recorded for the same user and event, and were skipped.`,
-        });
+        })
       } else {
         toast({
           title: "Info",
           description: `All ${existingCount} selected record(s) were already recorded for the same user and event. No new records were created.`,
           variant: "default",
-        });
+        })
       }
     } catch (error) {
-      console.error("Error creating college attendance:", error);
+      console.error("Error creating college attendance:", error)
       toast({
         title: "Error",
-        description:
-          "Failed to create college attendance records. Please try again.",
+        description: "Failed to create college attendance records. Please try again.",
         variant: "destructive",
-      });
+      })
+    } finally {
+      setIsCreatingAttendance(false)
     }
-  };
+  }
 
   const handleDeleteAllAttendance = async () => {
-    const selectedRows = table.getFilteredSelectedRowModel().rows;
+    const selectedRows = table.getFilteredSelectedRowModel().rows
     if (selectedRows.length === 0) {
       toast({
         title: "Error",
         description: "Please select at least one row to delete.",
         variant: "destructive",
-      });
-      return;
+      })
+      return
     }
+
+    setIsDeletingAttendance(true)
 
     try {
       for (const row of selectedRows) {
-        await deleteGeneralAttendance(row.original.$id);
+        await deleteGeneralAttendance(row.original.$id)
       }
-      setData((prevData) =>
-        prevData.filter(
-          (item) => !selectedRows.some((row) => row.original.$id === item.$id)
-        )
-      );
-      setRowSelection({});
+      setData((prevData) => prevData.filter((item) => !selectedRows.some((row) => row.original.$id === item.$id)))
+      setRowSelection({})
       toast({
         title: "Success",
         description: `${selectedRows.length} attendance record(s) deleted successfully.`,
-      });
+      })
     } catch (error) {
-      console.error("Error deleting attendance records:", error);
+      console.error("Error deleting attendance records:", error)
       toast({
         title: "Error",
-        description:
-          "Failed to delete some or all attendance records. Please try again.",
+        description: "Failed to delete some or all attendance records. Please try again.",
         variant: "destructive",
-      });
+      })
+    } finally {
+      setIsDeletingAttendance(false)
     }
-  };
+  }
 
   return (
     <div className="flex items-center justify-center min-h-screen p-2 sm:p-4 md:p-8">
       <Card className="w-full max-w-[calc(100vw-2rem)] sm:max-w-2xl md:max-w-3xl lg:max-w-5xl xl:max-w-6xl">
         <CardHeader>
-          <CardTitle className="text-2xl font-bold">
-            General Attendance
-          </CardTitle>
+          <CardTitle className="text-2xl font-bold">General Attendance</CardTitle>
         </CardHeader>
         <CardContent className="h-full">
-          {isLoading ? (
-            <div className="text-center py-4">Loading attendance data...</div>
-          ) : error ? (
+          {error ? (
             <div className="text-center text-red-500 py-4">{error}</div>
           ) : (
             <div className="space-y-4">
@@ -517,31 +468,26 @@ export function GeneralAttendanceTable() {
                       <Button
                         variant="outline"
                         className="w-full sm:w-[200px]"
-                        disabled={
-                          table.getFilteredSelectedRowModel().rows.length === 0
-                        }
+                        disabled={table.getFilteredSelectedRowModel().rows.length === 0 || isCreatingAttendance}
                       >
-                        <Plus className="mr-2 h-2 w-2" />
-                        Add College Attendance
+                        {isCreatingAttendance ? (
+                          <Loader2 className="mr-2 h-4 w-4 animate-spin text-primary" />
+                        ) : (
+                          <Plus className="mr-2 h-4 w-4" />
+                        )}
+                        {isCreatingAttendance ? "Adding..." : "Add College Attendance"}
                       </Button>
                     </AlertDialogTrigger>
                     <AlertDialogContent>
                       <AlertDialogHeader>
-                        <AlertDialogTitle>
-                          Create College Attendance
-                        </AlertDialogTitle>
+                        <AlertDialogTitle>Create College Attendance</AlertDialogTitle>
                         <AlertDialogDescription>
-                          Are you sure you want to create attendance records for
-                          the selected college?
+                          Are you sure you want to create attendance records for the selected college?
                         </AlertDialogDescription>
                       </AlertDialogHeader>
                       <AlertDialogFooter>
                         <AlertDialogCancel>Cancel</AlertDialogCancel>
-                        <AlertDialogAction
-                          onClick={handleCreateCollegeAttendance}
-                        >
-                          Create
-                        </AlertDialogAction>
+                        <AlertDialogAction onClick={handleCreateCollegeAttendance}>Create</AlertDialogAction>
                       </AlertDialogFooter>
                     </AlertDialogContent>
                   </AlertDialog>
@@ -550,29 +496,26 @@ export function GeneralAttendanceTable() {
                       <Button
                         variant="destructive"
                         className="w-full sm:w-[200px]"
-                        disabled={
-                          table.getFilteredSelectedRowModel().rows.length === 0
-                        }
+                        disabled={table.getFilteredSelectedRowModel().rows.length === 0 || isDeletingAttendance}
                       >
-                        <Trash2 className="mr-2 h-4 w-4" />
-                        Delete
+                        {isDeletingAttendance ? (
+                          <Loader2 className="mr-2 h-4 w-4 animate-spin text-primary" />
+                        ) : (
+                          <Trash2 className="mr-2 h-4 w-4" />
+                        )}
+                        {isDeletingAttendance ? "Deleting..." : "Delete"}
                       </Button>
                     </AlertDialogTrigger>
                     <AlertDialogContent>
                       <AlertDialogHeader>
-                        <AlertDialogTitle>
-                          Delete Attendance Records
-                        </AlertDialogTitle>
+                        <AlertDialogTitle>Delete Attendance Records</AlertDialogTitle>
                         <AlertDialogDescription>
-                          Are you sure you want to delete the selected
-                          attendance records? This action cannot be undone.
+                          Are you sure you want to delete the selected attendance records? This action cannot be undone.
                         </AlertDialogDescription>
                       </AlertDialogHeader>
                       <AlertDialogFooter>
                         <AlertDialogCancel>Cancel</AlertDialogCancel>
-                        <AlertDialogAction onClick={handleDeleteAllAttendance}>
-                          Delete
-                        </AlertDialogAction>
+                        <AlertDialogAction onClick={handleDeleteAllAttendance}>Delete</AlertDialogAction>
                       </AlertDialogFooter>
                     </AlertDialogContent>
                   </AlertDialog>
@@ -593,13 +536,11 @@ export function GeneralAttendanceTable() {
                               key={column.id}
                               className="capitalize"
                               checked={column.getIsVisible()}
-                              onCheckedChange={(value) =>
-                                column.toggleVisibility(!!value)
-                              }
+                              onCheckedChange={(value) => column.toggleVisibility(!!value)}
                             >
                               {column.id}
                             </DropdownMenuCheckboxItem>
-                          );
+                          )
                         })}
                     </DropdownMenuContent>
                   </DropdownMenu>
@@ -607,15 +548,10 @@ export function GeneralAttendanceTable() {
               </div>
               <div className="flex items-center justify-between">
                 <EntriesInfo
-                  start={
-                    table.getState().pagination.pageIndex *
-                      table.getState().pagination.pageSize +
-                    1
-                  }
+                  start={table.getState().pagination.pageIndex * table.getState().pagination.pageSize + 1}
                   end={Math.min(
-                    (table.getState().pagination.pageIndex + 1) *
-                      table.getState().pagination.pageSize,
-                    table.getFilteredRowModel().rows.length
+                    (table.getState().pagination.pageIndex + 1) * table.getState().pagination.pageSize,
+                    table.getFilteredRowModel().rows.length,
                   )}
                   total={table.getFilteredRowModel().rows.length}
                 />
@@ -623,8 +559,8 @@ export function GeneralAttendanceTable() {
                   <Select
                     value={itemsPerPage.toString()}
                     onValueChange={(value) => {
-                      setItemsPerPage(Number(value));
-                      table.setPageSize(Number(value));
+                      setItemsPerPage(Number(value))
+                      table.setPageSize(Number(value))
                     }}
                   >
                     <SelectTrigger className="w-[95px]">
@@ -655,48 +591,37 @@ export function GeneralAttendanceTable() {
                       <TableRow key={headerGroup.id}>
                         {headerGroup.headers.map((header) => {
                           return (
-                            <TableHead
-                              key={header.id}
-                              className="whitespace-nowrap"
-                            >
+                            <TableHead key={header.id} className="whitespace-nowrap">
                               {header.isPlaceholder
                                 ? null
-                                : flexRender(
-                                    header.column.columnDef.header,
-                                    header.getContext()
-                                  )}
+                                : flexRender(header.column.columnDef.header, header.getContext())}
                             </TableHead>
-                          );
+                          )
                         })}
                       </TableRow>
                     ))}
                   </TableHeader>
                   <TableBody>
-                    {table.getRowModel().rows?.length ? (
+                    {isLoadingData ? (
+                      <TableRow>
+                        <TableCell colSpan={columns.length} className="h-24 text-center">
+                          <Loader2 className="animate-spin h-8 w-8 mx-auto text-primary" />
+                          <span className="mt-2 block">Loading data...</span>
+                        </TableCell>
+                      </TableRow>
+                    ) : table.getRowModel().rows?.length ? (
                       table.getRowModel().rows.map((row) => (
-                        <TableRow
-                          key={row.id}
-                          data-state={row.getIsSelected() && "selected"}
-                        >
+                        <TableRow key={row.id} data-state={row.getIsSelected() && "selected"}>
                           {row.getVisibleCells().map((cell) => (
-                            <TableCell
-                              key={cell.id}
-                              className="p-2 md:p-4 whitespace-nowrap"
-                            >
-                              {flexRender(
-                                cell.column.columnDef.cell,
-                                cell.getContext()
-                              )}
+                            <TableCell key={cell.id} className="p-2 md:p-4 whitespace-nowrap">
+                              {flexRender(cell.column.columnDef.cell, cell.getContext())}
                             </TableCell>
                           ))}
                         </TableRow>
                       ))
                     ) : (
                       <TableRow>
-                        <TableCell
-                          colSpan={columns.length}
-                          className="h-24 text-center"
-                        >
+                        <TableCell colSpan={columns.length} className="h-24 text-center">
                           No results.
                         </TableCell>
                       </TableRow>
@@ -707,45 +632,56 @@ export function GeneralAttendanceTable() {
               </ScrollArea>
               <div className="flex flex-col sm:flex-row items-center justify-between space-y-2 sm:space-y-0">
                 <div className="text-sm text-muted-foreground">
-                  {table.getFilteredSelectedRowModel().rows.length} of{" "}
-                  {table.getFilteredRowModel().rows.length} row(s) selected.
+                  {table.getFilteredSelectedRowModel().rows.length} of {table.getFilteredRowModel().rows.length} row(s)
+                  selected.
                 </div>
                 <div className="flex items-center space-x-2">
                   <Button
                     variant="outline"
                     size="sm"
                     onClick={() => table.setPageIndex(0)}
-                    disabled={!table.getCanPreviousPage()}
+                    disabled={!table.getCanPreviousPage() || isLoadingData}
                   >
-                    <ChevronsLeft className="h-4 w-4" />
+                    {isLoadingData ? (
+                      <Loader2 className="h-4 w-4 animate-spin text-primary" />
+                    ) : (
+                      <ChevronsLeft className="h-4 w-4" />
+                    )}
                   </Button>
                   <Button
                     variant="outline"
                     size="sm"
                     onClick={() => table.previousPage()}
-                    disabled={!table.getCanPreviousPage()}
+                    disabled={!table.getCanPreviousPage() || isLoadingData}
                   >
-                    <ChevronLeft className="h-4 w-4" />
+                    {isLoadingData ? <Loader2 className="h-4 w-4 animate-spin text-primary" /> : <ChevronLeft className="h-4 w-4" />}
                   </Button>
                   <span className="text-sm text-muted-foreground">
-                    Page {table.getState().pagination.pageIndex + 1} of{" "}
-                    {table.getPageCount()}
+                    Page {table.getState().pagination.pageIndex + 1} of {table.getPageCount()}
                   </span>
                   <Button
                     variant="outline"
                     size="sm"
                     onClick={() => table.nextPage()}
-                    disabled={!table.getCanNextPage()}
+                    disabled={!table.getCanNextPage() || isLoadingData}
                   >
-                    <ChevronRight className="h-4 w-4" />
+                    {isLoadingData ? (
+                      <Loader2 className="h-4 w-4 animate-spin text-primary" />
+                    ) : (
+                      <ChevronRight className="h-4 w-4" />
+                    )}
                   </Button>
                   <Button
                     variant="outline"
                     size="sm"
                     onClick={() => table.setPageIndex(table.getPageCount() - 1)}
-                    disabled={!table.getCanNextPage()}
+                    disabled={!table.getCanNextPage() || isLoadingData}
                   >
-                    <ChevronsRight className="h-4 w-4" />
+                    {isLoadingData ? (
+                      <Loader2 className="h-4 w-4 animate-spin text-primary" />
+                    ) : (
+                      <ChevronsRight className="h-4 w-4" />
+                    )}
                   </Button>
                 </div>
               </div>
@@ -758,5 +694,6 @@ export function GeneralAttendanceTable() {
         </footer>
       </Card>
     </div>
-  );
+  )
 }
+
