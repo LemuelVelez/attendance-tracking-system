@@ -46,6 +46,9 @@ const CCS_ATTENDANCE_COLLECTION_ID =
   process.env
     .NEXT_PUBLIC_APPWRITE_CollegeOfComputingStudies_Attendance_COLLECTION_ID ||
   "";
+const JRMSU_TC_ORGANIZATIONS_ATTENDANCE_COLLECTION_ID =
+  process.env
+    .NEXT_PUBLIC_APPWRITE_JRMSU_TC_ORGANIZATIONS_ATTENDANCE_COLLECTION_ID || "";
 
 const validateEnvVariables = () => {
   if (
@@ -57,7 +60,8 @@ const validateEnvVariables = () => {
     !CBA_ATTENDANCE_COLLECTION_ID ||
     !CAS_ATTENDANCE_COLLECTION_ID ||
     !CAF_ATTENDANCE_COLLECTION_ID ||
-    !CCS_ATTENDANCE_COLLECTION_ID
+    !CCS_ATTENDANCE_COLLECTION_ID ||
+    !JRMSU_TC_ORGANIZATIONS_ATTENDANCE_COLLECTION_ID
   ) {
     throw new Error(
       "Missing Appwrite environment variables. Please check your .env file."
@@ -275,6 +279,17 @@ const createCollegeAttendance = async (
     console.error("Error creating college attendance record:", error);
     throw error;
   }
+};
+
+export const createJRMSUTCOrganizationsAttendance = async (
+  eventData: EventData,
+  userData: User
+): Promise<GeneralAttendance | null> => {
+  return createCollegeAttendance(
+    JRMSU_TC_ORGANIZATIONS_ATTENDANCE_COLLECTION_ID,
+    eventData,
+    userData
+  );
 };
 
 export { getCurrentSession, getCurrentUser, createCollegeAttendance };

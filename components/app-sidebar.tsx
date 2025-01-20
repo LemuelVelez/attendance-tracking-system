@@ -101,8 +101,8 @@ const data = {
           url: "/admin/general-attendance",
         },
         {
-          title: "College Attendance",
-          url: "/admin/college-attendance",
+          title: "Segregated Attendance",
+          url: "/admin/segregated-attendance",
         },
         {
           title: "Print Attendance",

@@ -38,6 +38,10 @@ const COLLEGE_ATTENDANCE_COLLECTION_IDS = {
     process.env
       .NEXT_PUBLIC_APPWRITE_CollegeOfComputingStudies_Attendance_COLLECTION_ID ||
     "",
+  JRMSUTCOrganizations:
+    process.env
+      .NEXT_PUBLIC_APPWRITE_JRMSU_TC_ORGANIZATIONS_ATTENDANCE_COLLECTION_ID ||
+    "",
 };
 
 const getCollegeAttendance = async (collectionId: string): Promise<any[]> => {
@@ -130,6 +134,9 @@ export const getAgricultureAndForestryAttendance = () =>
 export const getComputingStudiesAttendance = () =>
   getCollegeAttendance(COLLEGE_ATTENDANCE_COLLECTION_IDS.ComputingStudies);
 
+export const getJRMSUTCOrganizationsAttendance = () =>
+  getCollegeAttendance(COLLEGE_ATTENDANCE_COLLECTION_IDS.JRMSUTCOrganizations);
+
 const deleteCollegeAttendance = async (
   collectionId: string,
   documentId: string
@@ -185,6 +192,12 @@ export const deleteComputingStudiesAttendance = (documentId: string) =>
     documentId
   );
 
+export const deleteJRMSUTCOrganizationsAttendance = (documentId: string) =>
+  deleteCollegeAttendance(
+    COLLEGE_ATTENDANCE_COLLECTION_IDS.JRMSUTCOrganizations,
+    documentId
+  );
+
 export type AttendanceType = "general" | "college";
 
 export type CollegeType =
@@ -194,7 +207,8 @@ export type CollegeType =
   | "BusinessAdministration"
   | "CriminalJusticeEducation"
   | "Engineering"
-  | "TeacherEducation";
+  | "TeacherEducation"
+  | "JRMSUTCOrganizations";
 
 export interface AttendanceRecord {
   name: string;
