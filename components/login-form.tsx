@@ -22,6 +22,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { useTheme } from "next-themes";
 import { gsap } from "gsap";
+import { ErrorInfoDialog } from "./ErrorInfoDialog";
 
 export function LoginForm() {
   const { setTheme } = useTheme();
@@ -215,6 +216,9 @@ export function LoginForm() {
           >
             Sign up
           </Link>
+        </div>
+        <div className="mt-4 text-center">
+          <ErrorInfoDialog />
         </div>
         <footer className="py-4 text-center">
           <p className="text-sm">JESUS BE ALL THE GLORY!</p>

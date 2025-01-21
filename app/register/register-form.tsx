@@ -25,6 +25,7 @@ import { useTheme } from "next-themes";
 import { Button } from "@/components/ui/button";
 import { gsap } from "gsap";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { ErrorInfoDialog } from "@/components/ErrorInfoDialog";
 
 export function SignUpForm() {
   const { setTheme } = useTheme();
@@ -321,7 +322,9 @@ export function SignUpForm() {
           Log in
         </Link>
       </div>
-
+      <div className="mt-4 text-center">
+        <ErrorInfoDialog />
+      </div>
       <footer className="py-4 text-center">
         <p className="text-sm">JESUS BE ALL THE GLORY!</p>
         <p className="text-xs mt-1">© SSG QR Attendance</p>
