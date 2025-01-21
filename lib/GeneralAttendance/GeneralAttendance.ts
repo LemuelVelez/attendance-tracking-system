@@ -1,61 +1,58 @@
-import { Client, Databases, ID, Models, Query } from "appwrite";
+import { Client, Databases, ID, type Models, Query } from "appwrite"
 
-const client = new Client();
+const client = new Client()
 client
   .setEndpoint(process.env.NEXT_PUBLIC_APPWRITE_ENDPOINT || "")
-  .setProject(process.env.NEXT_PUBLIC_APPWRITE_PROJECT_ID || "");
+  .setProject(process.env.NEXT_PUBLIC_APPWRITE_PROJECT_ID || "")
 
-const databases = new Databases(client);
+const databases = new Databases(client)
 
-const DATABASE_ID = process.env.NEXT_PUBLIC_APPWRITE_DATABASE_ID || "";
-const GENERAL_ATTENDANCE_COLLECTION_ID =
-  process.env.NEXT_PUBLIC_APPWRITE_GENERAL_ATTENDANCE_COLLECTION_ID || "";
-const FINES_MANAGEMENT_COLLECTION_ID =
-  process.env.NEXT_PUBLIC_APPWRITE_FINES_MANAGEMENT_COLLECTION_ID || "";
-const USERS_COLLECTION_ID =
-  process.env.NEXT_PUBLIC_APPWRITE_USERS_COLLECTION_ID || "";
+const DATABASE_ID = process.env.NEXT_PUBLIC_APPWRITE_DATABASE_ID || ""
+const GENERAL_ATTENDANCE_COLLECTION_ID = process.env.NEXT_PUBLIC_APPWRITE_GENERAL_ATTENDANCE_COLLECTION_ID || ""
+const FINES_MANAGEMENT_COLLECTION_ID = process.env.NEXT_PUBLIC_APPWRITE_FINES_MANAGEMENT_COLLECTION_ID || ""
+const USERS_COLLECTION_ID = process.env.NEXT_PUBLIC_APPWRITE_USERS_COLLECTION_ID || ""
 
 export interface Attendance extends Models.Document {
-  userId: string;
-  studentId: string;
-  name: string;
-  degreeProgram: string;
-  yearLevel: string;
-  section: string;
-  eventName: string;
-  location: string;
-  date: string;
-  day: string;
-  time: string;
+  userId: string
+  studentId: string
+  name: string
+  degreeProgram: string
+  yearLevel: string
+  section: string
+  eventName: string
+  location: string
+  date: string
+  day: string
+  time: string
 }
 
 export interface User extends Models.Document {
-  $id: string;
-  studentId: string;
-  name: string;
-  email: string;
+  $id: string
+  studentId: string
+  name: string
+  email: string
 }
 
 export interface FineDocumentData {
-  userId: string;
-  studentId: string;
-  name: string;
-  absences: string;
-  presences: string;
-  penalties: string;
-  dateIssued: string;
-  status: "Pending" | "Cleared" | "penaltyCleared";
+  userId: string
+  studentId: string
+  name: string
+  absences: string
+  presences: string
+  penalties: string
+  dateIssued: string
+  status: "Pending" | "Cleared" | "penaltyCleared"
 }
 
 export interface FineDocument extends FineDocumentData, Models.Document {}
 
 function isFineDocument(doc: unknown): doc is FineDocument {
   if (typeof doc !== "object" || doc === null) {
-    console.log("Document is not an object");
-    return false;
+    console.log("Document is not an object")
+    return false
   }
 
-  const fineDoc = doc as Partial<FineDocument>;
+  const fineDoc = doc as Partial<FineDocument>
   const requiredProps = [
     "$id",
     "userId",
@@ -66,155 +63,119 @@ function isFineDocument(doc: unknown): doc is FineDocument {
     "penalties",
     "dateIssued",
     "status",
-  ];
-  const missingProps = requiredProps.filter((prop) => !(prop in fineDoc));
+  ]
+  const missingProps = requiredProps.filter((prop) => !(prop in fineDoc))
 
   if (missingProps.length > 0) {
-    console.log("Missing properties:", missingProps);
-    return false;
+    console.log("Missing properties:", missingProps)
+    return false
   }
 
-  if (
-    fineDoc.status !== "Pending" &&
-    fineDoc.status !== "Cleared" &&
-    fineDoc.status !== "penaltyCleared"
-  ) {
-    console.log("Invalid status:", fineDoc.status);
-    return false;
+  if (fineDoc.status !== "Pending" && fineDoc.status !== "Cleared" && fineDoc.status !== "penaltyCleared") {
+    console.log("Invalid status:", fineDoc.status)
+    return false
   }
 
-  return true;
+  return true
 }
 
 export const getGeneralAttendance = async (): Promise<Attendance[]> => {
   try {
     if (!DATABASE_ID || !GENERAL_ATTENDANCE_COLLECTION_ID) {
-      throw new Error(
-        "Missing Appwrite environment variables. Please check your .env file."
-      );
+      throw new Error("Missing Appwrite environment variables. Please check your .env file.")
     }
 
-    const allDocuments: Attendance[] = [];
-    let lastId: string | undefined;
+    const allDocuments: Attendance[] = []
+    let lastId: string | undefined
 
     while (true) {
-      const queries = [Query.orderDesc("$createdAt"), Query.limit(100)];
+      const queries = [Query.orderDesc("$createdAt"), Query.limit(100)]
       if (lastId) {
-        queries.push(Query.cursorAfter(lastId));
+        queries.push(Query.cursorAfter(lastId))
       }
 
-      const response = await databases.listDocuments(
-        DATABASE_ID,
-        GENERAL_ATTENDANCE_COLLECTION_ID,
-        queries
-      );
+      const response = await databases.listDocuments(DATABASE_ID, GENERAL_ATTENDANCE_COLLECTION_ID, queries)
 
-      const uniqueMap = new Map<string, Attendance>();
-      const duplicatesToDelete: string[] = [];
+      const uniqueMap = new Map<string, Attendance>()
+      const duplicatesToDelete: string[] = []
 
       response.documents.forEach((doc: Models.Document) => {
-        const attendance = doc as Attendance;
-        const key = `${attendance.userId}-${attendance.eventName}-${attendance.date}`;
+        const attendance = doc as Attendance
+        const key = `${attendance.userId}-${attendance.eventName}-${attendance.date}`
         if (uniqueMap.has(key)) {
-          duplicatesToDelete.push(doc.$id);
+          duplicatesToDelete.push(doc.$id)
         } else {
-          uniqueMap.set(key, attendance);
+          uniqueMap.set(key, attendance)
         }
-      });
+      })
 
       await Promise.all(
-        duplicatesToDelete.map((id) =>
-          databases.deleteDocument(
-            DATABASE_ID,
-            GENERAL_ATTENDANCE_COLLECTION_ID,
-            id
-          )
-        )
-      );
+        duplicatesToDelete.map((id) => databases.deleteDocument(DATABASE_ID, GENERAL_ATTENDANCE_COLLECTION_ID, id)),
+      )
 
-      console.log(`Deleted ${duplicatesToDelete.length} duplicate records.`);
+      console.log(`Deleted ${duplicatesToDelete.length} duplicate records.`)
 
-      allDocuments.push(...Array.from(uniqueMap.values()));
+      allDocuments.push(...Array.from(uniqueMap.values()))
 
       if (response.documents.length < 100) {
-        break;
+        break
       }
 
-      lastId = response.documents[response.documents.length - 1].$id;
+      lastId = response.documents[response.documents.length - 1].$id
     }
 
-    return allDocuments;
+    return allDocuments
   } catch (error) {
-    console.error("Error in getGeneralAttendance:", error);
-    throw error;
+    console.error("Error in getGeneralAttendance:", error)
+    throw error
   }
-};
+}
 
-export const deleteGeneralAttendance = async (
-  documentId: string
-): Promise<void> => {
+export const deleteGeneralAttendance = async (documentId: string): Promise<void> => {
   try {
     if (!DATABASE_ID || !GENERAL_ATTENDANCE_COLLECTION_ID) {
-      throw new Error(
-        "Missing Appwrite environment variables. Please check your .env file."
-      );
+      throw new Error("Missing Appwrite environment variables. Please check your .env file.")
     }
 
-    await databases.deleteDocument(
-      DATABASE_ID,
-      GENERAL_ATTENDANCE_COLLECTION_ID,
-      documentId
-    );
+    await databases.deleteDocument(DATABASE_ID, GENERAL_ATTENDANCE_COLLECTION_ID, documentId)
 
-    console.log(`Successfully deleted document with ID: ${documentId}`);
+    console.log(`Successfully deleted document with ID: ${documentId}`)
   } catch (error) {
-    console.error("Error in deleteGeneralAttendance:", error);
-    throw error;
+    console.error("Error in deleteGeneralAttendance:", error)
+    throw error
   }
-};
+}
 
-export const createFineDocument = async (
-  fineData: FineDocumentData
-): Promise<FineDocument> => {
+export const createFineDocument = async (fineData: FineDocumentData): Promise<FineDocument> => {
   try {
     if (!DATABASE_ID || !FINES_MANAGEMENT_COLLECTION_ID) {
-      throw new Error(
-        "Missing Appwrite environment variables. Please check your .env file."
-      );
+      throw new Error("Missing Appwrite environment variables. Please check your .env file.")
     }
 
-    const existingDocuments = await databases.listDocuments(
-      DATABASE_ID,
-      FINES_MANAGEMENT_COLLECTION_ID,
-      [
-        Query.equal("userId", fineData.userId),
-        Query.equal("studentId", fineData.studentId),
-        Query.equal("dateIssued", fineData.dateIssued),
-      ]
-    );
+    const existingDocuments = await databases.listDocuments(DATABASE_ID, FINES_MANAGEMENT_COLLECTION_ID, [
+      Query.equal("userId", fineData.userId),
+      Query.equal("studentId", fineData.studentId),
+      Query.equal("dateIssued", fineData.dateIssued),
+    ])
 
     if (existingDocuments.documents.length > 0) {
-      const existingDoc = existingDocuments.documents[0];
+      const existingDoc = existingDocuments.documents[0]
       if (isFineDocument(existingDoc)) {
         // Update the existing document
         const updatedDoc = await databases.updateDocument(
           DATABASE_ID,
           FINES_MANAGEMENT_COLLECTION_ID,
           existingDoc.$id,
-          fineData
-        );
-        console.log("Updated existing fine document:", updatedDoc);
+          fineData,
+        )
+        console.log("Updated existing fine document:", updatedDoc)
         if (isFineDocument(updatedDoc)) {
-          return updatedDoc;
+          return updatedDoc
         } else {
-          throw new Error(
-            "Updated document does not match FineDocument structure"
-          );
+          throw new Error("Updated document does not match FineDocument structure")
         }
       } else {
-        throw new Error(
-          "Existing document does not match FineDocument structure"
-        );
+        throw new Error("Existing document does not match FineDocument structure")
       }
     } else {
       // Create a new document
@@ -222,205 +183,165 @@ export const createFineDocument = async (
         DATABASE_ID,
         FINES_MANAGEMENT_COLLECTION_ID,
         ID.unique(),
-        fineData
-      );
+        fineData,
+      )
 
-      console.log("Created new fine document:", response);
+      console.log("Created new fine document:", response)
 
       if (!isFineDocument(response)) {
-        console.error("Document structure mismatch:", response);
-        throw new Error(
-          "Created document does not match FineDocument structure"
-        );
+        console.error("Document structure mismatch:", response)
+        throw new Error("Created document does not match FineDocument structure")
       }
 
-      console.log(
-        `Successfully created fine document with ID: ${response.$id}`
-      );
-      return response;
+      console.log(`Successfully created fine document with ID: ${response.$id}`)
+      return response
     }
   } catch (error) {
-    console.error("Error in createFineDocument:", error);
-    throw error;
+    console.error("Error in createFineDocument:", error)
+    throw error
   }
-};
+}
 
-export const getFineDocuments = async (
-  queries: string[] = []
-): Promise<FineDocument[]> => {
+export const getFineDocuments = async (queries: string[] = []): Promise<FineDocument[]> => {
   try {
     if (!DATABASE_ID || !FINES_MANAGEMENT_COLLECTION_ID) {
-      throw new Error(
-        "Missing Appwrite environment variables. Please check your .env file."
-      );
+      throw new Error("Missing Appwrite environment variables. Please check your .env file.")
     }
 
-    const allDocuments: FineDocument[] = [];
-    let lastId: string | undefined;
+    const allDocuments: FineDocument[] = []
+    let lastId: string | undefined
 
     while (true) {
-      const currentQueries = [
-        ...queries,
-        Query.limit(100),
-        Query.orderDesc("$createdAt"),
-      ];
+      const currentQueries = [...queries, Query.limit(100), Query.orderDesc("$createdAt")]
       if (lastId) {
-        currentQueries.push(Query.cursorAfter(lastId));
+        currentQueries.push(Query.cursorAfter(lastId))
       }
 
-      const response = await databases.listDocuments(
-        DATABASE_ID,
-        FINES_MANAGEMENT_COLLECTION_ID,
-        currentQueries
-      );
+      const response = await databases.listDocuments(DATABASE_ID, FINES_MANAGEMENT_COLLECTION_ID, currentQueries)
 
-      const fineDocuments = response.documents.filter(isFineDocument);
+      const fineDocuments = response.documents.filter(isFineDocument)
 
       // Check for duplicates and delete them
-      const uniqueFines = new Map<string, FineDocument>();
-      const duplicatesToDelete: string[] = [];
+      const uniqueFines = new Map<string, FineDocument>()
+      const duplicatesToDelete: string[] = []
 
       for (const fine of fineDocuments) {
-        const key = `${fine.studentId}-${fine.userId}-${fine.name}`;
+        const key = `${fine.studentId}-${fine.userId}-${fine.name}`
         if (uniqueFines.has(key)) {
           // Mark the duplicate for deletion
-          duplicatesToDelete.push(fine.$id);
+          duplicatesToDelete.push(fine.$id)
         } else {
-          uniqueFines.set(key, fine);
+          uniqueFines.set(key, fine)
         }
       }
 
       // Delete duplicates
       await Promise.all(
-        duplicatesToDelete.map((id) =>
-          databases.deleteDocument(
-            DATABASE_ID,
-            FINES_MANAGEMENT_COLLECTION_ID,
-            id
-          )
-        )
-      );
+        duplicatesToDelete.map((id) => databases.deleteDocument(DATABASE_ID, FINES_MANAGEMENT_COLLECTION_ID, id)),
+      )
 
-      console.log(`Deleted ${duplicatesToDelete.length} duplicate fine(s).`);
+      console.log(`Deleted ${duplicatesToDelete.length} duplicate fine(s).`)
 
-      allDocuments.push(...Array.from(uniqueFines.values()));
+      allDocuments.push(...Array.from(uniqueFines.values()))
 
       if (response.documents.length < 100) {
-        break;
+        break
       }
 
-      lastId = response.documents[response.documents.length - 1].$id;
+      lastId = response.documents[response.documents.length - 1].$id
     }
 
-    return allDocuments;
+    return allDocuments
   } catch (error) {
-    console.error("Error in getFineDocuments:", error);
-    throw error;
+    console.error("Error in getFineDocuments:", error)
+    throw error
   }
-};
+}
 
 export const deleteFines = async (documentId: string): Promise<void> => {
   try {
     if (!DATABASE_ID || !FINES_MANAGEMENT_COLLECTION_ID) {
-      throw new Error(
-        "Missing Appwrite environment variables. Please check your .env file."
-      );
+      throw new Error("Missing Appwrite environment variables. Please check your .env file.")
     }
 
-    await databases.deleteDocument(
-      DATABASE_ID,
-      FINES_MANAGEMENT_COLLECTION_ID,
-      documentId
-    );
+    await databases.deleteDocument(DATABASE_ID, FINES_MANAGEMENT_COLLECTION_ID, documentId)
 
-    console.log(`Successfully deleted fine document with ID: ${documentId}`);
+    console.log(`Successfully deleted fine document with ID: ${documentId}`)
   } catch (error) {
-    console.error("Error in deleteFines:", error);
-    throw error;
+    console.error("Error in deleteFines:", error)
+    throw error
   }
-};
+}
 
 export const getTotalUniqueEvents = async (): Promise<number> => {
   try {
     if (!DATABASE_ID || !GENERAL_ATTENDANCE_COLLECTION_ID) {
-      throw new Error(
-        "Missing Appwrite environment variables. Please check your .env file."
-      );
+      throw new Error("Missing Appwrite environment variables. Please check your .env file.")
     }
 
-    const uniqueEvents = new Set<string>();
-    let lastId: string | undefined;
+    const uniqueEvents = new Set<string>()
+    let lastId: string | undefined
 
     while (true) {
-      const queries = [Query.limit(100)];
+      const queries = [Query.limit(100)]
       if (lastId) {
-        queries.push(Query.cursorAfter(lastId));
+        queries.push(Query.cursorAfter(lastId))
       }
 
-      const response = await databases.listDocuments(
-        DATABASE_ID,
-        GENERAL_ATTENDANCE_COLLECTION_ID,
-        queries
-      );
+      const response = await databases.listDocuments(DATABASE_ID, GENERAL_ATTENDANCE_COLLECTION_ID, queries)
 
       response.documents.forEach((doc: Models.Document) => {
         if ((doc as Attendance).eventName) {
-          uniqueEvents.add((doc as Attendance).eventName);
+          uniqueEvents.add((doc as Attendance).eventName)
         }
-      });
+      })
 
       if (response.documents.length < 100) {
-        break;
+        break
       }
 
-      lastId = response.documents[response.documents.length - 1].$id;
+      lastId = response.documents[response.documents.length - 1].$id
     }
 
-    return uniqueEvents.size;
+    return uniqueEvents.size
   } catch (error) {
-    console.error("Error in getTotalUniqueEvents:", error);
-    throw error;
+    console.error("Error in getTotalUniqueEvents:", error)
+    throw error
   }
-};
+}
 
 export const getAllUsers = async (): Promise<User[]> => {
   try {
     if (!DATABASE_ID || !USERS_COLLECTION_ID) {
-      throw new Error(
-        "Missing Appwrite environment variables. Please check your .env file."
-      );
+      throw new Error("Missing Appwrite environment variables. Please check your .env file.")
     }
 
-    const allUsers: User[] = [];
-    let lastId: string | undefined;
+    const allUsers: User[] = []
+    let lastId: string | undefined
 
     while (true) {
-      const queries = [Query.limit(100)];
+      const queries = [Query.limit(100)]
       if (lastId) {
-        queries.push(Query.cursorAfter(lastId));
+        queries.push(Query.cursorAfter(lastId))
       }
 
-      const response = await databases.listDocuments(
-        DATABASE_ID,
-        USERS_COLLECTION_ID,
-        queries
-      );
+      const response = await databases.listDocuments(DATABASE_ID, USERS_COLLECTION_ID, queries)
 
-      allUsers.push(...(response.documents as User[]));
+      allUsers.push(...(response.documents as User[]))
 
       if (response.documents.length < 100) {
-        break;
+        break
       }
 
-      lastId = response.documents[response.documents.length - 1].$id;
+      lastId = response.documents[response.documents.length - 1].$id
     }
 
-    return allUsers;
+    return allUsers
   } catch (error) {
-    console.error("Error in getAllUsers:", error);
-    throw error;
+    console.error("Error in getAllUsers:", error)
+    throw error
   }
-};
+}
 
 const PENALTIES_MAP: Record<number, string> = {
   0: "No penalty",
@@ -434,57 +355,52 @@ const PENALTIES_MAP: Record<number, string> = {
   8: "1 plastic envelop with handle, 2 Pads intermediate paper, 2 notebooks",
   9: "1 plastic envelop with handle, 2 Pads intermediate paper, 3 notebooks 2 pencils, 2 eraser, 1 sharpener",
   10: "1 plastic envelop with handle, 2 Pads intermediate paper, 3 notebooks 3 pencils, 2 eraser, 3 sharpener, 3 ball pen, 1 crayon",
-};
+}
 
 export const updateAttendance = async (): Promise<void> => {
   try {
-    if (
-      !DATABASE_ID ||
-      !GENERAL_ATTENDANCE_COLLECTION_ID ||
-      !FINES_MANAGEMENT_COLLECTION_ID
-    ) {
-      throw new Error(
-        "Missing Appwrite environment variables. Please check your .env file."
-      );
+    if (!DATABASE_ID || !GENERAL_ATTENDANCE_COLLECTION_ID || !FINES_MANAGEMENT_COLLECTION_ID) {
+      throw new Error("Missing Appwrite environment variables. Please check your .env file.")
     }
 
-    const generalAttendance = await getGeneralAttendance();
-    const fineDocuments = await getFineDocuments();
-    const users = await getAllUsers();
-    const totalEvents = await getTotalUniqueEvents();
+    const generalAttendance = await getGeneralAttendance()
+    const fineDocuments = await getFineDocuments()
+    const users = await getAllUsers()
+    const totalEvents = await getTotalUniqueEvents()
+
+    // Delete duplicate fine documents
+    await deleteDuplicateFineDocuments()
 
     for (const user of users) {
-      const userAttendance = generalAttendance.filter(
-        (a) => a.userId === user.$id
-      );
-      const userFine = fineDocuments.find((f) => f.userId === user.$id);
+      const userAttendance = generalAttendance.filter((a) => a.userId === user.$id)
+      const userFine = fineDocuments.find((f) => f.userId === user.$id)
 
-      const presences = userAttendance.length;
-      const currentAbsences = Math.max(0, totalEvents - presences);
+      const presences = userAttendance.length
+      const currentAbsences = Math.max(0, totalEvents - presences)
 
-      let absencesToCount = currentAbsences;
-      let newStatus: "Cleared" | "Pending" | "penaltyCleared" = "Pending";
+      let absencesToCount = currentAbsences
+      let newStatus: "Cleared" | "Pending" | "penaltyCleared" = "Pending"
 
       if (userFine) {
-        const previousAbsences = parseInt(userFine.absences);
+        const previousAbsences = Number.parseInt(userFine.absences)
 
         if (userFine.status === "penaltyCleared") {
           if (currentAbsences <= previousAbsences) {
             // No new absences, keep the status as penaltyCleared
-            newStatus = "penaltyCleared";
-            absencesToCount = 0;
+            newStatus = "penaltyCleared"
+            absencesToCount = 0
           } else {
             // New absences detected, count only the new ones
-            absencesToCount = currentAbsences - previousAbsences;
-            newStatus = "Pending";
+            absencesToCount = currentAbsences - previousAbsences
+            newStatus = "Pending"
           }
         } else {
           // For other statuses, count all current absences
-          absencesToCount = currentAbsences;
+          absencesToCount = currentAbsences
         }
       }
 
-      const penalties = PENALTIES_MAP[absencesToCount] || PENALTIES_MAP[10];
+      const penalties = PENALTIES_MAP[absencesToCount] || PENALTIES_MAP[10]
 
       const fineData: FineDocumentData = {
         userId: user.$id,
@@ -495,24 +411,51 @@ export const updateAttendance = async (): Promise<void> => {
         penalties,
         dateIssued: new Date().toISOString().split("T")[0],
         status: penalties === "No penalty" ? "Cleared" : newStatus,
-      };
+      }
 
       if (userFine) {
         // Update existing fine document
         await createFineDocument({
           ...fineData,
-          status:
-            newStatus === "penaltyCleared" ? userFine.status : fineData.status,
-        });
+          status: newStatus === "penaltyCleared" ? userFine.status : fineData.status,
+        })
       } else {
         // Create new fine document
-        await createFineDocument(fineData);
+        await createFineDocument(fineData)
       }
     }
 
-    console.log("Attendance and fines updated successfully");
+    console.log("Attendance and fines updated successfully")
   } catch (error) {
-    console.error("Error in updateAttendance:", error);
-    throw error;
+    console.error("Error in updateAttendance:", error)
+    throw error
   }
-};
+}
+
+// Helper function to delete duplicate fine documents
+async function deleteDuplicateFineDocuments() {
+  try {
+    const documents = await databases.listDocuments(DATABASE_ID, FINES_MANAGEMENT_COLLECTION_ID, [
+      Query.orderDesc("$createdAt"),
+    ])
+
+    const userDocMap = new Map()
+
+    for (const doc of documents.documents) {
+      if (userDocMap.has(doc.userId)) {
+        // This is a duplicate, delete it
+        await databases.deleteDocument(DATABASE_ID, FINES_MANAGEMENT_COLLECTION_ID, doc.$id)
+        console.log(`Deleted duplicate document for user ${doc.userId}`)
+      } else {
+        // This is the first occurrence, keep it
+        userDocMap.set(doc.userId, doc)
+      }
+    }
+
+    console.log("Duplicate fine documents deleted successfully")
+  } catch (error) {
+    console.error("Error deleting duplicate fine documents:", error)
+    throw error
+  }
+}
+
