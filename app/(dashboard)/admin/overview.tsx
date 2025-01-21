@@ -189,7 +189,7 @@ export default function Overview() {
         <div className="grid gap-4 sm:gap-6 grid-cols-2 lg:grid-cols-4 mt-4 sm:mt-8">
           <AnimatePresence>
             {[
-              { title: "Total Students", value: totalStudents, icon: Users },
+              { title: "Total Users", value: totalStudents, icon: Users },
               {
                 title: "Average Attendance",
                 value: `${averageAttendance}%`,

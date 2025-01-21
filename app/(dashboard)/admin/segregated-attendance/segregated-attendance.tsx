@@ -71,6 +71,7 @@ import {
   getJRMSUTCOrganizationsAttendance,
   deleteJRMSUTCOrganizationsAttendance,
 } from "@/lib/GeneralAttendance/getCollegeAttendance"
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 
 export type Attendance = {
   $createdAt: string
@@ -362,6 +363,77 @@ export function SegregatedAttendanceTable() {
   return (
     <div className="flex flex-col items-center justify-center min-h-screen p-2 sm:p-4 md:p-8 space-y-4">
       <Card className="w-full max-w-[calc(100vw-2rem)] sm:max-w-2xl md:max-w-3xl lg:max-w-5xl xl:max-w-6xl">
+      <Dialog>
+        <DialogTrigger asChild>
+          <div className="flex justify-center w-full mb-2 mt-4 ">
+            <Button variant="outline" className="w-auto bg-primary">
+              View Segregated Attendance Instructions
+            </Button>
+          </div>
+        </DialogTrigger>
+         <DialogContent className="max-w-[350px] lg:max-w-[700px]">
+            <DialogHeader>
+              <DialogTitle className="text-lg lg:xl">Segregated Attendance Management Instructions</DialogTitle>
+            </DialogHeader>
+            <ScrollArea className="h-[70vh] w-full rounded-md border p-4">
+              <div className="text-sm lg:text-lg space-y-4">
+                <h3 className="text-lg font-semibold">Segregated Attendance Overview:</h3>
+                <p>
+                  Segregated Attendance allows you to verify and manage the transfer of recorded attendance
+                  from General Attendance to specific colleges or JRMSU-TC organizations. Use the search
+                  feature to confirm the transfer of attendance records by typing any value, such as event name
+                  (for example, &quot;Flag Ceremony&quot;), student name (for example, &quot;John Doe&quot;), student ID (for example, &quot;TC-21-A-00123&quot;),
+                  year level, degree program, or other criteria to display related results.
+                </p>
+
+                <h3 className="text-lg font-semibold">Attendance Management Process:</h3>
+                <p>
+                  To ensure proper management of attendance records:
+                </p>
+                <ul className="list-disc pl-6 space-y-2">
+                  <li>
+                    Check if the recorded attendance has been transferred to the correct college or
+                    JRMSU-TC organization.
+                  </li>
+                  <li>
+                    If you cannot locate the attendance in the target category, return to General
+                    Attendance to verify if it was mistakenly left untransferred.
+                  </li>
+                  <li>
+                    Utilize the search bar to efficiently find attendance records by typing relevant values,
+                    such as event name (for example, &quot;Flag Ceremony&quot;), student name (for example, &quot;John Doe&quot;), or student ID
+                    (for example, &quot;TC-21-A-00123&quot;) to display related results.
+                  </li>
+                </ul>
+
+                <p className="font-semibold mt-4">
+                  You can print all segregated attendance records into the Print Attendance section.
+                </p>
+
+                <div className="mt-4 space-y-2">
+                  <p>
+                      <strong>General Attendance:</strong>{" "}
+                      <a
+                        href="https://ssg-qr-attendance.vercel.app/admin/general-attendance"
+                        className="text-blue-500 hover:underline"
+                      >
+                        https://ssg-qr-attendance.vercel.app/admin/general-attendance
+                      </a>
+                    </p>
+                  <p>
+                    <strong>Print Attendance:</strong>{" "}
+                    <a
+                      href="https://ssg-qr-attendance.vercel.app/admin/print-attendance"
+                      className="text-blue-500 hover:underline"
+                    >
+                      https://ssg-qr-attendance.vercel.app/admin/print-attendance
+                    </a>
+                  </p>
+                </div>
+              </div>
+            </ScrollArea>
+          </DialogContent>
+          </Dialog>
         <CardHeader>
           <CardTitle className="text-2xl font-bold">Segregated Attendance</CardTitle>
         </CardHeader>

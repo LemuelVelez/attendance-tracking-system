@@ -66,6 +66,13 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
 
 type SortConfig = {
   key: keyof Student;
@@ -219,6 +226,54 @@ export default function StudentTable() {
 
   return (
     <Card className="w-full mx-auto max-w-xs sm:max-w-sm md:max-w-md lg:max-w-7xl my-8 shadow-lg">
+      <Dialog>
+        <DialogTrigger asChild>
+          <div className="flex justify-center w-full mb-2 mt-4 ">
+            <Button variant="outline" className="w-auto bg-primary">
+              View Student Management Instructions
+            </Button>
+          </div>
+        </DialogTrigger>
+        <DialogContent className="max-w-[350px] lg:max-w-[700px]">
+          <DialogHeader>
+            <DialogTitle className="text-lg lg:xl">
+              Student Management Instructions
+            </DialogTitle>
+          </DialogHeader>
+          <ScrollArea className="h-[70vh] w-full rounded-md border p-4">
+            <div className="text-sm lg:text-lg space-y-4">
+              <h3 className="text-lg font-semibold">Overview:</h3>
+              <p>
+                In Student Management, you can view all registered students and
+                identify admins by their badges. You can assign admin roles to
+                trusted individuals who will manage the admin dashboard of QR
+                Attendance.
+              </p>
+
+              <h3 className="text-lg font-semibold">
+                Utilizing the Search Feature:
+              </h3>
+              <p>
+                Use the search bar to quickly locate specific students or admins
+                by typing relevant details such as:
+              </p>
+              <ul className="list-disc pl-6 space-y-2">
+                <li>
+                  Degree Program (for example, &quot;BS Information
+                  Systems&quot;).
+                </li>
+                <li>Student ID (for example, &quot;TC-25-A-00123&quot;).</li>
+                <li>Name (for example, &quot;John Doe&quot;).</li>
+              </ul>
+              <p>
+                This feature helps you efficiently navigate records, especially
+                when assigning admin roles. Search by personal information like
+                name or student ID to locate individuals quickly.
+              </p>
+            </div>
+          </ScrollArea>
+        </DialogContent>
+      </Dialog>
       <CardHeader className="bg-gradient-to-r from-primary/95 to-purple-600">
         <CardTitle className="text-2xl font-bold flex items-center">
           <Users className="mr-2" />

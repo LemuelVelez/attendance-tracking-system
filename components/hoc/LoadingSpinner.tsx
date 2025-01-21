@@ -27,14 +27,14 @@ const LoadingSpinner = () => {
     <div className="w-full h-screen flex items-center justify-center bg-gray-800">
       {isLoading ? (
         <div className="relative">
-          <Loader2 className="w-72 h-72 animate-spin text-primary z-50" />
+          <Loader2 className="w-32 h-32 animate-spin text-primary" />
           <div className="absolute inset-0 flex items-center justify-center">
             <div className="rounded-full overflow-hidden">
               <Image
                 src="/ssglogo.jpg"
                 alt="SSG Logo"
-                width={150}
-                height={150}
+                width={90}
+                height={90}
               />
             </div>
           </div>
@@ -45,7 +45,7 @@ const LoadingSpinner = () => {
         </p>
       ) : (
         <div className="rounded-full overflow-hidden">
-          <Image src="/ssglogo.jpg" alt="SSG Logo" width={300} height={300} />
+          <Image src="/ssglogo.jpg" alt="SSG Logo" width={200} height={200} />
         </div>
       )}
     </div>

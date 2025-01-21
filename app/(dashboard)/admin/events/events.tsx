@@ -52,6 +52,7 @@ import {
 import { User } from "@/lib/attendance/attendance";
 import QRCodeScanner from "./QRCodeScanner";
 import { useToast } from "@/hooks/use-toast";
+import { ScrollArea } from "@/components/ui/scroll-area";
 
 const generateQRCode = async (event: Event): Promise<string> => {
   const qrData = JSON.stringify({
@@ -322,6 +323,102 @@ export default function EventDisplay() {
       <h1 className="text-2xl sm:text-3xl font-bold mb-6 text-center">
         Events Management
       </h1>
+      <Dialog>
+        <DialogTrigger asChild>
+          <div className="flex justify-center w-full mb-4">
+            <Button variant="outline" className="w-auto bg-primary">
+              View Attendance Instructions
+            </Button>
+          </div>
+        </DialogTrigger>
+        <DialogContent className="max-w-[350px] lg:max-w-[700px]">
+          <DialogHeader>
+            <DialogTitle className="text-lg lg:xl">
+              Event Attendance Management Instructions
+            </DialogTitle>
+          </DialogHeader>
+          <ScrollArea className="h-[70vh] w-full rounded-md border p-4">
+            <div className="text-sm lg:text-lg space-y-4">
+              <h3 className="text-lg font-semibold">
+                Attendance Recording Process:
+              </h3>
+              <p>
+                Recorded attendance for the events you created will be saved
+                under General Attendance. If you created an event specifically
+                for a particular college, please follow these steps:
+              </p>
+              <ul className="list-disc pl-6 space-y-2">
+                <li>
+                  Transfer the recorded attendance from General Attendance to
+                  Segregated Attendance.
+                </li>
+                <li>
+                  Locate the specific college in General Attendance for which
+                  you created the event.
+                </li>
+                <li>
+                  Add the attendance to the specific college or organization.
+                </li>
+                <li>
+                  Delete the corresponding recorded attendance in General
+                  Attendance to prevent it from being included in fines
+                  management.
+                </li>
+              </ul>
+              <p>
+                If you created an event specifically for any organizations under
+                JRMSU-TC:
+              </p>
+              <ul className="list-disc pl-6 space-y-2">
+                <li>Transfer it to Segregated Attendance.</li>
+                <li>
+                  Select the JRMSU-TC organizations from General Attendance.
+                </li>
+                <li>
+                  Delete the corresponding recorded attendance in General
+                  Attendance.
+                </li>
+              </ul>
+              <p>
+                If the event you created is for the entire student body of
+                JRMSU-TC, leave it in General Attendance.
+              </p>
+              <p className="font-semibold mt-4">
+                All recorded attendance can be printed under Print Attendance.
+              </p>
+              <div className="mt-4 space-y-2">
+                <p>
+                  <strong>General Attendance:</strong>{" "}
+                  <a
+                    href="https://ssg-qr-attendance.vercel.app/admin/general-attendance"
+                    className="text-blue-500 hover:underline"
+                  >
+                    https://ssg-qr-attendance.vercel.app/admin/general-attendance
+                  </a>
+                </p>
+                <p>
+                  <strong>Segregated Attendance:</strong>{" "}
+                  <a
+                    href="https://ssg-qr-attendance.vercel.app/admin/segregated-attendance"
+                    className="text-blue-500 hover:underline"
+                  >
+                    https://ssg-qr-attendance.vercel.app/admin/segregated-attendance
+                  </a>
+                </p>
+                <p>
+                  <strong>Print Attendance:</strong>{" "}
+                  <a
+                    href="https://ssg-qr-attendance.vercel.app/admin/print-attendance"
+                    className="text-blue-500 hover:underline"
+                  >
+                    https://ssg-qr-attendance.vercel.app/admin/print-attendance
+                  </a>
+                </p>
+              </div>
+            </div>
+          </ScrollArea>
+        </DialogContent>
+      </Dialog>
       {events.length === 0 ? (
         <Card className="w-full max-w-md mx-auto">
           <CardContent className="flex flex-col items-center justify-center p-6">

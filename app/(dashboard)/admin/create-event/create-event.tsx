@@ -38,6 +38,14 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { cn } from "@/lib/utils";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import { ScrollArea } from "@/components/ui/scroll-area";
 
 interface FormField {
   value: string;
@@ -58,6 +66,7 @@ export default function CreateEvent() {
     description: { value: "", error: null },
   });
   const [isLoading, setIsLoading] = useState(false);
+  const [organizationType, setOrganizationType] = useState<string>("");
 
   const updateField = (field: string, value: string) => {
     setFormFields((prev) => ({
@@ -123,6 +132,7 @@ export default function CreateEvent() {
           day: date.toLocaleDateString("en-US", { weekday: "long" }),
           location: formFields.location.value,
           description: formFields.description.value,
+          organizationType: organizationType,
         };
 
         const createdEvent = await createEvent(eventData);
@@ -165,7 +175,7 @@ export default function CreateEvent() {
 
   const formatTime = (time: string): string => {
     const [hours, minutes] = time.split(":");
-    const hour = parseInt(hours, 10);
+    const hour = Number.parseInt(hours, 10);
     const ampm = hour >= 12 ? "PM" : "AM";
     const formattedHour = hour % 12 || 12;
     return `${formattedHour}:${minutes} ${ampm}`;
@@ -173,6 +183,102 @@ export default function CreateEvent() {
 
   return (
     <div className="container mx-auto py-10">
+      <Dialog>
+        <DialogTrigger asChild>
+          <div className="flex justify-center w-full mb-4">
+            <Button variant="outline" className="w-auto bg-primary">
+              View Attendance Instructions
+            </Button>
+          </div>
+        </DialogTrigger>
+        <DialogContent className="max-w-[350px] lg:max-w-[700px]">
+          <DialogHeader>
+            <DialogTitle className="text-lg lg:xl">
+              Event Attendance Management Instructions
+            </DialogTitle>
+          </DialogHeader>
+          <ScrollArea className="h-[70vh] w-full rounded-md border p-4">
+            <div className="text-sm lg:text-lg space-y-4">
+              <h3 className="text-lg font-semibold">
+                Attendance Recording Process:
+              </h3>
+              <p>
+                Recorded attendance for the events you created will be saved
+                under General Attendance. If you created an event specifically
+                for a particular college, please follow these steps:
+              </p>
+              <ul className="list-disc pl-6 space-y-2">
+                <li>
+                  Transfer the recorded attendance from General Attendance to
+                  Segregated Attendance.
+                </li>
+                <li>
+                  Locate the specific college in General Attendance for which
+                  you created the event.
+                </li>
+                <li>
+                  Add the attendance to the specific college or organization.
+                </li>
+                <li>
+                  Delete the corresponding recorded attendance in General
+                  Attendance to prevent it from being included in fines
+                  management.
+                </li>
+              </ul>
+              <p>
+                If you created an event specifically for any organizations under
+                JRMSU-TC:
+              </p>
+              <ul className="list-disc pl-6 space-y-2">
+                <li>Transfer it to Segregated Attendance.</li>
+                <li>
+                  Select the JRMSU-TC organizations from General Attendance.
+                </li>
+                <li>
+                  Delete the corresponding recorded attendance in General
+                  Attendance.
+                </li>
+              </ul>
+              <p>
+                If the event you created is for the entire student body of
+                JRMSU-TC, leave it in General Attendance.
+              </p>
+              <p className="font-semibold mt-4">
+                All recorded attendance can be printed under Print Attendance.
+              </p>
+              <div className="mt-4 space-y-2">
+                <p>
+                  <strong>General Attendance:</strong>{" "}
+                  <a
+                    href="https://ssg-qr-attendance.vercel.app/admin/general-attendance"
+                    className="text-blue-500 hover:underline"
+                  >
+                    https://ssg-qr-attendance.vercel.app/admin/general-attendance
+                  </a>
+                </p>
+                <p>
+                  <strong>Segregated Attendance:</strong>{" "}
+                  <a
+                    href="https://ssg-qr-attendance.vercel.app/admin/segregated-attendance"
+                    className="text-blue-500 hover:underline"
+                  >
+                    https://ssg-qr-attendance.vercel.app/admin/segregated-attendance
+                  </a>
+                </p>
+                <p>
+                  <strong>Print Attendance:</strong>{" "}
+                  <a
+                    href="https://ssg-qr-attendance.vercel.app/admin/print-attendance"
+                    className="text-blue-500 hover:underline"
+                  >
+                    https://ssg-qr-attendance.vercel.app/admin/print-attendance
+                  </a>
+                </p>
+              </div>
+            </div>
+          </ScrollArea>
+        </DialogContent>
+      </Dialog>
       <Card className="w-full max-w-xs lg:max-w-2xl mx-auto">
         <CardHeader>
           <CardTitle>Create New Event</CardTitle>
@@ -295,6 +401,24 @@ export default function CreateEvent() {
                 {formFields.location.error}
               </p>
             )}
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="organization-type">Organization Type</Label>
+            <Select
+              value={organizationType}
+              onValueChange={setOrganizationType}
+            >
+              <SelectTrigger id="organization-type">
+                <SelectValue placeholder="Select organization type" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="general">
+                  General (Whole JRMSU-TC)
+                </SelectItem>
+                <SelectItem value="college">Specific College</SelectItem>
+                <SelectItem value="jrmsu-tc">JRMSU-TC Organization</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
         </CardContent>
         <CardFooter>
