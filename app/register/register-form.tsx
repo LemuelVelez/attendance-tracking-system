@@ -174,7 +174,7 @@ export function SignUpForm() {
                   <Input
                     id="studentId"
                     type="text"
-                    placeholder="e.g., TC-24-A-12345"
+                    placeholder="TC-24-A-12345"
                     required
                     value={form.studentId}
                     onChange={handleChange}
@@ -185,7 +185,7 @@ export function SignUpForm() {
                   <Input
                     id="firstname"
                     type="text"
-                    placeholder="e.g., John"
+                    placeholder="John"
                     required
                     value={form.firstname}
                     onChange={handleChange}
@@ -196,7 +196,7 @@ export function SignUpForm() {
                   <Input
                     id="middlename"
                     type="text"
-                    placeholder="e.g., Michael"
+                    placeholder="Michael"
                     value={form.middlename}
                     onChange={handleChange}
                   />
@@ -206,7 +206,7 @@ export function SignUpForm() {
                   <Input
                     id="lastname"
                     type="text"
-                    placeholder="e.g., Doe"
+                    placeholder="Doe"
                     required
                     value={form.lastname}
                     onChange={handleChange}
@@ -217,7 +217,7 @@ export function SignUpForm() {
                   <Input
                     id="degreeProgram"
                     type="text"
-                    placeholder="e.g., BS Information Systems"
+                    placeholder="BS Information Systems"
                     required
                     value={form.degreeProgram}
                     onChange={handleChange}
@@ -228,7 +228,7 @@ export function SignUpForm() {
                   <Input
                     id="yearLevel"
                     type="text"
-                    placeholder="e.g., 2nd Year"
+                    placeholder="2nd Year"
                     required
                     value={form.yearLevel}
                     onChange={handleChange}
@@ -239,7 +239,7 @@ export function SignUpForm() {
                   <Input
                     id="section"
                     type="text"
-                    placeholder="e.g., Section A"
+                    placeholder="Section A"
                     value={form.section}
                     onChange={handleChange}
                   />
