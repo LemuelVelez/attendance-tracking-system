@@ -281,7 +281,7 @@ export const getFineDocuments = async (
       const duplicatesToDelete: string[] = [];
 
       for (const fine of fineDocuments) {
-        const key = `${fine.userId}-${fine.dateIssued}`;
+        const key = `${fine.studentId}-${fine.userId}-${fine.name}`;
         if (uniqueFines.has(key)) {
           // Mark the duplicate for deletion
           duplicatesToDelete.push(fine.$id);
