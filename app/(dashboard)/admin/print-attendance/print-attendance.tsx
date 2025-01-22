@@ -535,7 +535,7 @@ export default function PrintableAttendanceDocument() {
               </Select>
             </div>
             <div>
-              <h3 className="text-sm font-medium mb-2">Date of Attendance</h3>
+              <h3 className="text-sm font-medium mb-2">Date</h3>
               <Select value={selectedDate} onValueChange={setSelectedDate}>
                 <SelectTrigger className="w-full">
                   <SelectValue placeholder="Select date" />
