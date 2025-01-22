@@ -363,66 +363,40 @@ export const updateAttendance = async (): Promise<void> => {
       throw new Error("Missing Appwrite environment variables. Please check your .env file.")
     }
 
+    // Delete all existing fine documents
+    await deleteAllFineDocuments()
+
+    // Check if there are any remaining documents
+    const remainingDocs = await getFineDocuments()
+    if (remainingDocs.length > 0) {
+      throw new Error("Not all documents were deleted. Please try again.")
+    }
+
     const generalAttendance = await getGeneralAttendance()
-    const fineDocuments = await getFineDocuments()
     const users = await getAllUsers()
     const totalEvents = await getTotalUniqueEvents()
 
-    // Delete duplicate fine documents
-    await deleteDuplicateFineDocuments()
-
     for (const user of users) {
       const userAttendance = generalAttendance.filter((a) => a.userId === user.$id)
-      const userFine = fineDocuments.find((f) => f.userId === user.$id)
 
       const presences = userAttendance.length
-      const currentAbsences = Math.max(0, totalEvents - presences)
+      const absences = Math.max(0, totalEvents - presences)
 
-      let absencesToCount = currentAbsences
-      let newStatus: "Cleared" | "Pending" | "penaltyCleared" = "Pending"
-
-      if (userFine) {
-        const previousAbsences = Number.parseInt(userFine.absences)
-
-        if (userFine.status === "penaltyCleared") {
-          if (currentAbsences <= previousAbsences) {
-            // No new absences, keep the status as penaltyCleared
-            newStatus = "penaltyCleared"
-            absencesToCount = 0
-          } else {
-            // New absences detected, count only the new ones
-            absencesToCount = currentAbsences - previousAbsences
-            newStatus = "Pending"
-          }
-        } else {
-          // For other statuses, count all current absences
-          absencesToCount = currentAbsences
-        }
-      }
-
-      const penalties = PENALTIES_MAP[absencesToCount] || PENALTIES_MAP[10]
+      const penalties = PENALTIES_MAP[absences] || PENALTIES_MAP[10]
 
       const fineData: FineDocumentData = {
         userId: user.$id,
         studentId: user.studentId,
         name: user.name,
-        absences: currentAbsences.toString(), // Always store the total absences
+        absences: absences.toString(),
         presences: presences.toString(),
         penalties,
         dateIssued: new Date().toISOString().split("T")[0],
-        status: penalties === "No penalty" ? "Cleared" : newStatus,
+        status: penalties === "No penalty" ? "Cleared" : "Pending",
       }
 
-      if (userFine) {
-        // Update existing fine document
-        await createFineDocument({
-          ...fineData,
-          status: newStatus === "penaltyCleared" ? userFine.status : fineData.status,
-        })
-      } else {
-        // Create new fine document
-        await createFineDocument(fineData)
-      }
+      // Create new fine document
+      await createFineDocument(fineData)
     }
 
     console.log("Attendance and fines updated successfully")
@@ -432,29 +406,22 @@ export const updateAttendance = async (): Promise<void> => {
   }
 }
 
-// Helper function to delete duplicate fine documents
-async function deleteDuplicateFineDocuments() {
+async function deleteAllFineDocuments() {
   try {
-    const documents = await databases.listDocuments(DATABASE_ID, FINES_MANAGEMENT_COLLECTION_ID, [
-      Query.orderDesc("$createdAt"),
-    ])
+    let documents
+    do {
+      documents = await databases.listDocuments(DATABASE_ID, FINES_MANAGEMENT_COLLECTION_ID, [Query.limit(100)])
 
-    const userDocMap = new Map()
-
-    for (const doc of documents.documents) {
-      if (userDocMap.has(doc.userId)) {
-        // This is a duplicate, delete it
+      for (const doc of documents.documents) {
+        await new Promise((resolve) => setTimeout(resolve, 2000)) // 2-second delay
         await databases.deleteDocument(DATABASE_ID, FINES_MANAGEMENT_COLLECTION_ID, doc.$id)
-        console.log(`Deleted duplicate document for user ${doc.userId}`)
-      } else {
-        // This is the first occurrence, keep it
-        userDocMap.set(doc.userId, doc)
+        console.log(`Deleted document ${doc.$id}`)
       }
-    }
+    } while (documents.documents.length > 0)
 
-    console.log("Duplicate fine documents deleted successfully")
+    console.log("All fine documents deleted successfully")
   } catch (error) {
-    console.error("Error deleting duplicate fine documents:", error)
+    console.error("Error deleting fine documents:", error)
     throw error
   }
 }

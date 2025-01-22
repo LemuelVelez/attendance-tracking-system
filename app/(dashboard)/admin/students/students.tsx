@@ -1,32 +1,15 @@
-"use client";
+"use client"
 
-import React, { useState, useEffect, useMemo } from "react";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-import { ScrollArea } from "@/components/ui/scroll-area";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import {
-  Pagination,
-  PaginationContent,
-  PaginationItem,
-} from "@/components/ui/pagination";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+import React, { useState, useEffect, useMemo } from "react"
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
+import { ScrollArea } from "@/components/ui/scroll-area"
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Input } from "@/components/ui/input"
+import { Button } from "@/components/ui/button"
+import { Badge } from "@/components/ui/badge"
+import { Pagination, PaginationContent, PaginationItem } from "@/components/ui/pagination"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -35,8 +18,8 @@ import {
   DropdownMenuRadioItem,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import { getAllUsers, updateUserRole, Student } from "@/lib/users/userService";
+} from "@/components/ui/dropdown-menu"
+import { getAllUsers, updateUserRole, type Student } from "@/lib/users/userService"
 import {
   Users,
   UserCircle,
@@ -54,8 +37,8 @@ import {
   ChevronsRight,
   ChevronLeft,
   ChevronRight,
-} from "lucide-react";
-import { useToast } from "@/hooks/use-toast";
+} from "lucide-react"
+import { useToast } from "@/hooks/use-toast"
 import {
   AlertDialog,
   AlertDialogAction,
@@ -65,164 +48,158 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog";
+} from "@/components/ui/alert-dialog"
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 
 type SortConfig = {
-  key: keyof Student;
-  direction: "asc" | "desc";
-} | null;
+  key: keyof Student
+  direction: "asc" | "desc"
+} | null
 
 export default function StudentTable() {
-  const [students, setStudents] = useState<Student[]>([]);
-  const [searchTerm, setSearchTerm] = useState("");
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [currentPage, setCurrentPage] = useState(1);
-  const [isUpdating, setIsUpdating] = useState(false);
-  const [studentsPerPage, setStudentsPerPage] = useState(10);
-  const [dialogOpen, setDialogOpen] = useState(false);
-  const [selectedStudent, setSelectedStudent] = useState<Student | null>(null);
-  const [sortConfig, setSortConfig] = useState<SortConfig>(null);
-  const { toast } = useToast();
+  const [students, setStudents] = useState<Student[]>([])
+  const [searchTerm, setSearchTerm] = useState("")
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+  const [currentPage, setCurrentPage] = useState(1)
+  const [isUpdating, setIsUpdating] = useState(false)
+  const [studentsPerPage, setStudentsPerPage] = useState(10)
+  const [dialogOpen, setDialogOpen] = useState(false)
+  const [selectedStudent, setSelectedStudent] = useState<Student | null>(null)
+  const [sortConfig, setSortConfig] = useState<SortConfig>(null)
+  const { toast } = useToast()
 
   useEffect(() => {
     const fetchStudents = async () => {
       try {
-        setLoading(true);
-        const users = await getAllUsers();
-        setStudents(users);
-        setLoading(false);
+        setLoading(true)
+        const users = await getAllUsers()
+        setStudents(users)
+        setLoading(false)
       } catch (err) {
-        console.error("Error fetching students:", err);
-        setError("Failed to load students. Please try again later.");
-        setLoading(false);
+        console.error("Error fetching students:", err)
+        setError("Failed to load students. Please try again later.")
+        setLoading(false)
         toast({
           title: "Error",
           description: "Failed to load students. Please try again later.",
           variant: "destructive",
-        });
+        })
       }
-    };
+    }
 
-    fetchStudents();
-  }, [toast]);
+    fetchStudents()
+  }, [toast])
 
-  const handleRoleUpdate = async (
-    userId: string,
-    newRole: "admin" | "student"
-  ) => {
-    setIsUpdating(true);
-    setError(null);
+  const handleRoleUpdate = async (userId: string, newRole: "admin" | "student") => {
+    setIsUpdating(true)
+    setError(null)
     try {
-      await updateUserRole(userId, newRole);
-      setStudents(
-        students.map((student) =>
-          student.userId === userId ? { ...student, role: newRole } : student
-        )
-      );
+      await updateUserRole(userId, newRole)
+      setStudents(students.map((student) => (student.userId === userId ? { ...student, role: newRole } : student)))
       toast({
         title: "Role updated successfully",
         description: `User role has been changed to ${newRole}.`,
         variant: "success",
-      });
+      })
     } catch (err) {
-      console.error("Error updating user role:", err);
-      setError("Failed to update user role. Please try again.");
+      console.error("Error updating user role:", err)
+      setError("Failed to update user role. Please try again.")
       toast({
         title: "Error",
         description: "Failed to update user role. Please try again.",
         variant: "destructive",
-      });
+      })
     } finally {
-      setIsUpdating(false);
-      setDialogOpen(false);
-      setSelectedStudent(null);
+      setIsUpdating(false)
+      setDialogOpen(false)
+      setSelectedStudent(null)
     }
-  };
+  }
 
   const openConfirmDialog = (student: Student) => {
-    setSelectedStudent(student);
-    setDialogOpen(true);
-  };
+    setSelectedStudent(student)
+    setDialogOpen(true)
+  }
 
   const sortedStudents = useMemo(() => {
-    const sortableStudents = [...students];
+    const sortableStudents = [...students]
     if (sortConfig !== null) {
       sortableStudents.sort((a, b) => {
-        if (a[sortConfig.key] < b[sortConfig.key]) {
-          return sortConfig.direction === "asc" ? -1 : 1;
+        if (sortConfig.key === "role") {
+          // Custom sorting for roles
+          if (a.role === b.role) return 0
+          if (sortConfig.direction === "asc") {
+            return a.role === "admin" ? -1 : 1
+          } else {
+            return a.role === "student" ? -1 : 1
+          }
+        } else {
+          // General sorting for other fields
+          if (a[sortConfig.key] < b[sortConfig.key]) {
+            return sortConfig.direction === "asc" ? -1 : 1
+          }
+          if (a[sortConfig.key] > b[sortConfig.key]) {
+            return sortConfig.direction === "asc" ? 1 : -1
+          }
         }
-        if (a[sortConfig.key] > b[sortConfig.key]) {
-          return sortConfig.direction === "asc" ? 1 : -1;
-        }
-        return 0;
-      });
+        return 0
+      })
     }
-    return sortableStudents;
-  }, [students, sortConfig]);
+    return sortableStudents
+  }, [students, sortConfig])
 
   const filteredStudents = useMemo(() => {
     return sortedStudents.filter((student) =>
-      Object.values(student).some((value) =>
-        String(value)
-          .toLowerCase()
-          .includes(searchTerm.toLowerCase())
-      )
-    );
-  }, [sortedStudents, searchTerm]);
+      Object.values(student).some((value) => String(value).toLowerCase().includes(searchTerm.toLowerCase())),
+    )
+  }, [sortedStudents, searchTerm])
 
-  const indexOfLastStudent = currentPage * studentsPerPage;
-  const indexOfFirstStudent = indexOfLastStudent - studentsPerPage;
+  const indexOfLastStudent = currentPage * studentsPerPage
+  const indexOfFirstStudent = indexOfLastStudent - studentsPerPage
   const currentStudents = useMemo(() => {
-    return filteredStudents.slice(indexOfFirstStudent, indexOfLastStudent);
-  }, [filteredStudents, indexOfFirstStudent, indexOfLastStudent]);
+    return filteredStudents.slice(indexOfFirstStudent, indexOfLastStudent)
+  }, [filteredStudents, indexOfFirstStudent, indexOfLastStudent])
 
   const paginate = (pageNumber: number) => {
-    if (
-      pageNumber >= 1 &&
-      pageNumber <= Math.ceil(filteredStudents.length / studentsPerPage)
-    ) {
-      setCurrentPage(pageNumber);
+    if (pageNumber >= 1 && pageNumber <= Math.ceil(filteredStudents.length / studentsPerPage)) {
+      setCurrentPage(pageNumber)
     }
-  };
+  }
 
   const handleRowLimitChange = (value: string) => {
-    const newLimit = parseInt(value, 10);
+    const newLimit = Number.parseInt(value, 10)
     if (!isNaN(newLimit) && newLimit > 0) {
-      setStudentsPerPage(newLimit);
-      setCurrentPage(1);
+      setStudentsPerPage(newLimit)
+      setCurrentPage(1)
     } else {
-      console.error("Invalid row limit:", value);
+      console.error("Invalid row limit:", value)
       toast({
         title: "Error",
         description: "Invalid row limit selected.",
         variant: "destructive",
-      });
+      })
     }
-  };
+  }
 
   const handleSort = (value: string) => {
-    const [key, direction] = value.split("-") as [
-      keyof Student,
-      "asc" | "desc"
-    ];
-    setSortConfig({ key, direction });
-  };
+    if (value === "role-admin") {
+      setSortConfig({ key: "role", direction: "asc" })
+    } else if (value === "role-student") {
+      setSortConfig({ key: "role", direction: "desc" })
+    } else {
+      const [key, direction] = value.split("-") as [keyof Student, "asc" | "desc"]
+      setSortConfig({ key, direction })
+    }
+  }
 
   if (loading)
     return (
       <div className="flex justify-center items-center h-screen">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
       </div>
-    );
-  if (error) return <div className="p-4 text-red-500">Error: {error}</div>;
+    )
+  if (error) return <div className="p-4 text-red-500">Error: {error}</div>
 
   return (
     <Card className="w-full mx-auto max-w-xs sm:max-w-sm md:max-w-md lg:max-w-7xl my-8 shadow-lg">
@@ -236,39 +213,28 @@ export default function StudentTable() {
         </DialogTrigger>
         <DialogContent className="max-w-[350px] lg:max-w-[700px]">
           <DialogHeader>
-            <DialogTitle className="text-lg lg:xl">
-              Student Management Instructions
-            </DialogTitle>
+            <DialogTitle className="text-lg lg:xl">Student Management Instructions</DialogTitle>
           </DialogHeader>
           <ScrollArea className="h-[70vh] w-full rounded-md border p-4">
             <div className="text-sm lg:text-lg space-y-4">
               <h3 className="text-lg font-semibold">Overview:</h3>
               <p>
-                In Student Management, you can view all registered students and
-                identify admins by their badges. You can assign admin roles to
-                trusted individuals who will manage the admin dashboard of QR
-                Attendance.
+                In Student Management, you can view all registered students and identify admins by their badges. You can
+                assign admin roles to trusted individuals who will manage the admin dashboard of QR Attendance.
               </p>
 
-              <h3 className="text-lg font-semibold">
-                Utilizing the Search Feature:
-              </h3>
+              <h3 className="text-lg font-semibold">Utilizing the Search Feature:</h3>
               <p>
-                Use the search bar to quickly locate specific students or admins
-                by typing relevant details such as:
+                Use the search bar to quickly locate specific students or admins by typing relevant details such as:
               </p>
               <ul className="list-disc pl-6 space-y-2">
-                <li>
-                  Degree Program (for example, &quot;BS Information
-                  Systems&quot;).
-                </li>
+                <li>Degree Program (for example, &quot;BS Information Systems&quot;).</li>
                 <li>Student ID (for example, &quot;TC-25-A-00123&quot;).</li>
                 <li>Name (for example, &quot;John Doe&quot;).</li>
               </ul>
               <p>
-                This feature helps you efficiently navigate records, especially
-                when assigning admin roles. Search by personal information like
-                name or student ID to locate individuals quickly.
+                This feature helps you efficiently navigate records, especially when assigning admin roles. Search by
+                personal information like name or student ID to locate individuals quickly.
               </p>
             </div>
           </ScrollArea>
@@ -305,24 +271,14 @@ export default function StudentTable() {
                   value={`${sortConfig?.key}-${sortConfig?.direction}`}
                   onValueChange={handleSort}
                 >
-                  <DropdownMenuRadioItem value="name-asc">
-                    Name (A-Z)
-                  </DropdownMenuRadioItem>
-                  <DropdownMenuRadioItem value="name-desc">
-                    Name (Z-A)
-                  </DropdownMenuRadioItem>
-                  <DropdownMenuRadioItem value="studentId-asc">
-                    Student ID (Ascending)
-                  </DropdownMenuRadioItem>
-                  <DropdownMenuRadioItem value="studentId-desc">
-                    Student ID (Descending)
-                  </DropdownMenuRadioItem>
-                  <DropdownMenuRadioItem value="yearLevel-asc">
-                    Year (Ascending)
-                  </DropdownMenuRadioItem>
-                  <DropdownMenuRadioItem value="yearLevel-desc">
-                    Year (Descending)
-                  </DropdownMenuRadioItem>
+                  <DropdownMenuRadioItem value="name-asc">Name (A-Z)</DropdownMenuRadioItem>
+                  <DropdownMenuRadioItem value="name-desc">Name (Z-A)</DropdownMenuRadioItem>
+                  <DropdownMenuRadioItem value="studentId-asc">Student ID (Ascending)</DropdownMenuRadioItem>
+                  <DropdownMenuRadioItem value="studentId-desc">Student ID (Descending)</DropdownMenuRadioItem>
+                  <DropdownMenuRadioItem value="yearLevel-asc">Year (Ascending)</DropdownMenuRadioItem>
+                  <DropdownMenuRadioItem value="yearLevel-desc">Year (Descending)</DropdownMenuRadioItem>
+                  <DropdownMenuRadioItem value="role-admin">Role (Admin first)</DropdownMenuRadioItem>
+                  <DropdownMenuRadioItem value="role-student">Role (Student first)</DropdownMenuRadioItem>
                 </DropdownMenuRadioGroup>
               </DropdownMenuContent>
             </DropdownMenu>
@@ -391,9 +347,7 @@ export default function StudentTable() {
                     <TableCell className="font-medium">
                       <Avatar className="w-10 h-10">
                         <AvatarImage src={student.avatar} alt={student.name} />
-                        <AvatarFallback>
-                          {student.name.charAt(0)}
-                        </AvatarFallback>
+                        <AvatarFallback>{student.name.charAt(0)}</AvatarFallback>
                       </Avatar>
                     </TableCell>
                     <TableCell>{student.name}</TableCell>
@@ -402,13 +356,7 @@ export default function StudentTable() {
                     <TableCell>{student.yearLevel}</TableCell>
                     <TableCell>{student.section}</TableCell>
                     <TableCell>
-                      <Badge
-                        variant={
-                          student.role === "admin" ? "default" : "secondary"
-                        }
-                      >
-                        {student.role}
-                      </Badge>
+                      <Badge variant={student.role === "admin" ? "default" : "secondary"}>{student.role}</Badge>
                     </TableCell>
                     <TableCell>{student.email}</TableCell>
                     <TableCell>
@@ -416,15 +364,9 @@ export default function StudentTable() {
                         onClick={() => openConfirmDialog(student)}
                         variant="outline"
                         size="sm"
-                        className={`${
-                          isUpdating ? "opacity-50 cursor-not-allowed" : ""
-                        }`}
+                        className={`${isUpdating ? "opacity-50 cursor-not-allowed" : ""}`}
                       >
-                        {isUpdating
-                          ? "Updating..."
-                          : student.role === "admin"
-                          ? "Make Student"
-                          : "Make Admin"}
+                        {isUpdating ? "Updating..." : student.role === "admin" ? "Make Student" : "Make Admin"}
                       </Button>
                     </TableCell>
                   </TableRow>
@@ -433,42 +375,28 @@ export default function StudentTable() {
                     <div className="flex items-center justify-between mb-2">
                       <Avatar className="w-10 h-10">
                         <AvatarImage src={student.avatar} alt={student.name} />
-                        <AvatarFallback>
-                          {student.name.charAt(0)}
-                        </AvatarFallback>
+                        <AvatarFallback>{student.name.charAt(0)}</AvatarFallback>
                       </Avatar>
-                      <Badge
-                        variant={
-                          student.role === "admin" ? "default" : "secondary"
-                        }
-                      >
-                        {student.role}
-                      </Badge>
+                      <Badge variant={student.role === "admin" ? "default" : "secondary"}>{student.role}</Badge>
                     </div>
                     <div className="space-y-1">
                       <p>
-                        <span className="font-semibold">Name:</span>{" "}
-                        {student.name}
+                        <span className="font-semibold">Name:</span> {student.name}
                       </p>
                       <p>
-                        <span className="font-semibold">Student ID:</span>{" "}
-                        {student.studentId}
+                        <span className="font-semibold">Student ID:</span> {student.studentId}
                       </p>
                       <p>
-                        <span className="font-semibold">Degree:</span>{" "}
-                        {student.degreeProgram}
+                        <span className="font-semibold">Degree:</span> {student.degreeProgram}
                       </p>
                       <p>
-                        <span className="font-semibold">Year:</span>{" "}
-                        {student.yearLevel}
+                        <span className="font-semibold">Year:</span> {student.yearLevel}
                       </p>
                       <p>
-                        <span className="font-semibold">Section:</span>{" "}
-                        {student.section}
+                        <span className="font-semibold">Section:</span> {student.section}
                       </p>
                       <p>
-                        <span className="font-semibold">Email:</span>{" "}
-                        {student.email}
+                        <span className="font-semibold">Email:</span> {student.email}
                       </p>
                     </div>
                     <div className="mt-4">
@@ -476,15 +404,9 @@ export default function StudentTable() {
                         onClick={() => openConfirmDialog(student)}
                         variant="outline"
                         size="sm"
-                        className={`w-full ${
-                          isUpdating ? "opacity-50 cursor-not-allowed" : ""
-                        }`}
+                        className={`w-full ${isUpdating ? "opacity-50 cursor-not-allowed" : ""}`}
                       >
-                        {isUpdating
-                          ? "Updating..."
-                          : student.role === "admin"
-                          ? "Make Student"
-                          : "Make Admin"}
+                        {isUpdating ? "Updating..." : student.role === "admin" ? "Make Student" : "Make Admin"}
                       </Button>
                     </div>
                   </TableRow>
@@ -522,12 +444,10 @@ export default function StudentTable() {
                   </Button>
                 </PaginationItem>
                 <div className="text-sm text-gray-600 sm:hidden">
-                  Page {currentPage} of{" "}
-                  {Math.ceil(filteredStudents.length / studentsPerPage)}
+                  Page {currentPage} of {Math.ceil(filteredStudents.length / studentsPerPage)}
                 </div>
                 <span className="text-sm text-gray-600 hidden sm:inline">
-                  Page {currentPage} of{" "}
-                  {Math.ceil(filteredStudents.length / studentsPerPage)}
+                  Page {currentPage} of {Math.ceil(filteredStudents.length / studentsPerPage)}
                 </span>
                 <PaginationItem>
                   <Button
@@ -535,10 +455,7 @@ export default function StudentTable() {
                     size="icon"
                     className="w-8 h-8 sm:w-10 sm:h-10"
                     onClick={() => paginate(currentPage + 1)}
-                    disabled={
-                      currentPage ===
-                      Math.ceil(filteredStudents.length / studentsPerPage)
-                    }
+                    disabled={currentPage === Math.ceil(filteredStudents.length / studentsPerPage)}
                   >
                     <span className="sr-only">Next page</span>
                     <ChevronRight className="h-4 w-4" />
@@ -549,15 +466,8 @@ export default function StudentTable() {
                     variant="outline"
                     size="icon"
                     className="w-8 h-8 sm:w-10 sm:h-10 mx-2"
-                    onClick={() =>
-                      paginate(
-                        Math.ceil(filteredStudents.length / studentsPerPage)
-                      )
-                    }
-                    disabled={
-                      currentPage ===
-                      Math.ceil(filteredStudents.length / studentsPerPage)
-                    }
+                    onClick={() => paginate(Math.ceil(filteredStudents.length / studentsPerPage))}
+                    disabled={currentPage === Math.ceil(filteredStudents.length / studentsPerPage)}
                   >
                     <span className="sr-only">Last page</span>
                     <ChevronsRight className="h-4 w-4" />
@@ -573,8 +483,7 @@ export default function StudentTable() {
           <AlertDialogHeader>
             <AlertDialogTitle>Confirm Role Change</AlertDialogTitle>
             <AlertDialogDescription>
-              Are you sure you want to change {selectedStudent?.name}&apos;s
-              role from {selectedStudent?.role} to{" "}
+              Are you sure you want to change {selectedStudent?.name}&apos;s role from {selectedStudent?.role} to{" "}
               {selectedStudent?.role === "admin" ? "student" : "admin"}?
             </AlertDialogDescription>
           </AlertDialogHeader>
@@ -583,10 +492,7 @@ export default function StudentTable() {
             <AlertDialogAction
               onClick={() =>
                 selectedStudent &&
-                handleRoleUpdate(
-                  selectedStudent.userId,
-                  selectedStudent.role === "admin" ? "student" : "admin"
-                )
+                handleRoleUpdate(selectedStudent.userId, selectedStudent.role === "admin" ? "student" : "admin")
               }
             >
               Confirm
@@ -599,5 +505,6 @@ export default function StudentTable() {
         <p className="text-xs mt-1">© SSG QR Attendance</p>
       </footer>
     </Card>
-  );
+  )
 }
+

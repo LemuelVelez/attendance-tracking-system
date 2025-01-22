@@ -1,25 +1,12 @@
-"use client";
+"use client"
 
-import React, { useState, useEffect, useCallback } from "react";
-import { Button } from "@/components/ui/button";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { Input } from "@/components/ui/input";
-import { Badge } from "@/components/ui/badge";
+import React, { useState, useEffect, useCallback } from "react"
+import { Button } from "@/components/ui/button"
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Input } from "@/components/ui/input"
+import { Badge } from "@/components/ui/badge"
 import {
   AlertDialog,
   AlertDialogAction,
@@ -30,9 +17,9 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
   AlertDialogTrigger,
-} from "@/components/ui/alert-dialog";
-import { useToast } from "@/hooks/use-toast";
-import { Toaster } from "@/components/ui/toaster";
+} from "@/components/ui/alert-dialog"
+import { useToast } from "@/hooks/use-toast"
+import { Toaster } from "@/components/ui/toaster"
 import {
   ChevronLeft,
   ChevronRight,
@@ -44,271 +31,107 @@ import {
   Users,
   Rows,
   Loader2,
-  AlertTriangle,
   Trash2,
   RefreshCw,
-} from "lucide-react";
+} from "lucide-react"
 import {
-  getGeneralAttendance,
-  createFineDocument,
   getFineDocuments,
   getTotalUniqueEvents,
-  getAllUsers,
   deleteFines,
   updateAttendance,
-  FineDocument,
-  Attendance,
-  FineDocumentData,
-  User,
-} from "@/lib/GeneralAttendance/GeneralAttendance";
-import { Checkbox } from "@/components/ui/checkbox";
-
-const PENALTIES_MAP: Record<number, string> = {
-  0: "No penalty",
-  1: "1 pad grade 1 paper, 1 pencil",
-  2: "2 pads Grade 2 paper, 2 pencils, 1 eraser",
-  3: "3 Pads Grade 3 paper, 3 pencils, 2 eraser, 1 sharpener",
-  4: "2 pads grade 4 paper 2 pencils, 2 ball pen, 1 crayon, 1 sharpener, 1 eraser",
-  5: "2 Pads intermediate paper, 2 notebooks, 2 ball pen, 1 crayon",
-  6: "2 Pads intermediate paper, 2 notebooks, 2 ball pen, 1 crayon, 2 pencils",
-  7: "1 plastic envelop with handle, 2 Pads intermediate paper, 2 notebooks",
-  8: "1 plastic envelop with handle, 2 Pads intermediate paper, 2 notebooks",
-  9: "1 plastic envelop with handle, 2 Pads intermediate paper, 3 notebooks 2 pencils, 2 eraser, 1 sharpener",
-  10: "1 plastic envelop with handle, 2 Pads intermediate paper, 3 notebooks 3 pencils, 2 eraser, 3 sharpener, 3 ball pen, 1 crayon",
-};
+  type FineDocument,
+  type FineDocumentData,
+  createFineDocument,
+} from "@/lib/GeneralAttendance/GeneralAttendance"
+import { Checkbox } from "@/components/ui/checkbox"
 
 export default function SupplyFinesManagement() {
-  const [attendances, setAttendances] = useState<Attendance[]>([]);
-  const [fines, setFines] = useState<FineDocument[]>([]);
-  const [totalEvents, setTotalEvents] = useState<number>(0);
-  const [allUsers, setAllUsers] = useState<User[]>([]);
-  const [currentPage, setCurrentPage] = useState(1);
-  const [rowsPerPage, setRowsPerPage] = useState(10);
-  const [searchTerm, setSearchTerm] = useState("");
-  const [dialogOpen, setDialogOpen] = useState(false);
-  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
-  const [selectedFineId, setSelectedFineId] = useState<string | null>(null);
-  const [isDeleting, setIsDeleting] = useState(false);
-  const { toast } = useToast();
+  const [fines, setFines] = useState<FineDocument[]>([])
+  const [totalEvents, setTotalEvents] = useState<number>(0)
+  const [currentPage, setCurrentPage] = useState(1)
+  const [rowsPerPage, setRowsPerPage] = useState(10)
+  const [searchTerm, setSearchTerm] = useState("")
+  const [dialogOpen, setDialogOpen] = useState(false)
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
+  const [selectedFineId, setSelectedFineId] = useState<string | null>(null)
+  const [isDeleting, setIsDeleting] = useState(false)
+  const { toast } = useToast()
 
-  const [isGeneratingFines, setIsGeneratingFines] = useState(false);
-  const [generateDialogOpen, setGenerateDialogOpen] = useState(false);
-  const [selectedFines, setSelectedFines] = useState<string[]>([]);
-  const [selectAll, setSelectAll] = useState(false);
+  const [isUpdatingFines, setIsUpdatingFines] = useState(false)
+  const [updateDialogOpen, setUpdateDialogOpen] = useState(false)
+  const [isLoadingFines, setIsLoadingFines] = useState(false)
+  const [eventNames, setEventNames] = useState<string[]>([])
 
-  const [isUpdatingFines, setIsUpdatingFines] = useState(false);
-  const [updateDialogOpen, setUpdateDialogOpen] = useState(false);
-  const [isLoadingFines, setIsLoadingFines] = useState(false);
-  const [eventNames, setEventNames] = useState<string[]>([]);
-
-  const [hasDocuments, setHasDocuments] = useState(false);
+  const [hasDocuments, setHasDocuments] = useState(false)
+  const [selectedFines, setSelectedFines] = useState<string[]>([])
+  const [selectAll, setSelectAll] = useState(false)
+  const [isLoading, setIsLoading] = useState(true)
 
   const fetchData = useCallback(async () => {
+    setIsLoading(true)
     try {
-      const attendanceData = await getGeneralAttendance();
-      setAttendances(attendanceData);
+      const finesData = await getFineDocuments()
+      setFines(finesData)
+      setHasDocuments(finesData.length > 0)
 
-      const finesData = await getFineDocuments();
-      setFines(finesData);
-      setHasDocuments(finesData.length > 0);
-
-      const totalEventsCount = await getTotalUniqueEvents();
-      setTotalEvents(totalEventsCount);
-
-      const usersData = await getAllUsers();
-      setAllUsers(usersData);
+      const totalEventsCount = await getTotalUniqueEvents()
+      setTotalEvents(totalEventsCount)
 
       // Get unique event names
-      const uniqueEventNames = [
-        ...new Set(attendanceData.map((a) => a.eventName)),
-      ];
-      setEventNames(uniqueEventNames);
+      const uniqueEventNames = [...new Set(finesData.map((f) => f.eventName))]
+      setEventNames(uniqueEventNames)
     } catch (error) {
-      console.error("Error fetching data:", error);
+      console.error("Error fetching data:", error)
       toast({
         title: "Error",
         description: "Failed to fetch data. Please try again.",
         variant: "destructive",
-      });
+      })
+    } finally {
+      setIsLoading(false)
     }
-  }, [toast]);
+  }, [toast])
 
   useEffect(() => {
-    fetchData();
-  }, [fetchData]);
-
-  const calculateFines = useCallback(
-    async (updateOnly: boolean = false) => {
-      const userAttendances = attendances.reduce((acc, attendance) => {
-        if (!acc[attendance.userId]) {
-          acc[attendance.userId] = {
-            presences: 0,
-            events: new Set(),
-          };
-        }
-        acc[attendance.userId].presences++;
-        acc[attendance.userId].events.add(attendance.eventName);
-        return acc;
-      }, {} as Record<string, { presences: number; events: Set<string> }>);
-
-      const newFines: FineDocument[] = [];
-      let updatedCount = 0;
-      let duplicatesCount = 0;
-
-      for (const user of allUsers) {
-        const userAttendance = userAttendances[user.$id] || {
-          presences: 0,
-          events: new Set(),
-        };
-        const presences = userAttendance.presences;
-        const absences = Math.max(0, totalEvents - presences);
-
-        const penalties = PENALTIES_MAP[absences] || PENALTIES_MAP[10];
-
-        const existingFine = fines.find((fine) => fine.userId === user.$id);
-        if (existingFine) {
-          if (
-            existingFine.absences !== absences.toString() ||
-            existingFine.presences !== presences.toString() ||
-            existingFine.penalties !== penalties ||
-            existingFine.dateIssued !== new Date().toISOString().split("T")[0]
-          ) {
-            // Update existing fine
-            const updatedFineData: FineDocumentData = {
-              ...existingFine,
-              absences: absences.toString(),
-              presences: presences.toString(),
-              penalties,
-              dateIssued: new Date().toISOString().split("T")[0],
-              status:
-                existingFine.status === "penaltyCleared"
-                  ? "penaltyCleared"
-                  : penalties === "No penalty"
-                  ? "Cleared"
-                  : "Pending",
-            };
-
-            try {
-              const updatedFine = await createFineDocument(updatedFineData);
-              newFines.push(updatedFine);
-              updatedCount++;
-            } catch (error) {
-              console.error("Error updating fine document:", error);
-              duplicatesCount++;
-            }
-          } else {
-            duplicatesCount++;
-          }
-        } else if (!updateOnly) {
-          // Create new fine only if not in update-only mode
-          const fineData: FineDocumentData = {
-            userId: user.$id,
-            studentId: user.studentId,
-            name: user.name,
-            absences: absences.toString(),
-            presences: presences.toString(),
-            penalties,
-            dateIssued: new Date().toISOString().split("T")[0],
-            status: penalties === "No penalty" ? "Cleared" : "Pending",
-          };
-
-          try {
-            const createdFine = await createFineDocument(fineData);
-            newFines.push(createdFine);
-          } catch (error) {
-            console.error("Error creating fine document:", error);
-            duplicatesCount++;
-          }
-        }
-      }
-
-      setFines((prevFines) => {
-        const updatedFines = prevFines.map((fine) => {
-          const newFine = newFines.find((f) => f.userId === fine.userId);
-          return newFine || fine;
-        });
-        return [
-          ...updatedFines,
-          ...newFines.filter(
-            (f) => !prevFines.some((pf) => pf.userId === f.userId)
-          ),
-        ];
-      });
-      return {
-        newFinesCount: newFines.length - updatedCount,
-        updatedCount,
-        duplicatesCount,
-      };
-    },
-    [allUsers, attendances, totalEvents, fines]
-  );
-
-  const handleGenerateFines = async () => {
-    setIsGeneratingFines(true);
-    try {
-      const result = await calculateFines();
-      let message = `Added ${result.newFinesCount} new fines.`;
-      if (result.updatedCount > 0) {
-        message += ` Updated ${result.updatedCount} existing fines.`;
-      }
-      if (result.duplicatesCount > 0) {
-        message += ` ${result.duplicatesCount} fines were not added or updated due to existing data.`;
-      }
-      toast({
-        title: "Fines Generation Complete",
-        description: message,
-        variant: "info",
-        className: "border-green-500 text-green-700 bg-green-50",
-      });
-      setHasDocuments(true);
-    } catch (error) {
-      console.error("Error generating fines:", error);
-      toast({
-        title: "Error",
-        description: "Failed to generate fines. Please try again.",
-        variant: "destructive",
-      });
-    } finally {
-      setIsGeneratingFines(false);
-      setGenerateDialogOpen(false);
-    }
-  };
+    fetchData()
+  }, [fetchData])
 
   const handleUpdateFines = async () => {
-    setIsUpdatingFines(true);
-    setIsLoadingFines(true);
+    setIsUpdatingFines(true)
+    setIsLoadingFines(true)
     try {
-      await updateAttendance();
+      await updateAttendance()
 
       toast({
         title: "Fines Update Complete",
-        description: "Attendance and fines have been updated successfully.",
-        variant: "info",
-        className: "border-blue-500 text-blue-700 bg-blue-50",
-      });
+        description:
+          "All existing fines have been deleted and new fines have been created based on the latest attendance data.",
+        variant: "success",
+        className: "border-green-500 text-green-700 bg-green-50",
+      })
 
       // Fetch updated fines data
-      const updatedFinesData = await getFineDocuments();
-      setFines(updatedFinesData);
-      setHasDocuments(updatedFinesData.length > 0);
+      const updatedFinesData = await getFineDocuments()
+      setFines(updatedFinesData)
+      setHasDocuments(updatedFinesData.length > 0)
     } catch (error) {
-      console.error("Error updating fines:", error);
+      console.error("Error updating fines:", error)
       toast({
         title: "Error",
-        description: "Failed to update fines. Please try again.",
+        description: error instanceof Error ? error.message : "Failed to update fines. Please try again.",
         variant: "destructive",
-      });
+      })
     } finally {
-      setIsUpdatingFines(false);
-      setIsLoadingFines(false);
-      setUpdateDialogOpen(false);
+      setIsUpdatingFines(false)
+      setIsLoadingFines(false)
+      setUpdateDialogOpen(false)
     }
-  };
+  }
 
   const handleSubmitSupplies = async (id: string) => {
     try {
-      const fineToUpdate = fines.find((fine) => fine.$id === id);
-      if (!fineToUpdate) return;
+      const fineToUpdate = fines.find((fine) => fine.$id === id)
+      if (!fineToUpdate) return
 
       const updatedFineData: FineDocumentData = {
         userId: fineToUpdate.userId,
@@ -319,82 +142,69 @@ export default function SupplyFinesManagement() {
         penalties: fineToUpdate.penalties,
         dateIssued: fineToUpdate.dateIssued,
         status: "penaltyCleared",
-      };
+      }
 
-      const updatedFineDocument = await createFineDocument(updatedFineData);
-      setFines((prev) =>
-        prev.map((fine) => (fine.$id === id ? updatedFineDocument : fine))
-      );
+      const updatedFineDocument = await createFineDocument(updatedFineData)
+      setFines((prev) => prev.map((fine) => (fine.$id === id ? updatedFineDocument : fine)))
       toast({
         title: "Success",
         description: "Fine has been marked as cleared.",
         variant: "success",
         className: "border-green-500 text-green-700 bg-green-50",
-      });
+      })
     } catch (error) {
-      console.error("Error updating fine document:", error);
+      console.error("Error updating fine document:", error)
       toast({
         title: "Error",
         description: "Failed to update fine status. Please try again.",
         variant: "destructive",
-      });
+      })
     }
-  };
+  }
 
   const handleDeleteFines = async () => {
-    setIsDeleting(true);
+    setIsDeleting(true)
     try {
       for (const id of selectedFines) {
-        await deleteFines(id);
+        await deleteFines(id)
       }
-      setFines((prevFines) =>
-        prevFines.filter((fine) => !selectedFines.includes(fine.$id))
-      );
-      setSelectedFines([]);
+      setFines((prevFines) => prevFines.filter((fine) => !selectedFines.includes(fine.$id)))
+      setSelectedFines([])
       toast({
         title: "Success",
         description: `Successfully deleted ${selectedFines.length} fine(s).`,
         variant: "success",
         className: "border-blue-500 text-blue-700 bg-blue-50",
-      });
-      setHasDocuments(fines.length > selectedFines.length);
+      })
+      setHasDocuments(fines.length > selectedFines.length)
     } catch (error) {
-      console.error("Error deleting fines:", error);
+      console.error("Error deleting fines:", error)
       toast({
         title: "Error",
         description: "Failed to delete fines. Please try again.",
         variant: "destructive",
-      });
+      })
     } finally {
-      setIsDeleting(false);
-      setDeleteDialogOpen(false);
+      setIsDeleting(false)
+      setDeleteDialogOpen(false)
     }
-  };
+  }
 
   const filteredFines = fines.filter((fine) =>
-    Object.values(fine).some((value) =>
-      String(value)
-        .toLowerCase()
-        .includes(searchTerm.toLowerCase())
-    )
-  );
+    Object.values(fine).some((value) => String(value).toLowerCase().includes(searchTerm.toLowerCase())),
+  )
 
-  const totalPages = Math.ceil(filteredFines.length / rowsPerPage);
-  const paginatedFines = filteredFines.slice(
-    (currentPage - 1) * rowsPerPage,
-    currentPage * rowsPerPage
-  );
+  const totalPages = Math.ceil(filteredFines.length / rowsPerPage)
+  const paginatedFines = filteredFines.slice((currentPage - 1) * rowsPerPage, currentPage * rowsPerPage)
 
   const handleSelectAll = (checked: boolean) => {
-    setSelectAll(checked);
-    setSelectedFines(checked ? paginatedFines.map((fine) => fine.$id) : []);
-  };
+    setSelectAll(checked)
+    setSelectedFines(checked ? paginatedFines.map((fine) => fine.$id) : [])
+  }
 
   return (
     <div className="container mx-auto px-2 sm:px-4 py-4 sm:py-6">
-      <h1 className="text-3xl font-bold mb-6 text-center">
-        Attendance Penalties Management
-      </h1>
+      <h1 className="text-3xl font-bold mb-6 text-center">Attendance Penalties Management</h1>
 
       <div className="grid gap-6 md:grid-cols-2 mb-8">
         <Card className="md:col-span-1">
@@ -405,9 +215,7 @@ export default function SupplyFinesManagement() {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="text-xl font-semibold mb-2">
-              Total required events: {totalEvents}
-            </p>
+            <p className="text-xl font-semibold mb-2">Total required events: {totalEvents}</p>
             <div className="max-h-40 overflow-y-auto">
               <ul className="list-disc list-inside">
                 {eventNames.map((eventName, index) => (
@@ -438,7 +246,7 @@ export default function SupplyFinesManagement() {
               <Search className="w-5 h-5 absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
             </div>
             <Select
-              onValueChange={(value) => setRowsPerPage(parseInt(value))}
+              onValueChange={(value) => setRowsPerPage(Number.parseInt(value))}
               defaultValue={rowsPerPage.toString()}
             >
               <SelectTrigger className="w-full">
@@ -454,64 +262,9 @@ export default function SupplyFinesManagement() {
       </div>
 
       <div className="flex space-x-4 mb-4">
-        <AlertDialog
-          open={generateDialogOpen}
-          onOpenChange={setGenerateDialogOpen}
-        >
-          <AlertDialogTrigger asChild>
-            <Button
-              disabled={isGeneratingFines || isUpdatingFines || hasDocuments}
-            >
-              {isGeneratingFines ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Generating...
-                </>
-              ) : (
-                <>
-                  <AlertTriangle className="mr-2 h-4 w-4" />
-                  Generate Fines
-                </>
-              )}
-            </Button>
-          </AlertDialogTrigger>
-          <AlertDialogContent>
-            <AlertDialogHeader>
-              <AlertDialogTitle>Confirm Fine Generation</AlertDialogTitle>
-              <AlertDialogDescription>
-                Are you sure you want to generate fines? This action cannot be
-                undone.
-              </AlertDialogDescription>
-            </AlertDialogHeader>
-            <AlertDialogFooter>
-              <AlertDialogCancel onClick={() => setGenerateDialogOpen(false)}>
-                Cancel
-              </AlertDialogCancel>
-              <AlertDialogAction
-                onClick={() => {
-                  handleGenerateFines();
-                  setGenerateDialogOpen(false);
-                }}
-                disabled={isGeneratingFines}
-              >
-                {isGeneratingFines ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Generating...
-                  </>
-                ) : (
-                  "Confirm"
-                )}
-              </AlertDialogAction>
-            </AlertDialogFooter>
-          </AlertDialogContent>
-        </AlertDialog>
-
         <AlertDialog open={updateDialogOpen} onOpenChange={setUpdateDialogOpen}>
           <AlertDialogTrigger asChild>
-            <Button
-              disabled={isGeneratingFines || isUpdatingFines || !hasDocuments}
-            >
+            <Button disabled={isUpdatingFines || !hasDocuments}>
               {isUpdatingFines ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -529,19 +282,16 @@ export default function SupplyFinesManagement() {
             <AlertDialogHeader>
               <AlertDialogTitle>Confirm Fines Update</AlertDialogTitle>
               <AlertDialogDescription>
-                Are you sure you want to update existing fines? This will
-                recalculate presences and absences based on the latest
-                attendance data for all students.
+                Are you sure you want to update fines? This will delete all existing fines and create new ones based on
+                the latest attendance data. This process may take several minutes, depending on the number of documents.
               </AlertDialogDescription>
             </AlertDialogHeader>
             <AlertDialogFooter>
-              <AlertDialogCancel onClick={() => setUpdateDialogOpen(false)}>
-                Cancel
-              </AlertDialogCancel>
+              <AlertDialogCancel onClick={() => setUpdateDialogOpen(false)}>Cancel</AlertDialogCancel>
               <AlertDialogAction
                 onClick={() => {
-                  handleUpdateFines();
-                  setUpdateDialogOpen(false);
+                  handleUpdateFines()
+                  setUpdateDialogOpen(false)
                 }}
                 disabled={isUpdatingFines}
               >
@@ -562,10 +312,7 @@ export default function SupplyFinesManagement() {
       <div className="mb-4">
         <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
           <AlertDialogTrigger asChild>
-            <Button
-              variant="destructive"
-              disabled={selectedFines.length === 0 || isDeleting}
-            >
+            <Button variant="destructive" disabled={selectedFines.length === 0 || isDeleting}>
               {isDeleting ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -583,18 +330,12 @@ export default function SupplyFinesManagement() {
             <AlertDialogHeader>
               <AlertDialogTitle>Confirm Deletion</AlertDialogTitle>
               <AlertDialogDescription>
-                Are you sure you want to delete {selectedFines.length} selected
-                fine(s)? This action cannot be undone.
+                Are you sure you want to delete {selectedFines.length} selected fine(s)? This action cannot be undone.
               </AlertDialogDescription>
             </AlertDialogHeader>
             <AlertDialogFooter>
-              <AlertDialogCancel onClick={() => setDeleteDialogOpen(false)}>
-                Cancel
-              </AlertDialogCancel>
-              <AlertDialogAction
-                onClick={handleDeleteFines}
-                disabled={isDeleting}
-              >
+              <AlertDialogCancel onClick={() => setDeleteDialogOpen(false)}>Cancel</AlertDialogCancel>
+              <AlertDialogAction onClick={handleDeleteFines} disabled={isDeleting}>
                 {isDeleting ? (
                   <>
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -617,7 +358,12 @@ export default function SupplyFinesManagement() {
           </CardTitle>
         </CardHeader>
         <CardContent>
-          {isLoadingFines ? (
+          {isLoading ? (
+            <div className="flex items-center justify-center p-4">
+              <Loader2 className="mr-2 h-6 w-6 animate-spin" />
+              <span>Loading fines data...</span>
+            </div>
+          ) : isLoadingFines ? (
             <div className="flex items-center justify-center p-4">
               <Loader2 className="mr-2 h-4 w-4 animate-spin" />
               <span>Loading updated fines...</span>
@@ -630,10 +376,7 @@ export default function SupplyFinesManagement() {
                   <TableHeader>
                     <TableRow>
                       <TableHead className="w-[50px]">
-                        <Checkbox
-                          checked={selectAll}
-                          onCheckedChange={handleSelectAll}
-                        />
+                        <Checkbox checked={selectAll} onCheckedChange={handleSelectAll} />
                       </TableHead>
                       <TableHead>Student ID</TableHead>
                       <TableHead>Name</TableHead>
@@ -653,11 +396,9 @@ export default function SupplyFinesManagement() {
                             checked={selectedFines.includes(fine.$id)}
                             onCheckedChange={(checked) => {
                               if (checked) {
-                                setSelectedFines([...selectedFines, fine.$id]);
+                                setSelectedFines([...selectedFines, fine.$id])
                               } else {
-                                setSelectedFines(
-                                  selectedFines.filter((id) => id !== fine.$id)
-                                );
+                                setSelectedFines(selectedFines.filter((id) => id !== fine.$id))
                               }
                             }}
                           />
@@ -671,58 +412,39 @@ export default function SupplyFinesManagement() {
                         <TableCell>
                           <Badge
                             variant={
-                              fine.status === "Cleared" ||
-                              fine.status === "penaltyCleared"
-                                ? "secondary"
-                                : "outline"
+                              fine.status === "Cleared" || fine.status === "penaltyCleared" ? "secondary" : "outline"
                             }
                             className={
-                              fine.status === "Cleared" ||
-                              fine.status === "penaltyCleared"
+                              fine.status === "Cleared" || fine.status === "penaltyCleared"
                                 ? "bg-green-500 text-white"
                                 : ""
                             }
                           >
-                            {fine.status === "penaltyCleared"
-                              ? "Cleared"
-                              : fine.status}
+                            {fine.status === "penaltyCleared" ? "Cleared" : fine.status}
                           </Badge>
                         </TableCell>
                         <TableCell>
                           {fine.status === "Pending" ? (
-                            <AlertDialog
-                              open={dialogOpen}
-                              onOpenChange={setDialogOpen}
-                            >
+                            <AlertDialog open={dialogOpen} onOpenChange={setDialogOpen}>
                               <AlertDialogTrigger asChild>
-                                <Button
-                                  onClick={() => setSelectedFineId(fine.$id)}
-                                  size="sm"
-                                >
+                                <Button onClick={() => setSelectedFineId(fine.$id)} size="sm">
                                   Mark as Cleared
                                 </Button>
                               </AlertDialogTrigger>
                               <AlertDialogContent>
                                 <AlertDialogHeader>
-                                  <AlertDialogTitle>
-                                    Confirm Action
-                                  </AlertDialogTitle>
+                                  <AlertDialogTitle>Confirm Action</AlertDialogTitle>
                                   <AlertDialogDescription>
-                                    Are you sure you want to mark this fine as
-                                    cleared?
+                                    Are you sure you want to mark this fine as cleared?
                                   </AlertDialogDescription>
                                 </AlertDialogHeader>
                                 <AlertDialogFooter>
-                                  <AlertDialogCancel
-                                    onClick={() => setDialogOpen(false)}
-                                  >
-                                    Cancel
-                                  </AlertDialogCancel>
+                                  <AlertDialogCancel onClick={() => setDialogOpen(false)}>Cancel</AlertDialogCancel>
                                   <AlertDialogAction
                                     onClick={() => {
                                       if (selectedFineId) {
-                                        handleSubmitSupplies(selectedFineId);
-                                        setDialogOpen(false);
+                                        handleSubmitSupplies(selectedFineId)
+                                        setDialogOpen(false)
                                       }
                                     }}
                                   >
@@ -749,10 +471,7 @@ export default function SupplyFinesManagement() {
                 <div className="mb-4 flex items-center justify-between">
                   <span className="text-sm font-medium">
                     <span className="mr-2 ">
-                      <Checkbox
-                        checked={selectAll}
-                        onCheckedChange={handleSelectAll}
-                      />
+                      <Checkbox checked={selectAll} onCheckedChange={handleSelectAll} />
                     </span>
                     Select All
                   </span>
@@ -766,29 +485,21 @@ export default function SupplyFinesManagement() {
                             checked={selectedFines.includes(fine.$id)}
                             onCheckedChange={(checked) => {
                               setSelectedFines((prev) =>
-                                checked
-                                  ? [...prev, fine.$id]
-                                  : prev.filter((id) => id !== fine.$id)
-                              );
+                                checked ? [...prev, fine.$id] : prev.filter((id) => id !== fine.$id),
+                              )
                             }}
                           />
                           <Badge
                             variant={
-                              fine.status === "Cleared" ||
-                              fine.status === "penaltyCleared"
-                                ? "secondary"
-                                : "outline"
+                              fine.status === "Cleared" || fine.status === "penaltyCleared" ? "secondary" : "outline"
                             }
                             className={`text-xs ${
-                              fine.status === "Cleared" ||
-                              fine.status === "penaltyCleared"
+                              fine.status === "Cleared" || fine.status === "penaltyCleared"
                                 ? "bg-green-500 text-white"
                                 : ""
                             }`}
                           >
-                            {fine.status === "penaltyCleared"
-                              ? "Cleared"
-                              : fine.status}
+                            {fine.status === "penaltyCleared" ? "Cleared" : fine.status}
                           </Badge>
                         </div>
                         {[
@@ -806,10 +517,7 @@ export default function SupplyFinesManagement() {
                         ))}
                         <div className="col-span-2 mt-2">
                           {fine.status === "Pending" ? (
-                            <AlertDialog
-                              open={dialogOpen}
-                              onOpenChange={setDialogOpen}
-                            >
+                            <AlertDialog open={dialogOpen} onOpenChange={setDialogOpen}>
                               <AlertDialogTrigger asChild>
                                 <Button
                                   onClick={() => setSelectedFineId(fine.$id)}
@@ -821,25 +529,18 @@ export default function SupplyFinesManagement() {
                               </AlertDialogTrigger>
                               <AlertDialogContent className="max-w-[90vw] sm:max-w-[425px]">
                                 <AlertDialogHeader>
-                                  <AlertDialogTitle>
-                                    Confirm Action
-                                  </AlertDialogTitle>
+                                  <AlertDialogTitle>Confirm Action</AlertDialogTitle>
                                   <AlertDialogDescription>
-                                    Are you sure you want to mark this fine as
-                                    cleared?
+                                    Are you sure you want to mark this fine as cleared?
                                   </AlertDialogDescription>
                                 </AlertDialogHeader>
                                 <AlertDialogFooter>
-                                  <AlertDialogCancel
-                                    onClick={() => setDialogOpen(false)}
-                                  >
-                                    Cancel
-                                  </AlertDialogCancel>
+                                  <AlertDialogCancel onClick={() => setDialogOpen(false)}>Cancel</AlertDialogCancel>
                                   <AlertDialogAction
                                     onClick={() => {
                                       if (selectedFineId) {
-                                        handleSubmitSupplies(selectedFineId);
-                                        setDialogOpen(false);
+                                        handleSubmitSupplies(selectedFineId)
+                                        setDialogOpen(false)
                                       }
                                     }}
                                   >
@@ -849,10 +550,7 @@ export default function SupplyFinesManagement() {
                               </AlertDialogContent>
                             </AlertDialog>
                           ) : (
-                            <Badge
-                              variant="outline"
-                              className="text-green-600 w-full justify-center text-xs"
-                            >
+                            <Badge variant="outline" className="text-green-600 w-full justify-center text-xs">
                               <Check className="w-3 h-3 mr-1" />
                               Cleared
                             </Badge>
@@ -865,12 +563,10 @@ export default function SupplyFinesManagement() {
               </div>
             </>
           )}
-
           <div className="flex flex-col sm:flex-row items-center justify-between mt-6 space-y-4 sm:space-y-0">
             <div className="text-xs sm:text-sm text-gray-500 text-center sm:text-left w-full sm:w-auto">
               Showing {(currentPage - 1) * rowsPerPage + 1} to{" "}
-              {Math.min(currentPage * rowsPerPage, filteredFines.length)} of{" "}
-              {filteredFines.length} entries
+              {Math.min(currentPage * rowsPerPage, filteredFines.length)} of {filteredFines.length} entries
             </div>
             <div className="flex items-center space-x-2">
               <Button
@@ -897,9 +593,7 @@ export default function SupplyFinesManagement() {
               <Button
                 variant="outline"
                 size="sm"
-                onClick={() =>
-                  setCurrentPage((prev) => Math.min(totalPages, prev + 1))
-                }
+                onClick={() => setCurrentPage((prev) => Math.min(totalPages, prev + 1))}
                 disabled={currentPage === totalPages}
                 className="p-1 sm:p-2"
               >
@@ -924,5 +618,6 @@ export default function SupplyFinesManagement() {
       </Card>
       <Toaster />
     </div>
-  );
+  )
 }
+

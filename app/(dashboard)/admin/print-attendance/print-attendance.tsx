@@ -465,15 +465,6 @@ export default function PrintableAttendanceDocument() {
                     https://ssg-qr-attendance.vercel.app/admin/segregated-attendance
                   </a>
                 </p>
-                <p>
-                  <strong>Print Attendance:</strong>{" "}
-                  <a
-                    href="https://ssg-qr-attendance.vercel.app/admin/print-attendance"
-                    className="text-blue-500 hover:underline"
-                  >
-                    https://ssg-qr-attendance.vercel.app/admin/print-attendance
-                  </a>
-                </p>
               </div>
             </div>
           </ScrollArea>
