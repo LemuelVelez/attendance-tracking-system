@@ -33,6 +33,7 @@ import {
   Loader2,
   Trash2,
   RefreshCw,
+  FileX,
 } from "lucide-react"
 import {
   getFineDocuments,
@@ -264,7 +265,7 @@ export default function SupplyFinesManagement() {
       <div className="flex space-x-4 mb-4">
         <AlertDialog open={updateDialogOpen} onOpenChange={setUpdateDialogOpen}>
           <AlertDialogTrigger asChild>
-            <Button disabled={isUpdatingFines || !hasDocuments}>
+            <Button disabled={isUpdatingFines}>
               {isUpdatingFines ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -367,6 +368,15 @@ export default function SupplyFinesManagement() {
             <div className="flex items-center justify-center p-4">
               <Loader2 className="mr-2 h-4 w-4 animate-spin" />
               <span>Loading updated fines...</span>
+            </div>
+          ) : !hasDocuments ? (
+            <div className="flex flex-col items-center justify-center p-8 text-center">
+              <FileX className="w-16 h-16 text-gray-400 mb-4" />
+              <p className="text-xl font-semibold mb-2">No Results</p>
+              <p className="text-gray-500">
+                No fines have been updated yet. Click the &quot;Update Fines&quot; button to generate new fines based on the
+                latest attendance data.
+              </p>
             </div>
           ) : (
             <>
