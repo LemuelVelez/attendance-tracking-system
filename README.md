@@ -11,7 +11,7 @@
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.6.3-3178C6.svg)](https://www.typescriptlang.org/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-<img src="./public/ssg-logo.jpg" alt="SSG Logo" width="150"/>
+<img src="./public/ssglogo.jpg" alt="SSG Logo" width="150"/>
 
 </div>
 
