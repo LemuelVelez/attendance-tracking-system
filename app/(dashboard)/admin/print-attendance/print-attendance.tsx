@@ -217,6 +217,8 @@ export default function PrintableAttendanceDocument() {
   const [academicYears, setAcademicYears] = useState<string[]>(["2023-2024", "2024-2025", "2025-2026"])
   const [selectedAcademicYear, setSelectedAcademicYear] = useState("2024-2025")
   const [newAcademicYear, setNewAcademicYear] = useState("")
+  const [availableDates, setAvailableDates] = useState<string[]>([])
+  const [selectedDate, setSelectedDate] = useState<string>("")
 
   useEffect(() => {
     const fetchAttendanceData = async () => {
@@ -229,8 +231,11 @@ export default function PrintableAttendanceDocument() {
         }
         setAttendanceData(data)
         const events = Array.from(new Set(data.map((record) => record.eventName)))
+        const dates = Array.from(new Set(data.map((record) => record.date)))
         setAvailableEvents(events)
+        setAvailableDates(dates)
         setSelectedEvent(events[0] || "")
+        setSelectedDate(dates[0] || "")
       } catch (error) {
         console.error("Error fetching attendance data:", error)
         toast({
@@ -285,6 +290,7 @@ export default function PrintableAttendanceDocument() {
   const filteredData = attendanceData.filter(
     (record) =>
       record.eventName === selectedEvent &&
+      record.date === selectedDate &&
       Object.values(record).some((value) => value.toString().toLowerCase().includes(searchTerm.toLowerCase())),
   )
 
@@ -329,8 +335,16 @@ export default function PrintableAttendanceDocument() {
         doc.setPage(pageNumber)
 
         // Header
-        const headerHeight = height * 0.1
-        doc.addImage("/Header.png", "PNG", 10, 10, width - 20, headerHeight)
+        let headerHeight: number
+        if (paperSize === "legal") {
+          headerHeight = height * 0.1
+        } else {
+          // For A4 and Letter
+          headerHeight = height * 0.13
+        }
+        const headerWidth = width * 0.9 // 90% of the page width
+        const headerX = (width - headerWidth) / 2 // Center the header horizontally
+        doc.addImage("/Header.png", "PNG", headerX, 10, headerWidth, headerHeight)
 
         // Document Title
         const titleY = headerHeight + 20
@@ -345,10 +359,9 @@ export default function PrintableAttendanceDocument() {
         const eventDetailsY = titleY + 20
         doc.setFontSize(10)
         doc.text(`Event: ${selectedEvent}`, 14, eventDetailsY)
-        doc.text("Venue: JRMSU Gymnasium", 14, eventDetailsY + 6)
-
-        // Use the date and time from the first selected record
         const firstSelectedRecord = filteredData[Array.from(selectedRows)[0]]
+        doc.text(`Venue: ${firstSelectedRecord?.location || "JRMSU Gymnasium"}`, 14, eventDetailsY + 6)
+
         if (firstSelectedRecord) {
           doc.text(`Date: ${formatDate(firstSelectedRecord.date)}`, width - 14, eventDetailsY, { align: "right" })
           doc.text(`Time: ${convertTo12HourFormat(firstSelectedRecord.time)}`, width - 14, eventDetailsY + 6, {
@@ -412,129 +425,155 @@ export default function PrintableAttendanceDocument() {
   return (
     <div className="container mx-auto px-4 py-8 space-y-6">
       <Card className="mx-auto max-w-xs sm:max-w-sm md:max-w-md lg:max-w-6xl shadow-md rounded-lg p-4">
-      <Dialog>
-        <DialogTrigger asChild>
-          <div className="flex justify-center w-full mb-4">
-            <Button variant="outline" className="w-auto bg-primary">
-              View Attendance Instructions
-            </Button>
-          </div>
-        </DialogTrigger>
-        <DialogContent className="max-w-[350px] lg:max-w-[700px]">
-          <DialogHeader>
-            <DialogTitle className="text-lg lg:xl">
-              Print Attendance Instructions
-            </DialogTitle>
-          </DialogHeader>
-          <ScrollArea className="h-[70vh] w-full rounded-md border p-4">
-            <div className="text-sm lg:text-lg space-y-4">
-              <h3 className="text-lg font-semibold">Printing Attendance Records:</h3>
-              <p>
-                Attendance records can be previewed and downloaded as a PDF. Use the options below to select the type of attendance to print:
-              </p>
-              <ul className="list-disc pl-6 space-y-2">
-                <li>
-                  The default selection is <strong>General Attendance</strong>. Select the event you want to print.
-                </li>
-                <li>
-                  To print <strong>Segregated Attendance</strong>, choose the specific college or organization and then select the event.
-                </li>
-                <li>
-                  For JRMSU-TC Organizations, select the organization and choose the event to print attendance.
-                </li>
-              </ul>
-              <p>
-                After selecting the event, check all recorded attendance entries you wish to include, download the PDF, and print it. You can also specify the bond paper size for printing.
-              </p>
-              <div className="mt-4 space-y-2">
-                <p>
-                  <strong>General Attendance:</strong>{" "}
-                  <a
-                    href="https://ssg-qr-attendance.vercel.app/admin/general-attendance"
-                    className="text-blue-500 hover:underline"
-                  >
-                    https://ssg-qr-attendance.vercel.app/admin/general-attendance
-                  </a>
-                </p>
-                <p>
-                  <strong>Segregated Attendance:</strong>{" "}
-                  <a
-                    href="https://ssg-qr-attendance.vercel.app/admin/segregated-attendance"
-                    className="text-blue-500 hover:underline"
-                  >
-                    https://ssg-qr-attendance.vercel.app/admin/segregated-attendance
-                  </a>
-                </p>
-              </div>
+        <Dialog>
+          <DialogTrigger asChild>
+            <div className="flex justify-center w-full mb-4">
+              <Button variant="outline" className="w-auto bg-primary">
+                View Attendance Instructions
+              </Button>
             </div>
-          </ScrollArea>
-        </DialogContent>
-      </Dialog>
+          </DialogTrigger>
+          <DialogContent className="max-w-[350px] lg:max-w-[700px]">
+            <DialogHeader>
+              <DialogTitle className="text-lg lg:xl">Print Attendance Instructions</DialogTitle>
+            </DialogHeader>
+            <ScrollArea className="h-[70vh] w-full rounded-md border p-4">
+              <div className="text-sm lg:text-lg space-y-4">
+                <h3 className="text-lg font-semibold">Printing Attendance Records:</h3>
+                <p>
+                  Attendance records can be previewed and downloaded as a PDF. Use the options below to select the type
+                  of attendance to print:
+                </p>
+                <ul className="list-disc pl-6 space-y-2">
+                  <li>
+                    The default selection is <strong>General Attendance</strong>. Select the event you want to print.
+                  </li>
+                  <li>
+                    To print <strong>Segregated Attendance</strong>, choose the specific college or organization and
+                    then select the event.
+                  </li>
+                  <li>For JRMSU-TC Organizations, select the organization and choose the event to print attendance.</li>
+                </ul>
+                <p>
+                  After selecting the event, check all recorded attendance entries you wish to include, download the
+                  PDF, and print it. You can also specify the bond paper size for printing.
+                </p>
+                <div className="mt-4 space-y-2">
+                  <p>
+                    <strong>General Attendance:</strong>{" "}
+                    <a
+                      href="https://ssg-qr-attendance.vercel.app/admin/general-attendance"
+                      className="text-blue-500 hover:underline"
+                    >
+                      https://ssg-qr-attendance.vercel.app/admin/general-attendance
+                    </a>
+                  </p>
+                  <p>
+                    <strong>Segregated Attendance:</strong>{" "}
+                    <a
+                      href="https://ssg-qr-attendance.vercel.app/admin/segregated-attendance"
+                      className="text-blue-500 hover:underline"
+                    >
+                      https://ssg-qr-attendance.vercel.app/admin/segregated-attendance
+                    </a>
+                  </p>
+                </div>
+              </div>
+            </ScrollArea>
+          </DialogContent>
+        </Dialog>
         <CardHeader className="bg-primary text-primary-foreground">
           <CardTitle className="text-xl sm:text-3xl font-bold text-center">Attendance Record</CardTitle>
         </CardHeader>
         <CardContent className="p-6">
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4 mb-6">
-            <Select defaultValue="general" onValueChange={(value) => setAttendanceType(value as AttendanceType)}>
-              <SelectTrigger className="w-full">
-                <SelectValue placeholder="Select attendance type" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="general">General Attendance</SelectItem>
-                <SelectItem value="college">Segregated Attendance</SelectItem>
-              </SelectContent>
-            </Select>
-            {attendanceType === "college" && (
-              <Select onValueChange={(value) => setCollegeType(value as CollegeType)}>
+            <div>
+              <h3 className="text-sm font-medium mb-2">Attendance Type</h3>
+              <Select defaultValue="general" onValueChange={(value) => setAttendanceType(value as AttendanceType)}>
                 <SelectTrigger className="w-full">
-                  <SelectValue placeholder="Select college" />
+                  <SelectValue placeholder="Select attendance type" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="ComputingStudies">Computing Studies</SelectItem>
-                  <SelectItem value="AgricultureAndForestry">Agriculture and Forestry</SelectItem>
-                  <SelectItem value="ArtsAndSciences">Arts and Sciences</SelectItem>
-                  <SelectItem value="BusinessAdministration">Business Administration</SelectItem>
-                  <SelectItem value="CriminalJusticeEducation">Criminal Justice Education</SelectItem>
-                  <SelectItem value="Engineering">Engineering</SelectItem>
-                  <SelectItem value="TeacherEducation">Teacher Education</SelectItem>
-                  <SelectItem value="JRMSUTCOrganizations">JRMSU TC Organizations</SelectItem>
+                  <SelectItem value="general">General Attendance</SelectItem>
+                  <SelectItem value="college">Segregated Attendance</SelectItem>
                 </SelectContent>
               </Select>
+            </div>
+            {attendanceType === "college" && (
+              <div>
+                <h3 className="text-sm font-medium mb-2">College</h3>
+                <Select onValueChange={(value) => setCollegeType(value as CollegeType)}>
+                  <SelectTrigger className="w-full">
+                    <SelectValue placeholder="Select college" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="ComputingStudies">Computing Studies</SelectItem>
+                    <SelectItem value="AgricultureAndForestry">Agriculture and Forestry</SelectItem>
+                    <SelectItem value="ArtsAndSciences">Arts and Sciences</SelectItem>
+                    <SelectItem value="BusinessAdministration">Business Administration</SelectItem>
+                    <SelectItem value="CriminalJusticeEducation">Criminal Justice Education</SelectItem>
+                    <SelectItem value="Engineering">Engineering</SelectItem>
+                    <SelectItem value="TeacherEducation">Teacher Education</SelectItem>
+                    <SelectItem value="JRMSUTCOrganizations">JRMSU TC Organizations</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
             )}
-            <Select value={selectedEvent} onValueChange={setSelectedEvent}>
-              <SelectTrigger className="w-full">
-                <SelectValue placeholder="Select event" />
-              </SelectTrigger>
-              <SelectContent>
-                {availableEvents.map((event) => (
-                  <SelectItem key={event} value={event}>
-                    {event}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            <Select
-              value={selectedAcademicYear}
-              onValueChange={(value) => {
-                setSelectedAcademicYear(value)
-                toast({
-                  title: "Academic Year Changed",
-                  description: `Successfully changed the academic year to ${value}.`,
-                  variant: "success",
-                })
-              }}
-            >
-              <SelectTrigger className="w-full">
-                <SelectValue placeholder="Select academic year" />
-              </SelectTrigger>
-              <SelectContent>
-                {academicYears.map((year) => (
-                  <SelectItem key={year} value={year}>
-                    {year}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <div>
+              <h3 className="text-sm font-medium mb-2">Events</h3>
+              <Select value={selectedEvent} onValueChange={setSelectedEvent}>
+                <SelectTrigger className="w-full">
+                  <SelectValue placeholder="Select event" />
+                </SelectTrigger>
+                <SelectContent>
+                  {availableEvents.map((event) => (
+                    <SelectItem key={event} value={event}>
+                      {event}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <h3 className="text-sm font-medium mb-2">Date of Attendance</h3>
+              <Select value={selectedDate} onValueChange={setSelectedDate}>
+                <SelectTrigger className="w-full">
+                  <SelectValue placeholder="Select date" />
+                </SelectTrigger>
+                <SelectContent>
+                  {availableDates.map((date) => (
+                    <SelectItem key={date} value={date}>
+                      {formatDate(date)}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <h3 className="text-sm font-medium mb-2">Academic Year</h3>
+              <Select
+                value={selectedAcademicYear}
+                onValueChange={(value) => {
+                  setSelectedAcademicYear(value)
+                  toast({
+                    title: "Academic Year Changed",
+                    description: `Successfully changed the academic year to ${value}.`,
+                    variant: "success",
+                  })
+                }}
+              >
+                <SelectTrigger className="w-full">
+                  <SelectValue placeholder="Select academic year" />
+                </SelectTrigger>
+                <SelectContent>
+                  {academicYears.map((year) => (
+                    <SelectItem key={year} value={year}>
+                      {year}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
           </div>
           <div className="flex items-center gap-2 mb-6">
             <Input
@@ -581,7 +620,7 @@ export default function PrintableAttendanceDocument() {
               </div>
             </RadioGroup>
           </div>
-
+          <h3 className="text-sm font-medium mb-2">Number of Rows</h3>
           <div className="flex items-center justify-between my-4 ">
             <Select
               value={itemsPerPage.toString()}
@@ -590,6 +629,7 @@ export default function PrintableAttendanceDocument() {
                 setCurrentPage(1)
               }}
             >
+               
               <SelectTrigger className="w-[95px]">
                 <SelectValue placeholder="Select number of rows" />
               </SelectTrigger>

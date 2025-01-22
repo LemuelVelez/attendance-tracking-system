@@ -10,7 +10,7 @@ const LoadingSpinner = () => {
 
   useEffect(() => {
     const img = new window.Image();
-    img.src = "/ssglogo.jpg";
+    img.src = "/attendancetracking.png";
     img.onload = () => {
       // Increase the timeout to 3 seconds (3000 milliseconds)
       setTimeout(() => {
@@ -31,10 +31,10 @@ const LoadingSpinner = () => {
           <div className="absolute inset-0 flex items-center justify-center">
             <div className="rounded-full overflow-hidden">
               <Image
-                src="/ssglogo.jpg"
+                src="/attendancetracking.png"
                 alt="SSG Logo"
-                width={90}
-                height={90}
+                width={80}
+                height={80}
               />
             </div>
           </div>
@@ -45,7 +45,12 @@ const LoadingSpinner = () => {
         </p>
       ) : (
         <div className="rounded-full overflow-hidden">
-          <Image src="/ssglogo.jpg" alt="SSG Logo" width={200} height={200} />
+          <Image
+            src="/attendancetracking.png"
+            alt="SSG Logo"
+            width={250}
+            height={250}
+          />
         </div>
       )}
     </div>
