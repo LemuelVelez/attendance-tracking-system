@@ -413,7 +413,7 @@ async function deleteAllFineDocuments() {
       documents = await databases.listDocuments(DATABASE_ID, FINES_MANAGEMENT_COLLECTION_ID, [Query.limit(100)])
 
       for (const doc of documents.documents) {
-        await new Promise((resolve) => setTimeout(resolve, 2000)) // 2-second delay
+        await new Promise((resolve) => setTimeout(resolve, 1000)) // 1-second delay
         await databases.deleteDocument(DATABASE_ID, FINES_MANAGEMENT_COLLECTION_ID, doc.$id)
         console.log(`Deleted document ${doc.$id}`)
       }
