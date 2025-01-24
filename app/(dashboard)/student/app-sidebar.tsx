@@ -38,7 +38,7 @@ const data = {
   navMain: [
     {
       title: "Dashboard",
-      url: "/student",
+      url: "#",
       icon: Layout,
       isActive: true,
       items: [
@@ -50,7 +50,7 @@ const data = {
     },
     {
       title: "Attendance History",
-      url: "/student/attendance-history",
+      url: "#",
       icon: History,
       items: [
         {
@@ -61,7 +61,7 @@ const data = {
     },
     {
       title: "QR Code",
-      url: "/student/my-qr-code",
+      url: "#",
       icon: CheckSquare,
       items: [
         {
@@ -76,7 +76,7 @@ const data = {
     },
     {
       title: "Settings",
-      url: "/student/profile",
+      url: "#",
       icon: Settings2,
       items: [
         {

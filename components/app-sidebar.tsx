@@ -41,7 +41,7 @@ const data = {
   navMain: [
     {
       title: "Dashboard",
-      url: "/admin",
+      url: "#",
       icon: Layout,
       items: [
         {
@@ -52,7 +52,7 @@ const data = {
     },
     {
       title: "Event Management",
-      url: "/admin/events",
+      url: "#",
       icon: QrCode,
       items: [
         {
@@ -67,7 +67,7 @@ const data = {
     },
     {
       title: "Student Management",
-      url: "/admin/students",
+      url: "#",
       icon: Users,
       items: [
         {
@@ -78,7 +78,7 @@ const data = {
     },
     {
       title: "QR Code",
-      url: "/admin/my-qr-code",
+      url: "#",
       icon: CheckSquare,
       items: [
         {
@@ -93,7 +93,7 @@ const data = {
     },
     {
       title: "Attendance Reports",
-      url: "/admin/general-attendance",
+      url: "#",
       icon: FileText,
       items: [
         {
@@ -112,7 +112,7 @@ const data = {
     },
     {
       title: "Fine Management",
-      url: "/admin/attendance-penalties-management",
+      url: "#",
       icon: Archive,
       items: [
         {
@@ -127,7 +127,7 @@ const data = {
     },
     {
       title: "Settings",
-      url: "/admin/profile-settings",
+      url: "#",
       icon: Settings2,
       items: [
         {
