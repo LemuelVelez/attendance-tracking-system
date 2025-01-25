@@ -175,7 +175,7 @@ export default function Overview() {
   );
 
   return (
-    <div className="p-4 sm:p-8 space-y-4 sm:space-y-8 min-h-screen bg-gradient-to-br from-background to-secondary/20">
+    <div className="p-4 sm:p-8 space-y-4 sm:space-y-8 min-h-screen bg-gradient-to-br from-background to-secondary/20 background-with-overlay">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div>
           {" "}
