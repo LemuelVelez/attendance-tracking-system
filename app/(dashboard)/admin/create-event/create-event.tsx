@@ -66,7 +66,6 @@ export default function CreateEvent() {
     description: { value: "", error: null },
   });
   const [isLoading, setIsLoading] = useState(false);
-  const [organizationType, setOrganizationType] = useState<string>("");
 
   const updateField = (field: string, value: string) => {
     setFormFields((prev) => ({
@@ -132,7 +131,6 @@ export default function CreateEvent() {
           day: date.toLocaleDateString("en-US", { weekday: "long" }),
           location: formFields.location.value,
           description: formFields.description.value,
-          organizationType: organizationType,
         };
 
         const createdEvent = await createEvent(eventData);
@@ -401,24 +399,6 @@ export default function CreateEvent() {
                 {formFields.location.error}
               </p>
             )}
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="organization-type">Organization Type</Label>
-            <Select
-              value={organizationType}
-              onValueChange={setOrganizationType}
-            >
-              <SelectTrigger id="organization-type">
-                <SelectValue placeholder="Select organization type" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="general">
-                  General (Whole JRMSU-TC)
-                </SelectItem>
-                <SelectItem value="college">Specific College</SelectItem>
-                <SelectItem value="jrmsu-tc">JRMSU-TC Organization</SelectItem>
-              </SelectContent>
-            </Select>
           </div>
         </CardContent>
         <CardFooter>
