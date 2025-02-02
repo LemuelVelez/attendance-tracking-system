@@ -52,7 +52,7 @@ Design and implement a comprehensive web application for the Supreme Student Gov
 ### Administrative Tools
 
 - **💰 Automated Fine System**:
-  - Set custom fines for event absences
+  - Fines for event absences
   - Automatic calculation and tracking
 
 - **🔄 Flexible Event Management**:
