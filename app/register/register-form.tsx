@@ -26,6 +26,7 @@ import { Button } from "@/components/ui/button";
 import { gsap } from "gsap";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { ErrorInfoDialog } from "@/components/ErrorInfoDialog";
+import { toast } from "@/hooks/use-toast";
 
 export function SignUpForm() {
   const { setTheme } = useTheme();
@@ -72,6 +73,13 @@ export function SignUpForm() {
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { id, value } = e.target;
+    if (id === "password" && value.length > 0 && value.length < 8) {
+      toast({
+        title: "Password too short",
+        description: "Password must be at least 8 characters long.",
+        variant: "destructive",
+      });
+    }
     setForm((prevForm) => ({ ...prevForm, [id]: value }));
   };
 
@@ -264,6 +272,7 @@ export function SignUpForm() {
                       type={showPassword ? "text" : "password"}
                       placeholder="Enter your Password"
                       required
+                      minLength={8}
                       value={form.password}
                       onChange={handleChange}
                     />
@@ -289,6 +298,7 @@ export function SignUpForm() {
                       type={showConfirmPassword ? "text" : "password"}
                       placeholder="Re-enter your Password"
                       required
+                      minLength={8}
                       value={form.confirmPassword}
                       onChange={handleChange}
                     />
