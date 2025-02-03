@@ -62,6 +62,8 @@ export default function QRCodeScanner({ eventData, onSuccessfulScan }: QRCodeSca
   const [showSuccessOverlay, setShowSuccessOverlay] = useState(false)
   const [scannedUserData, setScannedUserData] = useState<User | null>(null)
   const webcamRef = useRef<Webcam>(null)
+  const [isScanningEnabled, setIsScanningEnabled] = useState(false)
+  const animationFrameRef = useRef<number | null>(null)
 
   useEffect(() => {
     setScanMode(null)
@@ -72,6 +74,7 @@ export default function QRCodeScanner({ eventData, onSuccessfulScan }: QRCodeSca
     setShowSuccessOverlay(false)
     setScannedUserData(null)
     setDialogState({ isOpen: false, type: "success", message: "" })
+    setIsScanningEnabled(false) //added
     if (fileInputRef.current) {
       fileInputRef.current.value = ""
     }
@@ -130,6 +133,7 @@ export default function QRCodeScanner({ eventData, onSuccessfulScan }: QRCodeSca
                 })
                 onSuccessfulScan()
                 setIsCameraEnabled(false)
+                setIsScanningEnabled(false) // Stop scanning
               }
             } catch (parseError) {
               console.error("Error parsing QR code data:", parseError)
@@ -179,6 +183,42 @@ export default function QRCodeScanner({ eventData, onSuccessfulScan }: QRCodeSca
     },
     [processQRCode],
   )
+
+  const scanQRCode = useCallback(() => {
+    if (webcamRef.current && isScanningEnabled) {
+      const video = webcamRef.current.video
+      if (video && video.readyState === video.HAVE_ENOUGH_DATA) {
+        const canvas = document.createElement("canvas")
+        canvas.width = video.videoWidth
+        canvas.height = video.videoHeight
+        const ctx = canvas.getContext("2d")
+        ctx?.drawImage(video, 0, 0, canvas.width, canvas.height)
+        const imageData = ctx?.getImageData(0, 0, canvas.width, canvas.height)
+
+        if (imageData) {
+          const code = jsQR(imageData.data, imageData.width, imageData.height)
+          if (code) {
+            processQRCode(canvas.toDataURL())
+            return // Stop scanning after successful detection
+          }
+        }
+      }
+    }
+    animationFrameRef.current = requestAnimationFrame(scanQRCode)
+  }, [isScanningEnabled, processQRCode])
+
+  useEffect(() => {
+    if (isScanningEnabled) {
+      animationFrameRef.current = requestAnimationFrame(scanQRCode)
+    } else if (animationFrameRef.current) {
+      cancelAnimationFrame(animationFrameRef.current)
+    }
+    return () => {
+      if (animationFrameRef.current) {
+        cancelAnimationFrame(animationFrameRef.current)
+      }
+    }
+  }, [isScanningEnabled, scanQRCode])
 
   return (
     <>
@@ -238,6 +278,7 @@ export default function QRCodeScanner({ eventData, onSuccessfulScan }: QRCodeSca
                   onClick={() => {
                     setScanMode("camera")
                     setIsCameraEnabled(true)
+                    setIsScanningEnabled(true) // Start scanning
                   }}
                   className="w-full bg-primary hover:bg-primary/90 transition-all duration-300"
                   disabled={isLoading}
