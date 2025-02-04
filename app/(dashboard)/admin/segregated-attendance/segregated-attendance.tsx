@@ -366,7 +366,7 @@ export function SegregatedAttendanceTable() {
       <Dialog>
         <DialogTrigger asChild>
           <div className="flex justify-center w-full mb-2 mt-4 ">
-            <Button variant="outline" className="w-auto bg-primary">
+            <Button variant="outline" className="w-auto bg-primary text-white">
               View Segregated Attendance Instructions
             </Button>
           </div>

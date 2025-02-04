@@ -326,7 +326,10 @@ export default function EventDisplay() {
       <Dialog>
         <DialogTrigger asChild>
           <div className="flex justify-center w-full mb-4">
-            <Button variant="outline" className="w-auto bg-primary">
+            <Button
+              variant="outline"
+              className="w-auto bg-primary text-white"
+            >
               View Attendance Instructions
             </Button>
           </div>

@@ -1,6 +1,6 @@
 "use client"
 
-import React, { useState, useEffect, useCallback } from "react"
+import { useState, useEffect, useCallback } from "react"
 import { Button } from "@/components/ui/button"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -171,6 +171,7 @@ export default function SupplyFinesManagement() {
       }
       setFines((prevFines) => prevFines.filter((fine) => !selectedFines.includes(fine.$id)))
       setSelectedFines([])
+      setSelectAll(false) // Add this line to uncheck the "select all" checkbox
       toast({
         title: "Success",
         description: `Successfully deleted ${selectedFines.length} fine(s).`,
@@ -202,6 +203,12 @@ export default function SupplyFinesManagement() {
     setSelectAll(checked)
     setSelectedFines(checked ? paginatedFines.map((fine) => fine.$id) : [])
   }
+
+  useEffect(() => {
+    if (fines.length === 0) {
+      setSelectAll(false)
+    }
+  }, [fines])
 
   return (
     <div className="container mx-auto px-2 sm:px-4 py-4 sm:py-6">
@@ -374,8 +381,8 @@ export default function SupplyFinesManagement() {
               <FileX className="w-16 h-16 text-gray-400 mb-4" />
               <p className="text-xl font-semibold mb-2">No Results</p>
               <p className="text-gray-500">
-                No fines have been updated yet. Click the &quot;Update Fines&quot; button to generate new fines based on the
-                latest attendance data.
+                No fines have been updated yet. Click the &quot;Update Fines&quot; button to generate new fines based on
+                the latest attendance data.
               </p>
             </div>
           ) : (
