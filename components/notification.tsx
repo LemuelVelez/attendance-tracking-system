@@ -204,7 +204,7 @@ export default function Notification() {
   };
 
   return (
-    <div className="absolute right-10 z-50 lg:right-16">
+    <div className="absolute right-4 z-50 lg:right-8">
       <Card className="w-10 h-10 flex items-center justify-center cursor-pointer hover:bg-primary transition-colors">
         <button
           onClick={handleNotificationClick}
