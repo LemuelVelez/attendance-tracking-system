@@ -57,6 +57,49 @@ export function ErrorInfoDialog() {
               </p>
             </div>
             <div>
+              <h3 className="font-bold">4. Issue: Slow Internet Connection</h3>
+              <p>
+                Solution: If you&apos;re experiencing slow loading times or
+                timeouts, try the following:
+              </p>
+              <ul className="list-disc pl-5">
+                <li>Check your internet connection and try again.</li>
+                <li>Refresh the page and attempt the action once more.</li>
+                <li>If possible, try connecting to a different network.</li>
+                <li>Wait a few minutes and try again later.</li>
+              </ul>
+            </div>
+            <div>
+              <h3 className="font-bold">5. Issue: Failed Registration</h3>
+              <p>
+                Solution: If your registration fails, it could be due to various
+                reasons:
+              </p>
+              <ul className="list-disc pl-5">
+                <li>Ensure all required fields are filled out correctly.</li>
+                <li>
+                  Check if the email is already registered and, if possible, use
+                  another email. If you&apos;ve already used that email to sign
+                  up and the registration failed, attempting to use it again
+                  will result in another failure because the email is already
+                  stored in the database. Even though the registration failed,
+                  the email was successfully registered, while the other data
+                  was not. You need to use a different email instead. The
+                  registration failure was caused by an unstable internet
+                  connection.
+                </li>
+                <li>Verify that your password meets the required criteria.</li>
+                <li>
+                  If using a strong internet connection, try again after a few
+                  minutes.
+                </li>
+                <li>
+                  Clear your browser cache and cookies, then attempt to register
+                  again.
+                </li>
+              </ul>
+            </div>
+            <div>
               <h3 className="font-bold">Note:</h3>
               <ul className="list-disc pl-5">
                 <li>Use an active and valid email to avoid recovery issues.</li>
@@ -67,6 +110,10 @@ export function ErrorInfoDialog() {
                 <li>
                   Avoid accessing the system directly through Messenger for
                   optimal performance.
+                </li>
+                <li>
+                  Ensure you have a stable internet connection when using the
+                  system.
                 </li>
               </ul>
             </div>
