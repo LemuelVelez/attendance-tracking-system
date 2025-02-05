@@ -53,6 +53,11 @@ export function SignUpForm() {
   const cardRef = useRef(null);
   const formRef = useRef(null);
 
+  const validatePassword = (password: string) => {
+    const regex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*])[A-Za-z\d!@#$%^&*]{8,}$/;
+    return regex.test(password);
+  };
+
   useEffect(() => {
     gsap.fromTo(
       cardRef.current,
@@ -73,18 +78,37 @@ export function SignUpForm() {
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { id, value } = e.target;
-    if (id === "password" && value.length > 0 && value.length < 8) {
-      toast({
-        title: "Password too short",
-        description: "Password must be at least 8 characters long.",
-        variant: "destructive",
-      });
+    if (id === "password") {
+      if (value.length > 0 && value.length < 8) {
+        toast({
+          title: "Password too short",
+          description: "Password must be at least 8 characters long.",
+          variant: "destructive",
+        });
+      } else if (value.length >= 8 && !validatePassword(value)) {
+        toast({
+          title: "Invalid password",
+          description:
+            "Password must contain at least one uppercase letter, one lowercase letter, one number, and one special character.",
+          variant: "destructive",
+        });
+      }
     }
     setForm((prevForm) => ({ ...prevForm, [id]: value }));
   };
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+
+    if (!validatePassword(form.password)) {
+      Swal.fire({
+        icon: "error",
+        title: "Invalid Password",
+        text:
+          "Password must contain at least one uppercase letter, one lowercase letter, one number, and one special character, and be at least 8 characters long.",
+      });
+      return;
+    }
 
     if (form.password !== form.confirmPassword) {
       Swal.fire({
@@ -234,21 +258,34 @@ export function SignUpForm() {
                 </div>
                 <div className="grid gap-2">
                   <Label htmlFor="yearLevel">Year Level</Label>
-                  <Input
+                  <select
                     id="yearLevel"
-                    type="text"
-                    placeholder="2nd Year"
+                    className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
                     required
                     value={form.yearLevel}
-                    onChange={handleChange}
-                  />
+                    onChange={(e) =>
+                      setForm((prevForm) => ({
+                        ...prevForm,
+                        yearLevel: e.target.value,
+                      }))
+                    }
+                  >
+                    <option value="" disabled>
+                      Select Year Level
+                    </option>
+                    <option value="1st Year">1st Year</option>
+                    <option value="2nd Year">2nd Year</option>
+                    <option value="3rd Year">3rd Year</option>
+                    <option value="4th Year">4th Year</option>
+                    <option value="4th Year">5th Year</option>
+                  </select>
                 </div>
                 <div className="grid gap-2">
                   <Label htmlFor="section">Section (Optional)</Label>
                   <Input
                     id="section"
                     type="text"
-                    placeholder="Section A"
+                    placeholder="A"
                     value={form.section}
                     onChange={handleChange}
                   />
@@ -265,7 +302,14 @@ export function SignUpForm() {
                   />
                 </div>
                 <div className="grid gap-2">
-                  <Label htmlFor="password">Password</Label>
+                  <Label htmlFor="password">
+                    Password
+                    <span className="block text-xs text-gray-500 dark:text-gray-400 mt-1">
+                      Example: &quot;P@ssw0rd123&quot; (min. 8 characters,
+                      including uppercase, lowercase, number, and special
+                      character)
+                    </span>
+                  </Label>
                   <div className="relative">
                     <Input
                       id="password"
@@ -275,6 +319,8 @@ export function SignUpForm() {
                       minLength={8}
                       value={form.password}
                       onChange={handleChange}
+                      pattern="(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*])[A-Za-z\d!@#$%^&*]{8,}"
+                      title="Must contain at least one uppercase letter, one lowercase letter, one number, one special character, and be at least 8 characters long"
                     />
                     <button
                       type="button"
@@ -301,6 +347,8 @@ export function SignUpForm() {
                       minLength={8}
                       value={form.confirmPassword}
                       onChange={handleChange}
+                      pattern="(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*])[A-Za-z\d!@#$%^&*]{8,}"
+                      title="Must match the password entered above"
                     />
                     <button
                       type="button"

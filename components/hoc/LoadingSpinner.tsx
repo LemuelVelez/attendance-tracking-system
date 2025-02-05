@@ -10,7 +10,7 @@ const LoadingSpinner = () => {
 
   useEffect(() => {
     const img = new window.Image();
-    img.src = "/attendancetracking.png";
+    img.src = "/jrmsu.png";
     img.onload = () => {
       // Increase the timeout to 3 seconds (3000 milliseconds)
       setTimeout(() => {
@@ -30,12 +30,7 @@ const LoadingSpinner = () => {
           <Loader2 className="w-32 h-32 animate-spin text-primary" />
           <div className="absolute inset-0 flex items-center justify-center">
             <div className="rounded-full overflow-hidden">
-              <Image
-                src="/attendancetracking.png"
-                alt="SSG Logo"
-                width={80}
-                height={80}
-              />
+              <Image src="/jrmsu.png" alt="SSG Logo" width={85} height={85} />
             </div>
           </div>
         </div>
@@ -45,12 +40,7 @@ const LoadingSpinner = () => {
         </p>
       ) : (
         <div className="rounded-full overflow-hidden">
-          <Image
-            src="/attendancetracking.png"
-            alt="SSG Logo"
-            width={250}
-            height={250}
-          />
+          <Image src="/jrmsu.png" alt="SSG Logo" width={250} height={250} />
         </div>
       )}
     </div>

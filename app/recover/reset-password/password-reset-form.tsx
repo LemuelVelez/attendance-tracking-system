@@ -44,29 +44,37 @@ export function PasswordResetForm() {
     e.preventDefault();
     setStatus("loading");
 
-    // Password match validation
-    if (newPassword !== confirmPassword) {
-      setStatus("error");
-      Swal.fire("Error", "Passwords do not match.", "error");
-      return;
-    }
-
-    // Check password length
-    if (newPassword.length < 8 || newPassword.length > 265) {
+    // Password validation
+    const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*()_+\-=[\]{};':"\\|,.<>/?]).{8,}$/;
+    if (!passwordRegex.test(newPassword)) {
       setStatus("error");
       Swal.fire(
-        "Error",
-        "Password must be between 8 and 265 characters.",
+        "Weak Password",
+        "Password must be at least 8 characters long and contain a combination of uppercase and lowercase letters, numbers, and special characters.",
         "error"
       );
       return;
     }
 
-    // Validate against common passwords
+    // Check password length (keeping the existing check for maximum length)
+    if (newPassword.length > 265) {
+      setStatus("error");
+      Swal.fire("Error", "Password must not exceed 265 characters.", "error");
+      return;
+    }
+
+    // Validate against common passwords (keeping the existing check)
     const commonPasswords = ["password", "123456", "qwerty", "letmein"];
     if (commonPasswords.includes(newPassword.toLowerCase())) {
       setStatus("error");
       Swal.fire("Weak Password", "Please choose a stronger password.", "error");
+      return;
+    }
+
+    // Password match validation
+    if (newPassword !== confirmPassword) {
+      setStatus("error");
+      Swal.fire("Error", "Passwords do not match.", "error");
       return;
     }
 
@@ -135,7 +143,21 @@ export function PasswordResetForm() {
             </DropdownMenuContent>
           </DropdownMenu>
         </div>
-        <CardDescription>Enter your new password below.</CardDescription>
+        <CardDescription>
+          Enter your new password below.
+          <br />
+          Example of a strong password: &quot;P@ssw0rd_2023!&quot;
+        </CardDescription>
+        <div className="text-sm text-muted-foreground mt-2">
+          Password must contain:
+          <ul className="list-disc list-inside">
+            <li>At least 8 characters</li>
+            <li>At least one uppercase letter</li>
+            <li>At least one lowercase letter</li>
+            <li>At least one number</li>
+            <li>At least one special character</li>
+          </ul>
+        </div>
       </CardHeader>
       <CardContent ref={formRef}>
         <form className="grid gap-4" onSubmit={handleSubmit}>

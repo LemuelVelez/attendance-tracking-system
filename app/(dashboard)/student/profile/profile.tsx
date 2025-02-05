@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { Upload, Eye, EyeOff, Loader2 } from 'lucide-react'
+import { Upload, Eye, EyeOff, Loader2 } from "lucide-react"
 
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card"
 import { Label } from "@/components/ui/label"
@@ -31,28 +31,68 @@ import {
   type UserData,
 } from "@/lib/profile/profile"
 
-function AlertDialogPasswordChange({ isOpen, onClose, onConfirm }: { isOpen: boolean, onClose: () => void, onConfirm: (currentPassword: string, newPassword: string) => Promise<void> }) {
-  const [currentPassword, setCurrentPassword] = useState('')
-  const [newPassword, setNewPassword] = useState('')
-  const [confirmPassword, setConfirmPassword] = useState('')
+function AlertDialogPasswordChange({
+  isOpen,
+  onClose,
+  onConfirm,
+}: {
+  isOpen: boolean
+  onClose: () => void
+  onConfirm: (currentPassword: string, newPassword: string) => Promise<void>
+}) {
+  const [currentPassword, setCurrentPassword] = useState("")
+  const [newPassword, setNewPassword] = useState("")
+  const [confirmPassword, setConfirmPassword] = useState("")
   const [showCurrentPassword, setShowCurrentPassword] = useState(false)
   const [showNewPassword, setShowNewPassword] = useState(false)
   const [showConfirmPassword, setShowConfirmPassword] = useState(false)
   const [isConfirming, setIsConfirming] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const { toast } = useToast()
 
   const handleConfirm = async () => {
     if (newPassword !== confirmPassword) {
       setError("New passwords do not match.")
+      toast({
+        title: "Error",
+        description: "New passwords do not match.",
+        variant: "destructive",
+      })
       return
     }
+
+    // New password validation
+    const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*])[A-Za-z\d!@#$%^&*]{8,}$/
+    if (!passwordRegex.test(newPassword)) {
+      const errorMessage =
+        "Password must be at least 8 characters long and contain a combination of uppercase and lowercase letters, numbers, and special characters."
+      setError(errorMessage)
+      toast({
+        title: "Invalid Password",
+        description: errorMessage,
+        variant: "destructive",
+      })
+      return
+    }
+
     setIsConfirming(true)
     setError(null)
     try {
       await onConfirm(currentPassword, newPassword)
+      toast({
+        title: "Success",
+        description: "Password changed successfully.",
+        variant: "success",
+      })
       onClose()
     } catch (error) {
-      setError(error instanceof Error ? error.message : "An error occurred. Please try again.")
+      const errorMessage = error instanceof Error ? error.message : "An error occurred. Please try again."
+      setError(errorMessage)
+      toast({
+        title: "Error",
+        description: errorMessage,
+        variant: "destructive",
+      })
     } finally {
       setIsConfirming(false)
     }
@@ -64,7 +104,9 @@ function AlertDialogPasswordChange({ isOpen, onClose, onConfirm }: { isOpen: boo
         <AlertDialogHeader>
           <AlertDialogTitle>Change Password</AlertDialogTitle>
           <AlertDialogDescription>
-            Enter your current password and choose a new password to update your account.
+            Enter your current password and choose a new password to update your account. Your new password should be at
+            least 8 characters long and include a combination of uppercase and lowercase letters, numbers, and special
+            characters. For example: &quot;P@ssw0rd123!&quot;
           </AlertDialogDescription>
         </AlertDialogHeader>
         <div className="grid gap-4 py-4">
@@ -139,7 +181,7 @@ function AlertDialogPasswordChange({ isOpen, onClose, onConfirm }: { isOpen: boo
                 Changing...
               </>
             ) : (
-              'Change Password'
+              "Change Password"
             )}
           </AlertDialogAction>
         </AlertDialogFooter>
@@ -170,7 +212,7 @@ export default function Profile() {
           degreeProgram: user.degreeProgram,
           yearLevel: user.yearLevel,
           section: user.section,
-          name: `${user.firstname} ${user.middlename} ${user.lastname}`.trim()
+          name: `${user.firstname} ${user.middlename} ${user.lastname}`.trim(),
         }
         setUserData(userData)
 
@@ -195,7 +237,7 @@ export default function Profile() {
     try {
       const updatedData = {
         ...userData,
-        name: `${userData.firstname || ''} ${userData.middlename || ''} ${userData.lastname || ''}`.trim()
+        name: `${userData.firstname || ""} ${userData.middlename || ""} ${userData.lastname || ""}`.trim(),
       }
       await editUserData(updatedData)
       toast({
@@ -245,66 +287,67 @@ export default function Profile() {
   }
 
   const handleConfirmPasswordChange = async (currentPassword: string, newPassword: string) => {
-    setIsChangingPassword(true);
+    setIsChangingPassword(true)
     try {
-      await changePassword(currentPassword, newPassword);
+      await changePassword(currentPassword, newPassword)
       toast({
         title: "Success",
         description: "Password changed successfully.",
         variant: "success",
-      });
-      setIsPasswordChangeModalOpen(false);
+      })
+      setIsPasswordChangeModalOpen(false)
     } catch (error) {
-      console.error("Error changing password:", error);
+      console.error("Error changing password:", error)
       toast({
         title: "Error",
         description: error instanceof Error ? error.message : "Failed to change password. Please try again.",
         variant: "destructive",
-      });
-      throw error;
+      })
+      throw error
     } finally {
-      setIsChangingPassword(false);
+      setIsChangingPassword(false)
     }
-  };
+  }
 
   const handleDeleteAccount = async (password: string) => {
-    setIsDeletingAccount(true);
+    setIsDeletingAccount(true)
     try {
-      await deleteAccount(password);
+      await deleteAccount(password)
       toast({
         title: "Success",
         description: "Your account has been deleted.",
         variant: "success",
-      });
+      })
       // Redirect to home page or login page after successful deletion
-      window.location.href = '/';
+      window.location.href = "/"
     } catch (error) {
-      console.error('Error deleting account:', error);
+      console.error("Error deleting account:", error)
       if (error instanceof Error) {
         if (error.message.includes("session has expired")) {
           toast({
             title: "Session Expired",
-            description: "Your session has expired. Please log out and log in again before trying to delete your account.",
+            description:
+              "Your session has expired. Please log out and log in again before trying to delete your account.",
             variant: "destructive",
-          });
+          })
         } else if (error.message.includes("don't have the necessary permissions")) {
           toast({
             title: "Permission Denied",
             description: "You don't have the necessary permissions to delete your account. Please contact support.",
             variant: "destructive",
-          });
+          })
         } else {
           toast({
             title: "Error",
             description: "Failed to delete account. Please try again.",
             variant: "destructive",
-          });
+          })
         }
       }
     } finally {
-      setIsDeletingAccount(false);
+      setIsDeletingAccount(false)
     }
-  };
+  }
 
   return (
     <div className="container mx-auto px-4 py-8 md:py-12 lg:py-16">
@@ -322,18 +365,12 @@ export default function Profile() {
             <div className="flex flex-col items-center space-y-4">
               <Avatar className="h-24 w-24">
                 <AvatarImage src={avatarUrl || undefined} alt="User Avatar" />
-                <AvatarFallback className="text-2xl">
-                  {userData?.firstname?.charAt(0) || "U"}
-                </AvatarFallback>
+                <AvatarFallback className="text-2xl">{userData?.firstname?.charAt(0) || "U"}</AvatarFallback>
               </Avatar>
               <Label htmlFor="avatar-upload" className="cursor-pointer">
                 <div className="flex h-7 items-center space-x-2 rounded-md bg-primary px-4 py-2 text-primary-foreground hover:bg-primary/90">
-                  {isUploadingAvatar ? (
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                  ) : (
-                    <Upload className="h-4 w-4" />
-                  )}
-                  <span>{isUploadingAvatar ? 'Uploading...' : 'Upload New Picture'}</span>
+                  {isUploadingAvatar ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />}
+                  <span>{isUploadingAvatar ? "Uploading..." : "Upload New Picture"}</span>
                 </div>
                 <Input
                   id="avatar-upload"
@@ -350,21 +387,21 @@ export default function Profile() {
                 <Label htmlFor="fullName">Full Name</Label>
                 <Input
                   id="fullName"
-                  value={`${userData?.firstname || ''} ${userData?.middlename || ''} ${userData?.lastname || ''}`.trim()}
+                  value={`${userData?.firstname || ""} ${userData?.middlename || ""} ${userData?.lastname || ""}`.trim()}
                   onChange={(e) => {
-                    const [firstname = '', middlename = '', ...lastnameParts] = e.target.value.split(' ');
-                    const lastname = lastnameParts.join(' ');
+                    const [firstname = "", middlename = "", ...lastnameParts] = e.target.value.split(" ")
+                    const lastname = lastnameParts.join(" ")
                     setUserData((prev) => ({
                       ...prev,
                       firstname,
                       middlename,
                       lastname,
-                      name: e.target.value.trim()
-                    }));
+                      name: e.target.value.trim(),
+                    }))
                   }}
                 />
               </div>
-              
+
               <div className="space-y-2">
                 <Label htmlFor="studentId">Student ID</Label>
                 <Input
@@ -418,18 +455,14 @@ export default function Profile() {
                 />
               </div>
             </div>
-            <Button 
-              className="w-full" 
-              onClick={handleEditUserData}
-              disabled={isUpdatingProfile}
-            >
+            <Button className="w-full" onClick={handleEditUserData} disabled={isUpdatingProfile}>
               {isUpdatingProfile ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                   Saving...
                 </>
               ) : (
-                'Save Changes'
+                "Save Changes"
               )}
             </Button>
           </CardContent>
@@ -442,19 +475,17 @@ export default function Profile() {
             <CardDescription>Update your account password.</CardDescription>
           </CardHeader>
           <CardContent>
-            <p className="mb-4">Changing your password helps keep your account secure. Click the button below to start the process.</p>
-            <Button 
-              className="w-full" 
-              onClick={handleChangePassword}
-              disabled={isChangingPassword}
-            >
+            <p className="mb-4">
+              Changing your password helps keep your account secure. Click the button below to start the process.
+            </p>
+            <Button className="w-full" onClick={handleChangePassword} disabled={isChangingPassword}>
               {isChangingPassword ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                   Changing Password...
                 </>
               ) : (
-                'Change Password'
+                "Change Password"
               )}
             </Button>
           </CardContent>
@@ -467,13 +498,9 @@ export default function Profile() {
             <CardDescription>Permanently delete your account and all associated data.</CardDescription>
           </CardHeader>
           <CardContent>
-            <DeleteAccountDialog 
-              onDeleteAccount={handleDeleteAccount}
-              isDeleting={isDeletingAccount}
-            />
+            <DeleteAccountDialog onDeleteAccount={handleDeleteAccount} isDeleting={isDeletingAccount} />
           </CardContent>
         </Card>
-     
       </div>
       <AlertDialogPasswordChange
         isOpen={isPasswordChangeModalOpen}
