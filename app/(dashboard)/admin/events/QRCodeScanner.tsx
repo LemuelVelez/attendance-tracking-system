@@ -258,7 +258,7 @@ export default function QRCodeScanner({ eventData, onSuccessfulScan }: QRCodeSca
                 <p className="text-center mt-2 text-sm text-gray-600">
                   {scanMode === "camera"
                     ? isCameraEnabled
-                      ? "Align QR code within the frame and tap Capture"
+                      ? "Align QR code within the frame"
                       : "QR code scanned. Camera disabled."
                     : isScanning
                       ? "Scanning uploaded image..."

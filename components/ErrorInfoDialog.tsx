@@ -35,6 +35,20 @@ export function ErrorInfoDialog() {
                 email, as password recovery and reset instructions will be sent
                 to your active email if needed.
               </p>
+              <p className="mt-2">
+                Note: This issue might also occur due to a typo during
+                registration. For example, you might have registered as
+                &quot;TC-22-00123&quot; but are trying to log in with &quot;TC-22-A-00123&quot;.
+                Double-check your registration details and ensure you&apos;re using
+                the exact same information when logging in.
+              </p>
+              <p className="mt-2">
+                If you realize you&apos;ve made a typo or mistake in your credentials
+                during registration, don&apos;t worry. Once you&apos;ve successfully
+                logged in, you can edit your information in the Profile
+                settings. This allows you to correct any errors in your
+                registered details.
+              </p>
             </div>
             <div>
               <h3 className="font-bold">2. Issue: Invalid Email or Password</h3>
@@ -59,8 +73,8 @@ export function ErrorInfoDialog() {
             <div>
               <h3 className="font-bold">4. Issue: Slow Internet Connection</h3>
               <p>
-                Solution: If you&apos;re experiencing slow loading times or
-                timeouts, try the following:
+                Solution: If you&apos;re experiencing slow loading times or timeouts,
+                try the following:
               </p>
               <ul className="list-disc pl-5">
                 <li>Check your internet connection and try again.</li>
@@ -79,12 +93,12 @@ export function ErrorInfoDialog() {
                 <li>Ensure all required fields are filled out correctly.</li>
                 <li>
                   Check if the email is already registered and, if possible, use
-                  another email. If you&apos;ve already used that email to sign
-                  up and the registration failed, attempting to use it again
-                  will result in another failure because the email is already
-                  stored in the database. Even though the registration failed,
-                  the email was successfully registered, while the other data
-                  was not. You need to use a different email instead. The
+                  another email. If you&apos;ve already used that email to sign up
+                  and the registration failed, attempting to use it again will
+                  result in another failure because the email is already stored
+                  in the database. Even though the registration failed, the
+                  email was successfully registered, while the other data was
+                  not. You need to use a different email instead. The
                   registration failure was caused by an unstable internet
                   connection.
                 </li>
