@@ -12,7 +12,6 @@ import { Loader2, Upload, Camera, CheckCircle } from "lucide-react"
 import { createGeneralAttendance, type EventData } from "@/lib/attendance/attendance"
 import jsQR from "jsqr"
 import { ResultDialog } from "./SuccessDialog"
-import { format } from "date-fns"
 
 type ScanMode = "camera" | "image" | null
 
@@ -85,23 +84,6 @@ export default function QRCodeScanner() {
       } catch (parseError) {
         console.error("Error parsing QR code data:", parseError)
         throw new Error("Invalid QR code format. Please scan a valid QR code.")
-      }
-
-      // Check if the current time is past the event time (with 30-minute grace period)
-      const currentTime = new Date()
-      const eventTime = new Date(`${eventData.date} ${eventData.time}`)
-      const graceTime = new Date(eventTime.getTime() + 30 * 60000) // Add 30 minutes
-
-      if (currentTime > graceTime) {
-        setDialogState({
-          isOpen: true,
-          type: "error",
-          message: `Your attendance is not recorded because you are late past the grace period. The event was scheduled for ${format(
-            eventTime,
-            "PPpp",
-          )}, and the grace period ended at ${format(graceTime, "PPpp")}.`,
-        })
-        return
       }
 
       // Create the general attendance record
