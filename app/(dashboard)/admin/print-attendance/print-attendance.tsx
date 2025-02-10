@@ -287,7 +287,13 @@ export default function PrintableAttendanceDocument() {
     }
   }
 
-  const filteredData = attendanceData.filter(
+  const sortedData = [...attendanceData].sort((a, b) => {
+    const dateA = new Date(a.date + "T" + a.time)
+    const dateB = new Date(b.date + "T" + b.time)
+    return dateA.getTime() - dateB.getTime()
+  })
+
+  const filteredData = sortedData.filter(
     (record) =>
       record.eventName === selectedEvent &&
       record.date === selectedDate &&
@@ -331,47 +337,6 @@ export default function PrintableAttendanceDocument() {
         format: [width, height],
       })
 
-      const generatePage = (pageNumber: number) => {
-        doc.setPage(pageNumber)
-
-        // Header
-        let headerHeight: number
-        if (paperSize === "legal") {
-          headerHeight = height * 0.1
-        } else {
-          // For A4 and Letter
-          headerHeight = height * 0.13
-        }
-        const headerWidth = width * 0.9 // 90% of the page width
-        const headerX = (width - headerWidth) / 2 // Center the header horizontally
-        doc.addImage("/Header.png", "PNG", headerX, 10, headerWidth, headerHeight)
-
-        // Document Title
-        const titleY = headerHeight + 20
-        doc.setFontSize(18)
-        doc.text("ATTENDANCE RECORD", width / 2, titleY, { align: "center" })
-        doc.setFontSize(12)
-        doc.text(`Academic Year ${selectedAcademicYear}`, width / 2, titleY + 8, {
-          align: "center",
-        })
-
-        // Event Details
-        const eventDetailsY = titleY + 20
-        doc.setFontSize(10)
-        doc.text(`Event: ${selectedEvent}`, 14, eventDetailsY)
-        const firstSelectedRecord = filteredData[Array.from(selectedRows)[0]]
-        doc.text(`Venue: ${firstSelectedRecord?.location || "JRMSU Gymnasium"}`, 14, eventDetailsY + 6)
-
-        if (firstSelectedRecord) {
-          doc.text(`Date: ${formatDate(firstSelectedRecord.date)}`, width - 14, eventDetailsY, { align: "right" })
-          doc.text(`Time: ${convertTo12HourFormat(firstSelectedRecord.time)}`, width - 14, eventDetailsY + 6, {
-            align: "right",
-          })
-        }
-
-        return eventDetailsY + 15
-      }
-
       const tableColumn = ["Name", "Student ID", "Program", "Year", "Section"]
 
       const tableRows = Array.from(selectedRows).map((index) => {
@@ -379,19 +344,51 @@ export default function PrintableAttendanceDocument() {
         return [record.name, record.studentId, record.degreeProgram, record.yearLevel, record.section]
       })
 
-      let startY = generatePage(1)
-      let pageNumber = 1
-
       doc.autoTable({
         head: [tableColumn],
         body: tableRows,
-        startY: startY,
+        startY: 90, // Adjusted starting position for first page
         margin: { left: 14, right: 14 },
         didDrawPage: (data) => {
-          if (data.pageNumber > pageNumber) {
-            pageNumber = data.pageNumber
-            startY = generatePage(pageNumber)
-            data.cursor.y = startY
+          // Only draw header and title on first page
+          if (data.pageNumber === 1) {
+            // Header
+            let headerHeight: number
+            if (paperSize === "legal") {
+              headerHeight = height * 0.1
+            } else {
+              // For A4 and Letter
+              headerHeight = height * 0.13
+            }
+            const headerWidth = width * 0.9 // 90% of the page width
+            const headerX = (width - headerWidth) / 2 // Center the header horizontally
+            doc.addImage("/Header.png", "PNG", headerX, 10, headerWidth, headerHeight)
+
+            // Document Title
+            const titleY = headerHeight + 20
+            doc.setFontSize(18)
+            doc.text("ATTENDANCE RECORD", width / 2, titleY, { align: "center" })
+            doc.setFontSize(12)
+            doc.text(`Academic Year ${selectedAcademicYear}`, width / 2, titleY + 8, {
+              align: "center",
+            })
+
+            // Event Details
+            const eventDetailsY = titleY + 20
+            doc.setFontSize(10)
+            doc.text(`Event: ${selectedEvent}`, 14, eventDetailsY)
+            const firstSelectedRecord = filteredData[Array.from(selectedRows)[0]]
+            doc.text(`Venue: ${firstSelectedRecord?.location || "JRMSU Gymnasium"}`, 14, eventDetailsY + 6)
+
+            if (firstSelectedRecord) {
+              doc.text(`Date: ${formatDate(firstSelectedRecord.date)}`, width - 14, eventDetailsY, { align: "right" })
+              doc.text(`Time: ${convertTo12HourFormat(firstSelectedRecord.time)}`, width - 14, eventDetailsY + 6, {
+                align: "right",
+              })
+            }
+
+            // Set the starting Y position for the table on first page
+            data.cursor.y = eventDetailsY + 15
           }
         },
       })
@@ -399,13 +396,17 @@ export default function PrintableAttendanceDocument() {
       // Signature Section (only on the last page)
       const finalY = (doc as unknown as { lastAutoTable?: { finalY: number } }).lastAutoTable?.finalY ?? 150
       const signatureY = Math.min(finalY + 40, height - 30)
+      doc.setFontSize(10)
       doc.text("Prepared by:", width * 0.25, signatureY, { align: "center" })
+      doc.setFontSize(8)
       doc.text("SSG Secretary", width * 0.25, signatureY + 5, {
         align: "center",
       })
       doc.line(width * 0.1, signatureY - 5, width * 0.4, signatureY - 5)
 
+      doc.setFontSize(10)
       doc.text("Noted by:", width * 0.75, signatureY, { align: "center" })
+      doc.setFontSize(8)
       doc.text("SSG Adviser", width * 0.75, signatureY + 5, {
         align: "center",
       })
@@ -629,7 +630,6 @@ export default function PrintableAttendanceDocument() {
                 setCurrentPage(1)
               }}
             >
-               
               <SelectTrigger className="w-[95px]">
                 <SelectValue placeholder="Select number of rows" />
               </SelectTrigger>
@@ -782,13 +782,13 @@ export default function PrintableAttendanceDocument() {
               <div className="grid grid-cols-2 gap-8 mt-12">
                 <div className="text-center">
                   <div className="border-t border-black w-36 sm:w-48 mx-auto mt-12 sm:mt-16"></div>
-                  <p className="font-semibold text-sm sm:text-base text-gray-950">Prepared by</p>
-                  <p className="text-xs sm:text-sm text-gray-600">SSG Secretary</p>
+                  <p className="font-semibold text-xs sm:text-sm text-gray-950">Prepared by:</p>
+                  <p className="text-[10px] sm:text-xs text-gray-600">SSG Secretary</p>
                 </div>
                 <div className="text-center">
                   <div className="border-t border-black w-36 sm:w-48 mx-auto mt-12 sm:mt-16"></div>
-                  <p className="font-semibold text-sm sm:text-base text-gray-950">Noted by</p>
-                  <p className="text-xs sm:text-sm text-gray-600">SSG Adviser</p>
+                  <p className="font-semibold text-xs sm:text-sm text-gray-950">Noted by:</p>
+                  <p className="text-[10px] sm:text-xs text-gray-600">SSG Adviser</p>
                 </div>
               </div>
             </div>
