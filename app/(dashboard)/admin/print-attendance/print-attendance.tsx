@@ -426,7 +426,6 @@ export default function PrintableAttendanceDocument() {
           }
           return eventDetailsY + 15
         } else {
-          // On subsequent pages, do not draw the header.
           return 10
         }
       }
@@ -476,7 +475,8 @@ export default function PrintableAttendanceDocument() {
     }
   }
 
-  // New function to generate a preview of the PDF
+  // Modified function to generate a preview of the PDF.
+  // If the device is small, open the PDF in a new tab.
   const handlePreviewPDF = async () => {
     try {
       const paperSizes = {
@@ -502,7 +502,6 @@ export default function PrintableAttendanceDocument() {
           }
           const headerWidth = width * 0.9 // 90% of the page width
           const headerX = (width - headerWidth) / 2 // Center the header horizontally
-          // Draw header image and event details only on the first page.
           doc.addImage("/Header.png", "PNG", headerX, 10, headerWidth, headerHeight)
 
           const titleY = headerHeight + 20
@@ -536,7 +535,6 @@ export default function PrintableAttendanceDocument() {
           }
           return eventDetailsY + 15
         } else {
-          // On subsequent pages, do not draw the header.
           return 10
         }
       }
@@ -575,11 +573,17 @@ export default function PrintableAttendanceDocument() {
       doc.text("SSG Adviser", width * 0.75, signatureY + 5, { align: "center" })
       doc.line(width * 0.6, signatureY - 5, width * 0.9, signatureY - 5)
 
-      // Generate a blob and create a preview URL.
+      // Generate the PDF as a blob and create a URL.
       const pdfBlob = doc.output("blob")
       const pdfUrl = URL.createObjectURL(pdfBlob)
-      setPreviewPdfUrl(pdfUrl)
-      setShowPreview(true)
+
+      // If the device width is less than 600px, open the PDF in a new tab.
+      if (window.innerWidth < 600) {
+        window.open(pdfUrl, "_blank")
+      } else {
+        setPreviewPdfUrl(pdfUrl)
+        setShowPreview(true)
+      }
     } catch (error) {
       console.error("Error generating PDF preview:", error)
       toast({
@@ -877,7 +881,6 @@ export default function PrintableAttendanceDocument() {
       {selectedRows.size > 0 && (
         <Card className="mx-auto max-w-xs sm:max-w-sm md:max-w-md lg:max-w-6xl bg-white shadow-md rounded-lg p-4">
           <CardContent className="p-6 space-y-6">
-            {/* Responsive buttons container: stacks on mobile, row on larger screens */}
             <div className="flex flex-col sm:flex-row justify-end gap-2">
               <Button onClick={handlePreviewPDF} className="w-full sm:w-auto">
                 <Eye className="mr-2 h-4 w-4" />
