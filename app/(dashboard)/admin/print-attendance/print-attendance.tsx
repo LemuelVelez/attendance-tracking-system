@@ -3,13 +3,35 @@
 import type React from "react"
 import { useState, useEffect, useCallback } from "react"
 import Image from "next/image"
-import { Download, Eye, Search, ChevronLeft, ChevronRight, PlusCircle, ChevronsLeft, ChevronsRight } from "lucide-react"
+import {
+  Download,
+  Eye,
+  Search,
+  ChevronLeft,
+  ChevronRight,
+  PlusCircle,
+  ChevronsLeft,
+  ChevronsRight,
+} from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Input } from "@/components/ui/input"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table"
 import { useToast } from "@/hooks/use-toast"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { Label } from "@/components/ui/label"
@@ -25,11 +47,21 @@ import {
   getJRMSUTCOrganizationsAttendance,
 } from "@/lib/GeneralAttendance/getCollegeAttendance"
 import { getGeneralAttendance } from "@/lib/GeneralAttendance/GeneralAttendance"
-import type { AttendanceType, CollegeType, AttendanceRecord } from "@/lib/GeneralAttendance/getCollegeAttendance"
+import type {
+  AttendanceType,
+  CollegeType,
+  AttendanceRecord,
+} from "@/lib/GeneralAttendance/getCollegeAttendance"
 import { jsPDF } from "jspdf"
 import "jspdf-autotable"
 import { pdfjs } from "react-pdf"
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog"
 
 pdfjs.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjs.version}/pdf.worker.min.js`
 
@@ -61,7 +93,13 @@ interface PaginationProps {
   totalItems: number
 }
 
-const Pagination: React.FC<PaginationProps> = ({ currentPage, totalPages, onPageChange, itemsPerPage, totalItems }) => {
+const Pagination: React.FC<PaginationProps> = ({
+  currentPage,
+  totalPages,
+  onPageChange,
+  itemsPerPage,
+  totalItems,
+}) => {
   const startItem = (currentPage - 1) * itemsPerPage + 1
   const endItem = Math.min(currentPage * itemsPerPage, totalItems)
 
@@ -214,7 +252,11 @@ export default function PrintableAttendanceDocument() {
   const [selectedEvent, setSelectedEvent] = useState<string>("")
   const [availableEvents, setAvailableEvents] = useState<string[]>([])
   const { toast } = useToast()
-  const [academicYears, setAcademicYears] = useState<string[]>(["2023-2024", "2024-2025", "2025-2026"])
+  const [academicYears, setAcademicYears] = useState<string[]>([
+    "2023-2024",
+    "2024-2025",
+    "2025-2026",
+  ])
   const [selectedAcademicYear, setSelectedAcademicYear] = useState("2024-2025")
   const [newAcademicYear, setNewAcademicYear] = useState("")
   const [availableDates, setAvailableDates] = useState<string[]>([])
@@ -294,10 +336,15 @@ export default function PrintableAttendanceDocument() {
     (record) =>
       record.eventName === selectedEvent &&
       record.date === selectedDate &&
-      Object.values(record).some((value) => value.toString().toLowerCase().includes(searchTerm.toLowerCase())),
+      Object.values(record).some((value) =>
+        value.toString().toLowerCase().includes(searchTerm.toLowerCase()),
+      ),
   )
 
-  const paginatedData = filteredData.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage)
+  const paginatedData = filteredData.slice(
+    (currentPage - 1) * itemsPerPage,
+    currentPage * itemsPerPage,
+  )
 
   const handlePageChange = (page: number) => {
     setCurrentPage(page)
@@ -360,13 +407,22 @@ export default function PrintableAttendanceDocument() {
           doc.setFontSize(10)
           doc.text(`Event: ${selectedEvent}`, 14, eventDetailsY)
           const firstSelectedRecord = filteredData[Array.from(selectedRows)[0]]
-          doc.text(`Venue: ${firstSelectedRecord?.location || "JRMSU Gymnasium"}`, 14, eventDetailsY + 6)
+          doc.text(
+            `Venue: ${firstSelectedRecord?.location || "JRMSU Gymnasium"}`,
+            14,
+            eventDetailsY + 6,
+          )
 
           if (firstSelectedRecord) {
-            doc.text(`Date: ${formatDate(firstSelectedRecord.date)}`, width - 14, eventDetailsY, { align: "right" })
-            doc.text(`Time: ${convertTo12HourFormat(firstSelectedRecord.time)}`, width - 14, eventDetailsY + 6, {
+            doc.text(`Date: ${formatDate(firstSelectedRecord.date)}`, width - 14, eventDetailsY, {
               align: "right",
             })
+            doc.text(
+              `Time: ${convertTo12HourFormat(firstSelectedRecord.time)}`,
+              width - 14,
+              eventDetailsY + 6,
+              { align: "right" },
+            )
           }
           return eventDetailsY + 15
         } else {
@@ -400,8 +456,6 @@ export default function PrintableAttendanceDocument() {
       })
 
       // Signature Section on the footer of the last page:
-      // Instead of basing the position on the table's final Y,
-      // place it at a fixed position from the bottom.
       const signatureY = height - 30
       doc.text("Prepared by:", width * 0.25, signatureY, { align: "center" })
       doc.text("SSG Secretary", width * 0.25, signatureY + 5, { align: "center" })
@@ -463,13 +517,22 @@ export default function PrintableAttendanceDocument() {
           doc.setFontSize(10)
           doc.text(`Event: ${selectedEvent}`, 14, eventDetailsY)
           const firstSelectedRecord = filteredData[Array.from(selectedRows)[0]]
-          doc.text(`Venue: ${firstSelectedRecord?.location || "JRMSU Gymnasium"}`, 14, eventDetailsY + 6)
+          doc.text(
+            `Venue: ${firstSelectedRecord?.location || "JRMSU Gymnasium"}`,
+            14,
+            eventDetailsY + 6,
+          )
 
           if (firstSelectedRecord) {
-            doc.text(`Date: ${formatDate(firstSelectedRecord.date)}`, width - 14, eventDetailsY, { align: "right" })
-            doc.text(`Time: ${convertTo12HourFormat(firstSelectedRecord.time)}`, width - 14, eventDetailsY + 6, {
+            doc.text(`Date: ${formatDate(firstSelectedRecord.date)}`, width - 14, eventDetailsY, {
               align: "right",
             })
+            doc.text(
+              `Time: ${convertTo12HourFormat(firstSelectedRecord.time)}`,
+              width - 14,
+              eventDetailsY + 6,
+              { align: "right" },
+            )
           }
           return eventDetailsY + 15
         } else {
@@ -512,7 +575,7 @@ export default function PrintableAttendanceDocument() {
       doc.text("SSG Adviser", width * 0.75, signatureY + 5, { align: "center" })
       doc.line(width * 0.6, signatureY - 5, width * 0.9, signatureY - 5)
 
-      // Instead of saving, generate a blob and create a preview URL.
+      // Generate a blob and create a preview URL.
       const pdfBlob = doc.output("blob")
       const pdfUrl = URL.createObjectURL(pdfBlob)
       setPreviewPdfUrl(pdfUrl)
@@ -540,28 +603,34 @@ export default function PrintableAttendanceDocument() {
           </DialogTrigger>
           <DialogContent className="max-w-[350px] lg:max-w-[700px]">
             <DialogHeader>
-              <DialogTitle className="text-lg lg:xl">Print Attendance Instructions</DialogTitle>
+              <DialogTitle className="text-lg lg:xl">
+                Print Attendance Instructions
+              </DialogTitle>
             </DialogHeader>
             <ScrollArea className="h-[70vh] w-full rounded-md border p-4">
               <div className="text-sm lg:text-lg space-y-4">
                 <h3 className="text-lg font-semibold">Printing Attendance Records:</h3>
                 <p>
-                  Attendance records can be previewed and downloaded as a PDF. Use the options below to select the type
-                  of attendance to print:
+                  Attendance records can be previewed and downloaded as a PDF. Use the options below
+                  to select the type of attendance to print:
                 </p>
                 <ul className="list-disc pl-6 space-y-2">
                   <li>
-                    The default selection is <strong>General Attendance</strong>. Select the event you want to print.
+                    The default selection is <strong>General Attendance</strong>. Select the event you
+                    want to print.
                   </li>
                   <li>
-                    To print <strong>Segregated Attendance</strong>, choose the specific college or organization and
-                    then select the event.
+                    To print <strong>Segregated Attendance</strong>, choose the specific college or
+                    organization and then select the event.
                   </li>
-                  <li>For JRMSU-TC Organizations, select the organization and choose the event to print attendance.</li>
+                  <li>
+                    For JRMSU-TC Organizations, select the organization and choose the event to print
+                    attendance.
+                  </li>
                 </ul>
                 <p>
-                  After selecting the event, check all recorded attendance entries you wish to include, download the
-                  PDF, and print it. You can also specify the bond paper size for printing.
+                  After selecting the event, check all recorded attendance entries you wish to include,
+                  download the PDF, and print it. You can also specify the bond paper size for printing.
                 </p>
                 <div className="mt-4 space-y-2">
                   <p>
@@ -588,7 +657,9 @@ export default function PrintableAttendanceDocument() {
           </DialogContent>
         </Dialog>
         <CardHeader className="bg-primary text-primary-foreground">
-          <CardTitle className="text-xl sm:text-3xl font-bold text-center">Attendance Record</CardTitle>
+          <CardTitle className="text-xl sm:text-3xl font-bold text-center">
+            Attendance Record
+          </CardTitle>
         </CardHeader>
         <CardContent className="p-6">
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4 mb-6">
@@ -701,7 +772,7 @@ export default function PrintableAttendanceDocument() {
               aria-label="Search records"
             />
           </div>
-          <div className="mb-6 text:xs sm:text-base">
+          <div className="mb-6 text-xs sm:text-base">
             <Label htmlFor="paper-size" className="mb-4 block">
               Paper Size
             </Label>
@@ -711,15 +782,15 @@ export default function PrintableAttendanceDocument() {
               className="flex flex-wrap gap-4"
               onValueChange={handlePaperSizeChange}
             >
-              <div className="flex items-center space-x-2 text:xs sm:text-base">
+              <div className="flex items-center space-x-2 text-xs sm:text-base">
                 <RadioGroupItem value="letter" id="letter" />
                 <Label htmlFor="letter">Letter (&quot;8.5 x 11&quot;)</Label>
               </div>
-              <div className="flex items-center space-x-2 text:xs sm:text-base">
+              <div className="flex items-center space-x-2 text-xs sm:text-base">
                 <RadioGroupItem value="legal" id="legal" />
                 <Label htmlFor="legal">Legal (&quot;8.5 x 14&quot;)</Label>
               </div>
-              <div className="flex items-center space-x-2 text:xs sm:text-base">
+              <div className="flex items-center space-x-2 text-xs sm:text-base">
                 <RadioGroupItem value="a4" id="a4" />
                 <Label htmlFor="a4">A4 (210mm x 297mm)</Label>
               </div>
@@ -806,7 +877,8 @@ export default function PrintableAttendanceDocument() {
       {selectedRows.size > 0 && (
         <Card className="mx-auto max-w-xs sm:max-w-sm md:max-w-md lg:max-w-6xl bg-white shadow-md rounded-lg p-4">
           <CardContent className="p-6 space-y-6">
-            <div className="flex justify-end gap-2">
+            {/* Responsive buttons container: stacks on mobile, row on larger screens */}
+            <div className="flex flex-col sm:flex-row justify-end gap-2">
               <Button onClick={handlePreviewPDF} className="w-full sm:w-auto">
                 <Eye className="mr-2 h-4 w-4" />
                 <span>Preview PDF</span>
@@ -817,11 +889,21 @@ export default function PrintableAttendanceDocument() {
               </Button>
             </div>
             <div className="w-full mb-6">
-              <Image src="/Header.png" alt="JRMSU Header" width={1200} height={200} className="w-full object-contain" />
+              <Image
+                src="/Header.png"
+                alt="JRMSU Header"
+                width={1200}
+                height={200}
+                className="w-full object-contain"
+              />
             </div>
             <div className="text-center mb-8">
-              <h1 className="text-base sm:text-3xl font-bold text-gray-950">ATTENDANCE RECORD</h1>
-              <p className="text-xs sm:text-xl text-gray-600">Academic Year {selectedAcademicYear}</p>
+              <h1 className="text-base sm:text-3xl font-bold text-gray-950">
+                ATTENDANCE RECORD
+              </h1>
+              <p className="text-xs sm:text-xl text-gray-600">
+                Academic Year {selectedAcademicYear}
+              </p>
             </div>
             <div className="space-y-6">
               <div className="grid grid-cols-2 gap-4 mb-6">
@@ -875,11 +957,21 @@ export default function PrintableAttendanceDocument() {
                       const record = filteredData[index]
                       return (
                         <TableRow key={index}>
-                          <TableCell className="text-xs sm:text-base text-gray-950">{record.name}</TableCell>
-                          <TableCell className="text-xs sm:text-base text-gray-950">{record.studentId}</TableCell>
-                          <TableCell className="text-xs sm:text-base text-gray-950">{record.degreeProgram}</TableCell>
-                          <TableCell className="text-xs sm:text-base text-gray-950">{record.yearLevel}</TableCell>
-                          <TableCell className="text-xs sm:text-base text-gray-950">{record.section}</TableCell>
+                          <TableCell className="text-xs sm:text-base text-gray-950">
+                            {record.name}
+                          </TableCell>
+                          <TableCell className="text-xs sm:text-base text-gray-950">
+                            {record.studentId}
+                          </TableCell>
+                          <TableCell className="text-xs sm:text-base text-gray-950">
+                            {record.degreeProgram}
+                          </TableCell>
+                          <TableCell className="text-xs sm:text-base text-gray-950">
+                            {record.yearLevel}
+                          </TableCell>
+                          <TableCell className="text-xs sm:text-base text-gray-950">
+                            {record.section}
+                          </TableCell>
                         </TableRow>
                       )
                     })}
@@ -904,15 +996,18 @@ export default function PrintableAttendanceDocument() {
         </Card>
       )}
 
-      {/* New PDF Preview Dialog */}
-      <Dialog open={showPreview} onOpenChange={(open) => {
-        setShowPreview(open)
-        if (!open && previewPdfUrl) {
-          URL.revokeObjectURL(previewPdfUrl)
-          setPreviewPdfUrl("")
-        }
-      }}>
-        <DialogContent className="max-w-full">
+      {/* Responsive PDF Preview Dialog */}
+      <Dialog
+        open={showPreview}
+        onOpenChange={(open) => {
+          setShowPreview(open)
+          if (!open && previewPdfUrl) {
+            URL.revokeObjectURL(previewPdfUrl)
+            setPreviewPdfUrl("")
+          }
+        }}
+      >
+        <DialogContent className="w-full sm:max-w-[700px]">
           <DialogHeader>
             <DialogTitle>PDF Preview</DialogTitle>
           </DialogHeader>
