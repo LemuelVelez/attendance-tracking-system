@@ -156,7 +156,7 @@ export function LoginForm() {
             <Input
               id="student-id"
               type="text"
-              placeholder="e.g., TC-24-A-12345"
+              placeholder="TC-24-A-12345"
               required
               value={studentId}
               onChange={(e) => setStudentId(e.target.value)}

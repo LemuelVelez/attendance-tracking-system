@@ -1,37 +1,27 @@
-"use client";
+"use client"
 
-import { useEffect, useRef, useState } from "react";
-import { Eye, EyeOff, Moon, Sun } from "lucide-react";
-import Swal from "sweetalert2";
-import { useRouter } from "next/navigation";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { createStudentUser } from "@/lib/auth/signup";
-import Link from "next/link";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import { useTheme } from "next-themes";
-import { Button } from "@/components/ui/button";
-import { gsap } from "gsap";
-import { ScrollArea } from "@/components/ui/scroll-area";
-import { ErrorInfoDialog } from "@/components/ErrorInfoDialog";
-import { toast } from "@/hooks/use-toast";
+import type React from "react"
+
+import { useEffect, useRef, useState } from "react"
+import { Eye, EyeOff, Moon, Sun } from "lucide-react"
+import Swal from "sweetalert2"
+import { useRouter } from "next/navigation"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
+import { createStudentUser } from "@/lib/auth/signup"
+import Link from "next/link"
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
+import { useTheme } from "next-themes"
+import { Button } from "@/components/ui/button"
+import { gsap } from "gsap"
+import { ScrollArea } from "@/components/ui/scroll-area"
+import { ErrorInfoDialog } from "@/components/ErrorInfoDialog"
 
 export function SignUpForm() {
-  const { setTheme } = useTheme();
-  const [showPassword, setShowPassword] = useState(false);
-  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const { setTheme } = useTheme()
+  const [showPassword, setShowPassword] = useState(false)
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false)
 
   const [form, setForm] = useState({
     studentId: "",
@@ -44,70 +34,52 @@ export function SignUpForm() {
     email: "",
     password: "",
     confirmPassword: "",
-  });
+  })
 
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(false)
 
-  const router = useRouter();
+  const router = useRouter()
 
-  const cardRef = useRef(null);
-  const formRef = useRef(null);
+  const cardRef = useRef(null)
+  const formRef = useRef(null)
 
   const validatePassword = (password: string) => {
-    const regex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*])[A-Za-z\d!@#$%^&*]{8,}$/;
-    return regex.test(password);
-  };
+    const regex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*])[A-Za-z\d!@#$%^&*]{8,}$/
+    return regex.test(password)
+  }
 
   useEffect(() => {
     gsap.fromTo(
       cardRef.current,
       { opacity: 0, scale: 0.95 },
-      { opacity: 1, scale: 1, duration: 0.8, ease: "power3.out" }
-    );
+      { opacity: 1, scale: 1, duration: 0.8, ease: "power3.out" },
+    )
 
     gsap.fromTo(
       formRef.current,
       { y: 30, opacity: 0 },
-      { y: 0, opacity: 1, duration: 0.8, ease: "power3.out", delay: 0.3 }
-    );
-  }, []);
+      { y: 0, opacity: 1, duration: 0.8, ease: "power3.out", delay: 0.3 },
+    )
+  }, [])
 
-  const togglePasswordVisibility = () => setShowPassword((prev) => !prev);
-  const toggleConfirmPasswordVisibility = () =>
-    setShowConfirmPassword((prev) => !prev);
+  const togglePasswordVisibility = () => setShowPassword((prev) => !prev)
+  const toggleConfirmPasswordVisibility = () => setShowConfirmPassword((prev) => !prev)
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { id, value } = e.target;
-    if (id === "password") {
-      if (value.length > 0 && value.length < 8) {
-        toast({
-          title: "Password too short",
-          description: "Password must be at least 8 characters long.",
-          variant: "destructive",
-        });
-      } else if (value.length >= 8 && !validatePassword(value)) {
-        toast({
-          title: "Invalid password",
-          description:
-            "Password must contain at least one uppercase letter, one lowercase letter, one number, and one special character.",
-          variant: "destructive",
-        });
-      }
-    }
-    setForm((prevForm) => ({ ...prevForm, [id]: value }));
-  };
+    const { id, value } = e.target
+    setForm((prevForm) => ({ ...prevForm, [id]: value }))
+  }
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
+    e.preventDefault()
 
     if (!validatePassword(form.password)) {
       Swal.fire({
         icon: "error",
         title: "Invalid Password",
-        text:
-          "Password must contain at least one uppercase letter, one lowercase letter, one number, and one special character, and be at least 8 characters long.",
-      });
-      return;
+        text: "Password must contain at least one uppercase letter, one lowercase letter, one number, and one special character, and be at least 8 characters long.",
+      })
+      return
     }
 
     if (form.password !== form.confirmPassword) {
@@ -115,11 +87,11 @@ export function SignUpForm() {
         icon: "error",
         title: "Oops...",
         text: "Passwords do not match!",
-      });
-      return;
+      })
+      return
     }
 
-    setLoading(true);
+    setLoading(true)
 
     try {
       const payload = {
@@ -132,19 +104,19 @@ export function SignUpForm() {
         section: form.section || undefined,
         email: form.email,
         password: form.password,
-      };
+      }
 
-      console.log("Payload being sent to createStudentUser:", payload);
+      console.log("Payload being sent to createStudentUser:", payload)
 
-      await createStudentUser(payload);
+      await createStudentUser(payload)
 
       Swal.fire({
         icon: "success",
         title: "Account created!",
         text: "Your account has been successfully created.",
-      });
+      })
 
-      router.push("/");
+      router.push("/")
 
       setForm({
         studentId: "",
@@ -157,18 +129,18 @@ export function SignUpForm() {
         email: "",
         password: "",
         confirmPassword: "",
-      });
+      })
     } catch (err) {
-      console.error("Error creating student user:", err);
+      console.error("Error creating student user:", err)
       Swal.fire({
         icon: "error",
         title: "Failed to create account",
         text: "Something went wrong. Please try again.",
-      });
+      })
     } finally {
-      setLoading(false);
+      setLoading(false)
     }
-  };
+  }
 
   return (
     <Card ref={cardRef} className="mx-auto my-auto w-full max-w-sm">
@@ -184,18 +156,12 @@ export function SignUpForm() {
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
-              <DropdownMenuItem onClick={() => setTheme("light")}>
-                Light
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => setTheme("dark")}>
-                Dark
-              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => setTheme("light")}>Light</DropdownMenuItem>
+              <DropdownMenuItem onClick={() => setTheme("dark")}>Dark</DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
         </div>
-        <CardDescription>
-          Create a new account by filling in the details below.
-        </CardDescription>
+        <CardDescription>Create a new account by filling in the details below.</CardDescription>
       </CardHeader>
       <form className="space-y-4" onSubmit={handleSubmit}>
         <ScrollArea className="h-[30vh] ">
@@ -282,13 +248,7 @@ export function SignUpForm() {
                 </div>
                 <div className="grid gap-2">
                   <Label htmlFor="section">Section (Optional)</Label>
-                  <Input
-                    id="section"
-                    type="text"
-                    placeholder="A"
-                    value={form.section}
-                    onChange={handleChange}
-                  />
+                  <Input id="section" type="text" placeholder="A" value={form.section} onChange={handleChange} />
                 </div>
                 <div className="grid gap-2">
                   <Label htmlFor="email">Email</Label>
@@ -305,9 +265,8 @@ export function SignUpForm() {
                   <Label htmlFor="password">
                     Password
                     <span className="block text-xs text-gray-500 dark:text-gray-400 mt-1">
-                      Example: &quot;P@ssw0rd123&quot; (min. 8 characters,
-                      including uppercase, lowercase, number, and special
-                      character)
+                      Example: &quot;P@ssw0rd123&quot; (min. 8 characters, including uppercase, lowercase, number, and
+                      special character)
                     </span>
                   </Label>
                   <div className="relative">
@@ -388,5 +347,6 @@ export function SignUpForm() {
         <p className="text-xs mt-1">© SSG QR Attendance</p>
       </footer>
     </Card>
-  );
+  )
 }
+
