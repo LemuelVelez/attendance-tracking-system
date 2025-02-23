@@ -225,7 +225,7 @@ export default function Notification() {
 
       <Dialog open={isOpen} onOpenChange={setIsOpen}>
         <DialogContent
-          className="sm:max-w-[425px] w-[95vw] max-h-[90vh] h-auto flex flex-col"
+          className="sm:max-w-[425px] w-[95vw] max-h-[90vh] h-auto flex flex-col overflow-hidden"
           aria-describedby="notification-description"
         >
           <DialogHeader className="flex flex-row items-center justify-between">
@@ -290,7 +290,7 @@ export default function Notification() {
                 </AlertDialogContent>
               </AlertDialog>
             </div>
-            <ScrollArea className="flex-grow pr-4 h-full -mr-4 overflow-y-auto max-h-[60vh] sm:max-h-none">
+            <ScrollArea className="flex-grow pr-4 h-full -mr-4 overflow-y-auto max-h-[60vh] lg:h-[calc(100vh-11rem)] sm:max-h-none ">
               <div className="h-full overflow-y-auto">
                 {isLoading ? (
                   <div className="flex justify-center items-center h-full">
