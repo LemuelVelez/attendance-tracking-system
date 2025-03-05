@@ -120,7 +120,7 @@ const data = {
           url: "/admin/attendance-penalties-management",
         },
         {
-          title: "Personal Records",
+          title: "Attendance History",
           url: "/admin/my-attendance-penalties",
         },
       ],
