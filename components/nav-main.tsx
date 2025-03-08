@@ -50,10 +50,12 @@ export function NavMain({
                 <SidebarMenuButton
                   tooltip={item.title}
                   className={clsx(
-                    "hover:bg-primary/30 transition",
+                    "transition",
+                    // Apply different hover styles based on collapsible state
+                    "hover:bg-primary/50 group-data-[state=open]/collapsible:hover:bg-primary",
                     pathname === item.url ? "bg-primary text-white" : ""
                   )}
-                  
+
                 >
                   {item.icon && <item.icon />}
                   <span>{item.title}</span>
@@ -68,7 +70,7 @@ export function NavMain({
                         <a
                           href={subItem.url}
                           className={clsx(
-                            "block px-4 py-2 rounded-md text-sm hover:bg-primary/30 transition",
+                            "block px-4 py-2 rounded-md text-sm hover:bg-primary/50 transition",
                             pathname === subItem.url
                               ? "bg-primary text-white"
                               : ""
