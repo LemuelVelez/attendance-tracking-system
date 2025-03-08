@@ -69,7 +69,7 @@ export function NavMain({
                         <a
                           href={subItem.url}
                           className={clsx(
-                            "block px-4 py-2 rounded-md text-sm hover:bg-primary/50 transition",
+                            "block px-4 py-2 rounded-md text-sm hover:bg-primary/70 transition",
                             pathname === subItem.url
                               ? "bg-primary text-white"
                               : ""
