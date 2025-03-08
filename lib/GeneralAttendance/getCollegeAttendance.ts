@@ -105,6 +105,9 @@ const getCollegeAttendance = async (collectionId: string): Promise<any[]> => {
 
     return finalDocuments.map((doc: any) => ({
       ...doc,
+      name: `${doc.firstName || ""} ${
+        doc.middleName ? doc.middleName + " " : ""
+      }${doc.lastName || ""}`.trim(),
       Created: doc.$createdAt,
     }));
   } catch (error) {
