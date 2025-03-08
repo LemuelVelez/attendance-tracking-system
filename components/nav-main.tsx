@@ -51,7 +51,6 @@ export function NavMain({
                   tooltip={item.title}
                   className={clsx(
                     "transition",
-                    // Apply different hover styles based on collapsible state
                     "hover:bg-primary/50 group-data-[state=open]/collapsible:hover:bg-primary",
                     pathname === item.url ? "bg-primary text-white" : ""
                   )}
