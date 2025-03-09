@@ -149,9 +149,6 @@ yarn install
 3. Set up environment variables:
 Here's the updated section with dummy data for security purposes:
 
-
----
-
 ### 🔧 Environment Variables
 
 To run the application, configure the following environment variables in the `.env.local` file at the root of your project:
