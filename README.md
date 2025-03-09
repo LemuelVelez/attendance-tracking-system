@@ -135,10 +135,6 @@ Design and implement a comprehensive web application for the Supreme Student Gov
 ```bash
 git clone https://github.com/your-username/ssg-attendance-tracking.git
 cd ssg-attendance-tracking
-
-
-Thought for 5 seconds```markdown project="SSG Attendance Tracking" file="README.md"
-...
 ```
 
 2. Install dependencies:
