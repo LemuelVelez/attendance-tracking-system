@@ -112,8 +112,9 @@ export function ErrorInfoDialog() {
               <h3 className="font-bold">Note:</h3>
               <ul className="list-disc pl-5">
                 <li>Use an active and valid email to avoid recovery issues.</li>
-                <li>For the best experience, use Google Chrome or a similar browser.</li>
-                <li>Avoid accessing the system directly through Messenger for optimal performance.</li>
+                <li>You can access the system directly through Messenger or using Google Chrome. Both options are fully supported and provide a smooth, optimized experience on various devices.</li>
+                <li>If you receive an error stating that there is an active session in Messenger or Chrome, try refreshing the page if possible.</li>
+                <li>If your internet connection is stable, simply wait as the system will automatically redirect you to your dashboard. This error occurs because you are already logged in and haven&apos;t logged out, keeping your session active.</li>
                 <li>Ensure you have a stable internet connection when using the system.</li>
               </ul>
             </div>
