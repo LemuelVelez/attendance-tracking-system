@@ -177,7 +177,7 @@ NEXT_PUBLIC_APPWRITE_EVENTS_NOTIFICATION_COLLECTION_ID=events_notification_colle
 
 - Replace these dummy values with your actual Appwrite configuration data during setup.
 - Ensure the `.env.local` file is **not** committed to your repository to protect sensitive information.
-- Copy the `.env.example` file to `.env.local`
+- Create file `.env.local`
 - Fill in the required Appwrite credentials and other configuration details
 
 
@@ -197,7 +197,7 @@ yarn dev
 
 ## 📖 Usage
 
-Detailed usage instructions and documentation can be found in the [User Guide](docs/USER_GUIDE.md).
+Detailed usage instructions and documentation can be found in the [User Guide](USER_GUIDE.md).
 
 ## 🤝 Contributing
 
