@@ -19,7 +19,7 @@ export function ErrorInfoDialog() {
       <DialogContent className="max-w-xs lg:max-w-sm">
         <DialogHeader>
           <DialogTitle>Frequent Errors and Solutions</DialogTitle>
-          <DialogDescription>USE GOOGLE CHROME OR ANY OTHER BROWSER FOR OPTIMAL EXPERIENCE.</DialogDescription>
+          <DialogDescription>USE GOOGLE CHROME FOR OPTIMAL EXPERIENCE.</DialogDescription>
         </DialogHeader>
         <div className="mb-4 px-1">
           <Button
