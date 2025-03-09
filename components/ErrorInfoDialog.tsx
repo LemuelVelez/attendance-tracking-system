@@ -63,7 +63,7 @@ export function ErrorInfoDialog() {
               </p>
             </div>
             <div>
-              <h3 className="font-bold">2. Issue: Invalid Email or Password</h3>
+              <h3 className="font-bold">2. Issue: Invalid Credentials</h3>
               <p>Primary Solution: Double-check your password for accuracy, then try logging in again.</p>
               <p>
                 Note: This issue might also occur due to a typo during registration. For example, you might have registered as &quot;TC-22-00123&quot; but are trying to log in with &quot;TC-22-A-00123&quot;. Double-check your registration details and ensure you’re using the exact same information when logging in.
