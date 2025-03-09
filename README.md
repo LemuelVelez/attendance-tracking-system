@@ -177,8 +177,8 @@ NEXT_PUBLIC_APPWRITE_EVENTS_NOTIFICATION_COLLECTION_ID=events_notification_colle
 
 - Replace these dummy values with your actual Appwrite configuration data during setup.
 - Ensure the `.env.local` file is **not** committed to your repository to protect sensitive information.
-- Create file `.env.local`
-- Fill in the required Appwrite credentials and other configuration details
+- Create file `.env.local` to the root of your directory.
+- Fill in the required Appwrite credentials and other configuration details.
 
 
 4. Run the development server:
