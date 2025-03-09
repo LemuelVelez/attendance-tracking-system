@@ -220,9 +220,21 @@ export function LoginForm() {
         <div className="mt-4 text-center">
           <ErrorInfoDialog />
         </div>
-        <footer className="py-4 text-center">
-          <p className="text-sm">JESUS BE ALL THE GLORY!</p>
-          <p className="text-xs mt-1">© SSG QR Attendance</p>
+        <footer role="contentinfo" className="pt-4 pb-2 text-center text-xs">
+          <p className="font-bold">JESUS BE ALL THE GLORY!</p>
+          <p className="mt-1">© SSG QR Attendance</p>
+          <small className="block mt-1 text-muted-foreground">
+            © {new Date().getFullYear()} Lemuel Velez. Open-source under the{" "}
+            <a
+              href="http://www.apache.org/licenses/LICENSE-2.0"
+              className="underline"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              Apache 2.0 License
+            </a>
+            . No unauthorized patenting allowed.
+          </small>
         </footer>
       </CardContent>
     </Card>
