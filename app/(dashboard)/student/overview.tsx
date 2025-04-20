@@ -181,7 +181,7 @@ export default function Overview() {
         </div>
 
         {/* Charts */}
-        <div className="grid gap-4 sm:gap-6 md:grid-cols-2 mt-8 sm:mt-12">
+        <div className="grid gap-4 sm:gap-6 grid-cols-2 mt-8 sm:mt-12">
           <MotionCard
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -193,9 +193,9 @@ export default function Overview() {
               <BarChartIcon className="h-5 w-5 text-primary" />
             </CardHeader>
             <CardContent>
-              <div className="h-[300px] w-full">
+              <div className="h-full w-full">
                 <ScrollArea className="h-full w-full rounded-md border overflow-auto touch-auto">
-                  <div className="min-w-[800px] h-full">
+                  <div className="min-w-[500px] lg:min-w-[800px] h-full">
                     <ResponsiveContainer width="100%" height={300}>
                       <BarChart data={attendanceByEvent} margin={{ top: 20, right: 10, left: 0, bottom: 70 }}>
                         <XAxis
@@ -235,9 +235,9 @@ export default function Overview() {
               <TrendingUp className="h-5 w-5 text-primary" />
             </CardHeader>
             <CardContent>
-              <div className="h-[300px] w-full">
+              <div className="h-full w-full">
                 <ScrollArea className="h-full w-full rounded-md border overflow-auto touch-auto">
-                  <div className="min-w-[800px] h-full">
+                  <div className=" min-w-[600px] lg:min-w-[800px] h-full">
                     <ResponsiveContainer width="100%" height={300}>
                       <LineChart data={attendanceTrend} margin={{ top: 20, right: 10, left: 0, bottom: 70 }}>
                         <XAxis
