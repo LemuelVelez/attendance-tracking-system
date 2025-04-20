@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 import { Client, Databases, ID, type Models, Query } from "appwrite"
 
 const client = new Client()
@@ -11,6 +12,8 @@ const DATABASE_ID = process.env.NEXT_PUBLIC_APPWRITE_DATABASE_ID || ""
 const GENERAL_ATTENDANCE_COLLECTION_ID = process.env.NEXT_PUBLIC_APPWRITE_GENERAL_ATTENDANCE_COLLECTION_ID || ""
 const FINES_MANAGEMENT_COLLECTION_ID = process.env.NEXT_PUBLIC_APPWRITE_FINES_MANAGEMENT_COLLECTION_ID || ""
 const USERS_COLLECTION_ID = process.env.NEXT_PUBLIC_APPWRITE_USERS_COLLECTION_ID || ""
+const PENALTIES_MAP_COLLECTION_ID = "penalties_map" // New collection for storing penalties map
+const TOTAL_EVENTS_COLLECTION_ID = "total_events"
 
 export interface Attendance extends Models.Document {
   userId: string
@@ -46,6 +49,21 @@ export interface FineDocumentData {
 
 export interface FineDocument extends FineDocumentData, Models.Document {}
 
+// Default penalties map
+let PENALTIES_MAP: Record<number, string> = {
+  0: "No penalty",
+  1: "1 pad grade 1 paper, 1 pencil",
+  2: "2 pads Grade 2 paper, 2 pencils, 1 eraser",
+  3: "3 Pads Grade 3 paper, 3 pencils, 2 eraser, 1 sharpener",
+  4: "2 pads grade 4 paper 2 pencils, 2 ball pen, 1 crayon, 1 sharpener, 1 eraser",
+  5: "2 Pads intermediate paper, 2 notebooks, 2 ball pen, 1 crayon",
+  6: "2 Pads intermediate paper, 2 notebooks, 2 ball pen, 1 crayon, 2 pencils",
+  7: "1 plastic envelop with handle, 2 Pads intermediate paper, 2 notebooks",
+  8: "1 plastic envelop with handle, 2 Pads intermediate paper, 2 notebooks",
+  9: "1 plastic envelop with handle, 2 Pads intermediate paper, 3 notebooks 2 pencils, 2 eraser, 1 sharpener",
+  10: "1 plastic envelop with handle, 2 Pads intermediate paper, 3 notebooks 3 pencils, 2 eraser, 3 sharpener, 3 ball pen, 1 crayon",
+}
+
 function isFineDocument(doc: unknown): doc is FineDocument {
   if (typeof doc !== "object" || doc === null) {
     console.log("Document is not an object")
@@ -77,6 +95,88 @@ function isFineDocument(doc: unknown): doc is FineDocument {
   }
 
   return true
+}
+
+// Function to get the penalties map from the database
+export const getPenaltiesMap = async (): Promise<Record<number, string>> => {
+  try {
+    // Try to get the penalties map document
+    try {
+      const response = await databases.getDocument(DATABASE_ID, PENALTIES_MAP_COLLECTION_ID, "penalties_map")
+
+      if (response && response.penalties) {
+        return JSON.parse(response.penalties)
+      }
+    } catch (_error) {
+      console.log("Penalties map document not found, will create a new one")
+
+      // Create a document with the default penalties map
+      try {
+        await databases.createDocument(DATABASE_ID, PENALTIES_MAP_COLLECTION_ID, "penalties_map", {
+          penalties: JSON.stringify(PENALTIES_MAP),
+        })
+      } catch (createError) {
+        console.error("Error creating penalties map document:", createError)
+      }
+    }
+
+    return PENALTIES_MAP // Return default penalties map
+  } catch (fetchError) {
+    console.error("Error getting penalties map:", fetchError)
+    return PENALTIES_MAP // Return default penalties map if there's an error
+  }
+}
+
+// Function to update the penalties map in the database
+export const updatePenaltiesMap = async (penaltiesMap: Record<number, string>): Promise<void> => {
+  try {
+    // Update the global variable
+    PENALTIES_MAP = penaltiesMap
+
+    // Update or create the penalties map document
+    try {
+      await databases.updateDocument(DATABASE_ID, PENALTIES_MAP_COLLECTION_ID, "penalties_map", {
+        penalties: JSON.stringify(penaltiesMap),
+      })
+      console.log("Penalties map updated successfully")
+    } catch (_updateError) {
+      // Document doesn't exist, create it
+      try {
+        await databases.createDocument(DATABASE_ID, PENALTIES_MAP_COLLECTION_ID, "penalties_map", {
+          penalties: JSON.stringify(penaltiesMap),
+        })
+        console.log("Penalties map created successfully")
+      } catch (createError) {
+        console.error("Error creating penalties map document:", createError)
+        throw createError
+      }
+    }
+  } catch (error) {
+    console.error("Error updating penalties map:", error)
+    throw error
+  }
+}
+
+// Function to update a fine document
+export const updateFineDocument = async (documentId: string, fineData: FineDocumentData): Promise<FineDocument> => {
+  try {
+    if (!DATABASE_ID || !FINES_MANAGEMENT_COLLECTION_ID) {
+      throw new Error("Missing Appwrite environment variables. Please check your .env file.")
+    }
+
+    const updatedDoc = await databases.updateDocument(DATABASE_ID, FINES_MANAGEMENT_COLLECTION_ID, documentId, fineData)
+
+    console.log("Updated fine document:", updatedDoc)
+
+    if (!isFineDocument(updatedDoc)) {
+      throw new Error("Updated document does not match FineDocument structure")
+    }
+
+    return updatedDoc
+  } catch (error) {
+    console.error("Error updating fine document:", error)
+    throw error
+  }
 }
 
 export const getGeneralAttendance = async (): Promise<Attendance[]> => {
@@ -279,6 +379,17 @@ export const getTotalUniqueEvents = async (): Promise<number> => {
       throw new Error("Missing Appwrite environment variables. Please check your .env file.")
     }
 
+    // Try to get the stored total events value first
+    try {
+      const document = await databases.getDocument(DATABASE_ID, PENALTIES_MAP_COLLECTION_ID, "penalties_map")
+      if (document && document.totalEvents !== undefined) {
+        return Number.parseInt(document.totalEvents)
+      }
+    } catch (_error) {
+      // If document doesn't exist or doesn't have totalEvents, continue with counting
+    }
+
+    // Count unique events if no stored value exists
     const uniqueEvents = new Set<string>()
     let lastId: string | undefined
 
@@ -303,7 +414,30 @@ export const getTotalUniqueEvents = async (): Promise<number> => {
       lastId = response.documents[response.documents.length - 1].$id
     }
 
-    return uniqueEvents.size
+    const totalEventsCount = uniqueEvents.size
+
+    // Auto-create the total events in the penalties_map collection
+    try {
+      const document = await databases.getDocument(DATABASE_ID, PENALTIES_MAP_COLLECTION_ID, "penalties_map")
+      // Update existing document with total events
+      await databases.updateDocument(DATABASE_ID, PENALTIES_MAP_COLLECTION_ID, "penalties_map", {
+        totalEvents: totalEventsCount.toString(),
+      })
+      console.log("Total events updated automatically:", totalEventsCount)
+    } catch (_error) {
+      // Document doesn't exist, create it
+      try {
+        await databases.createDocument(DATABASE_ID, PENALTIES_MAP_COLLECTION_ID, "penalties_map", {
+          penalties: JSON.stringify(PENALTIES_MAP),
+          totalEvents: totalEventsCount.toString(),
+        })
+        console.log("Total events created automatically:", totalEventsCount)
+      } catch (createError) {
+        console.error("Error creating penalties map document with total events:", createError)
+      }
+    }
+
+    return totalEventsCount
   } catch (error) {
     console.error("Error in getTotalUniqueEvents:", error)
     throw error
@@ -343,25 +477,15 @@ export const getAllUsers = async (): Promise<User[]> => {
   }
 }
 
-const PENALTIES_MAP: Record<number, string> = {
-  0: "No penalty",
-  1: "1 pad grade 1 paper, 1 pencil",
-  2: "2 pads Grade 2 paper, 2 pencils, 1 eraser",
-  3: "3 Pads Grade 3 paper, 3 pencils, 2 eraser, 1 sharpener",
-  4: "2 pads grade 4 paper 2 pencils, 2 ball pen, 1 crayon, 1 sharpener, 1 eraser",
-  5: "2 Pads intermediate paper, 2 notebooks, 2 ball pen, 1 crayon",
-  6: "2 Pads intermediate paper, 2 notebooks, 2 ball pen, 1 crayon, 2 pencils",
-  7: "1 plastic envelop with handle, 2 Pads intermediate paper, 2 notebooks",
-  8: "1 plastic envelop with handle, 2 Pads intermediate paper, 2 notebooks",
-  9: "1 plastic envelop with handle, 2 Pads intermediate paper, 3 notebooks 2 pencils, 2 eraser, 1 sharpener",
-  10: "1 plastic envelop with handle, 2 Pads intermediate paper, 3 notebooks 3 pencils, 2 eraser, 3 sharpener, 3 ball pen, 1 crayon",
-}
-
 export const updateAttendance = async (): Promise<void> => {
   try {
     if (!DATABASE_ID || !GENERAL_ATTENDANCE_COLLECTION_ID || !FINES_MANAGEMENT_COLLECTION_ID) {
       throw new Error("Missing Appwrite environment variables. Please check your .env file.")
     }
+
+    // Get the latest penalties map
+    const currentPenaltiesMap = await getPenaltiesMap()
+    PENALTIES_MAP = currentPenaltiesMap
 
     // Delete all existing fine documents
     await deleteAllFineDocuments()
@@ -426,3 +550,30 @@ async function deleteAllFineDocuments() {
   }
 }
 
+export const updateTotalEvents = async (totalEvents: number | string): Promise<void> => {
+  try {
+    // Convert to string if it's a number
+    const totalEventsStr = typeof totalEvents === "number" ? totalEvents.toString() : totalEvents
+
+    // Check if the penalties_map document exists
+    try {
+      const document = await databases.getDocument(DATABASE_ID, PENALTIES_MAP_COLLECTION_ID, "penalties_map")
+
+      // Update the existing document with the total events
+      await databases.updateDocument(DATABASE_ID, PENALTIES_MAP_COLLECTION_ID, "penalties_map", {
+        totalEvents: totalEventsStr,
+      })
+      console.log("Total events updated successfully")
+    } catch (_error) {
+      // Document doesn't exist, create it
+      await databases.createDocument(DATABASE_ID, PENALTIES_MAP_COLLECTION_ID, "penalties_map", {
+        penalties: JSON.stringify(PENALTIES_MAP),
+        totalEvents: totalEventsStr,
+      })
+      console.log("Total events created successfully")
+    }
+  } catch (error) {
+    console.error("Error updating total events:", error)
+    throw error
+  }
+}
