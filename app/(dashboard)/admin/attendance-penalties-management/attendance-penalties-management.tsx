@@ -110,6 +110,9 @@ export default function SupplyFinesManagement() {
   const [penaltyToDelete, setPenaltyToDelete] = useState<number | null>(null)
   const [confirmEditPenaltyDialog, setConfirmEditPenaltyDialog] = useState(false)
 
+  // State for mobile tab view
+  const [activeTab, setActiveTab] = useState<"view" | "add">("view")
+
   const fetchData = useCallback(async () => {
     setIsLoading(true)
     try {
@@ -642,7 +645,117 @@ export default function SupplyFinesManagement() {
               </AlertDialogDescription>
             </AlertDialogHeader>
 
-            <Tabs defaultValue="view" className="mt-4">
+            {/* Mobile view: Use buttons instead of tabs */}
+            <div className="block sm:hidden mt-4">
+              <div className="flex flex-col space-y-4">
+                <div className="flex flex-col w-full border-b pb-4 space-y-2">
+                  <Button
+                    variant={activeTab === "view" ? "default" : "outline"}
+                    className="w-full"
+                    onClick={() => setActiveTab("view")}
+                  >
+                    View Penalties
+                  </Button>
+                  <Button
+                    variant={activeTab === "add" ? "default" : "outline"}
+                    className="w-full"
+                    onClick={() => setActiveTab("add")}
+                  >
+                    Add New Penalty
+                  </Button>
+                </div>
+
+                {activeTab === "view" && (
+                  <div className="space-y-4">
+                    {Object.entries(penaltiesMap)
+                      .sort(([a], [b]) => Number.parseInt(a) - Number.parseInt(b))
+                      .map(([key, value]) => {
+                        const numKey = Number.parseInt(key)
+                        return (
+                          <div key={key} className="flex flex-col items-start py-4 border-b gap-2">
+                            {/* Mobile label for absences */}
+                            <div className="font-medium text-sm">Absences:</div>
+                            <div>{key}</div>
+
+                            {/* Mobile label for penalty */}
+                            <div className="font-medium text-sm">Penalty:</div>
+                            <div className="w-full">
+                              {editingPenaltyKey === numKey ? (
+                                <Textarea
+                                  value={editingPenaltyValue}
+                                  onChange={(e) => setEditingPenaltyValue(e.target.value)}
+                                  className="min-h-[80px] w-full"
+                                />
+                              ) : (
+                                <p className="text-sm">{value}</p>
+                              )}
+                            </div>
+
+                            {/* Mobile label for actions */}
+                            <div className="font-medium text-sm">Actions:</div>
+                            <div className="flex space-x-2 w-full justify-start">
+                              {editingPenaltyKey === numKey ? (
+                                <Button size="sm" onClick={() => setConfirmEditPenaltyDialog(true)}>
+                                  Save
+                                </Button>
+                              ) : (
+                                <Button size="sm" variant="outline" onClick={() => handleStartEditPenalty(numKey, value)}>
+                                  <Edit className="h-4 w-4" />
+                                </Button>
+                              )}
+                              <Button
+                                size="sm"
+                                variant="destructive"
+                                onClick={() => {
+                                  setPenaltyToDelete(numKey)
+                                  setConfirmDeletePenaltyDialog(true)
+                                }}
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            </div>
+                          </div>
+                        )
+                      })}
+                  </div>
+                )}
+
+                {activeTab === "add" && (
+                  <div className="space-y-4">
+                    <div className="grid gap-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="absences-mobile">Number of Absences</Label>
+                        <Input
+                          id="absences-mobile"
+                          type="number"
+                          min="0"
+                          value={newPenaltyKey}
+                          onChange={(e) => setNewPenaltyKey(e.target.value)}
+                          placeholder="Enter number of absences"
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="penalty-mobile">Penalty Description</Label>
+                        <Textarea
+                          id="penalty-mobile"
+                          value={newPenaltyValue}
+                          onChange={(e) => setNewPenaltyValue(e.target.value)}
+                          placeholder="Enter penalty description"
+                          className="min-h-[100px]"
+                        />
+                      </div>
+                      <Button onClick={() => setConfirmAddPenaltyDialog(true)}>
+                        <Plus className="mr-2 h-4 w-4" />
+                        Add Penalty
+                      </Button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Desktop view: Use tabs */}
+            <Tabs defaultValue="view" className="hidden sm:block mt-4">
               <TabsList className="grid w-full grid-cols-2">
                 <TabsTrigger value="view">View Penalties</TabsTrigger>
                 <TabsTrigger value="add">Add New Penalty</TabsTrigger>
@@ -668,7 +781,7 @@ export default function SupplyFinesManagement() {
                               <Textarea
                                 value={editingPenaltyValue}
                                 onChange={(e) => setEditingPenaltyValue(e.target.value)}
-                                className="min-h-[80px]"
+                                className="min-h-[80px] w-full"
                               />
                             ) : (
                               <p className="text-sm">{value}</p>
@@ -734,9 +847,15 @@ export default function SupplyFinesManagement() {
               </TabsContent>
             </Tabs>
 
-            <AlertDialogFooter className="mt-6">
-              <AlertDialogCancel onClick={() => setPenaltiesDialogOpen(false)}>Cancel</AlertDialogCancel>
-              <AlertDialogAction onClick={() => setConfirmPenaltiesDialog(true)} disabled={isPenaltiesSaving}>
+            <AlertDialogFooter className="mt-6 flex-col sm:flex-row gap-2">
+              <AlertDialogCancel className="w-full sm:w-auto" onClick={() => setPenaltiesDialogOpen(false)}>
+                Cancel
+              </AlertDialogCancel>
+              <AlertDialogAction
+                className="w-full sm:w-auto"
+                onClick={() => setConfirmPenaltiesDialog(true)}
+                disabled={isPenaltiesSaving}
+              >
                 Save Changes
               </AlertDialogAction>
             </AlertDialogFooter>
