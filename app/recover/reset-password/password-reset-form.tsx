@@ -205,16 +205,7 @@ export function PasswordResetForm() {
           <p className="font-bold">JESUS BE ALL THE GLORY!</p>
           <p className="mt-1">© SSG QR Attendance</p>
           <small className="block mt-1 text-muted-foreground">
-            © {new Date().getFullYear()} Lemuel Velez. Open-source under the{" "}
-            <a
-              href="http://www.apache.org/licenses/LICENSE-2.0"
-              className="underline"
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              Apache 2.0 License
-            </a>
-            . No unauthorized patenting allowed.
+            © {new Date().getFullYear()} Lemuel Velez. All rights reserved.
           </small>
         </footer>
       </CardContent>
