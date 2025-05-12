@@ -571,6 +571,8 @@ export default function SupplyFinesManagement() {
   // Function to handle bulk operation
   const handleBulkOperation = async () => {
     setIsProcessingBulkOperation(true)
+    setConfirmBulkOperationDialog(false) // Close the confirmation dialog immediately
+
     try {
       const amount = Number.parseInt(changeAmount)
       if (isNaN(amount) || amount <= 0) {
@@ -579,10 +581,18 @@ export default function SupplyFinesManagement() {
           description: "Please enter a valid positive number for the change amount.",
           variant: "destructive",
         })
+        setIsProcessingBulkOperation(false)
         return
       }
 
       const studentIds = selectedStudents.map((s) => s.studentId)
+
+      // Show a processing toast
+      toast({
+        title: "Processing",
+        description: `Processing ${bulkOperationType} operation. Please wait...`,
+        variant: "default",
+      })
 
       switch (bulkOperationType) {
         case "decrease":
@@ -632,7 +642,6 @@ export default function SupplyFinesManagement() {
 
       // Reset state
       setBulkOperationDialogOpen(false)
-      setConfirmBulkOperationDialog(false)
       setSelectedStudents([])
       setChangeAmount("1")
     } catch (error) {
@@ -713,7 +722,7 @@ export default function SupplyFinesManagement() {
                         onClick={() => setConfirmTotalEventsDialog(true)}
                         disabled={isSavingTotalEvents}
                       >
-                        Save Changes
+                        SaveChanges
                       </AlertDialogAction>
                     </AlertDialogFooter>
                   </AlertDialogContent>
@@ -918,22 +927,40 @@ export default function SupplyFinesManagement() {
                   setBulkOperationType("decrease")
                   setBulkOperationDialogOpen(true)
                 }}
-                disabled={selectedStudents.length === 0}
+                disabled={selectedStudents.length === 0 || isProcessingBulkOperation}
                 className="flex-1"
               >
-                <MinusCircle className="mr-2 h-4 w-4" />
-                Decrease Presences for Selected
+                {isProcessingBulkOperation && bulkOperationType === "decrease" ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Processing...
+                  </>
+                ) : (
+                  <>
+                    <MinusCircle className="mr-2 h-4 w-4" />
+                    Decrease Presences for Selected
+                  </>
+                )}
               </Button>
               <Button
                 onClick={() => {
                   setBulkOperationType("exempt")
                   setBulkOperationDialogOpen(true)
                 }}
-                disabled={selectedStudents.length === 0}
+                disabled={selectedStudents.length === 0 || isProcessingBulkOperation}
                 className="flex-1"
               >
-                <UserMinus className="mr-2 h-4 w-4" />
-                Exempt from Decrease
+                {isProcessingBulkOperation && bulkOperationType === "exempt" ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Processing...
+                  </>
+                ) : (
+                  <>
+                    <UserMinus className="mr-2 h-4 w-4" />
+                    Exempt from Decrease
+                  </>
+                )}
               </Button>
             </div>
             <div className="flex flex-col sm:flex-row gap-4 mt-4">
@@ -942,24 +969,42 @@ export default function SupplyFinesManagement() {
                   setBulkOperationType("increase")
                   setBulkOperationDialogOpen(true)
                 }}
-                disabled={selectedStudents.length === 0}
+                disabled={selectedStudents.length === 0 || isProcessingBulkOperation}
                 className="flex-1"
                 variant="outline"
               >
-                <Plus className="mr-2 h-4 w-4" />
-                Increase Presences for Selected
+                {isProcessingBulkOperation && bulkOperationType === "increase" ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Processing...
+                  </>
+                ) : (
+                  <>
+                    <Plus className="mr-2 h-4 w-4" />
+                    Increase Presences for Selected
+                  </>
+                )}
               </Button>
               <Button
                 onClick={() => {
                   setBulkOperationType("exempt-increase")
                   setBulkOperationDialogOpen(true)
                 }}
-                disabled={selectedStudents.length === 0}
+                disabled={selectedStudents.length === 0 || isProcessingBulkOperation}
                 className="flex-1"
                 variant="outline"
               >
-                <Users className="mr-2 h-4 w-4" />
-                Exempt from Increase
+                {isProcessingBulkOperation && bulkOperationType === "exempt-increase" ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Processing...
+                  </>
+                ) : (
+                  <>
+                    <Users className="mr-2 h-4 w-4" />
+                    Exempt from Increase
+                  </>
+                )}
               </Button>
             </div>
           </div>
