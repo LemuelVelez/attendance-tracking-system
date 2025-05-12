@@ -183,19 +183,34 @@ export default function SupplyFinesManagement() {
       clearTimeout(searchTimeoutRef.current)
     }
 
-    // Only search if we have at least 2 characters
-    if (studentSearchTerm.trim().length < 2) {
+    // Set searching state immediately to show loading indicator
+    setIsSearching(studentSearchTerm.trim().length > 0)
+
+    // Don't clear previous results immediately - this causes flickering
+    // Only clear if the search term is empty
+    if (studentSearchTerm.trim().length === 0) {
       setSearchResults([])
+      setIsSearching(false)
       return
     }
 
+    // Make sure the popover is open when searching
+    if (studentSearchTerm.trim().length > 0 && !searchPopoverOpen) {
+      setSearchPopoverOpen(true)
+    }
+
+    // Use a very short debounce time for more responsive search
     searchTimeoutRef.current = setTimeout(async () => {
-      setIsSearching(true)
       try {
         console.log("Searching for:", studentSearchTerm.trim())
         const results = await searchStudents(studentSearchTerm.trim())
         console.log("Search results:", results.length)
+
+        // Update results and ensure popover stays open
         setSearchResults(results)
+        if (results.length > 0 && !searchPopoverOpen) {
+          setSearchPopoverOpen(true)
+        }
       } catch (error) {
         console.error("Error searching students:", error)
         toast({
@@ -206,14 +221,14 @@ export default function SupplyFinesManagement() {
       } finally {
         setIsSearching(false)
       }
-    }, 300)
+    }, 100) // Keep at 100ms for fast response
 
     return () => {
       if (searchTimeoutRef.current) {
         clearTimeout(searchTimeoutRef.current)
       }
     }
-  }, [studentSearchTerm, toast])
+  }, [studentSearchTerm, toast, searchPopoverOpen])
 
   const handleUpdateFines = async () => {
     setIsUpdatingFines(true)
@@ -756,43 +771,65 @@ export default function SupplyFinesManagement() {
                 <Label htmlFor="studentSearch" className="mb-2 block">
                   Search and Select Students
                 </Label>
-                <Popover open={searchPopoverOpen} onOpenChange={setSearchPopoverOpen}>
+                <Popover
+                  open={searchPopoverOpen}
+                  onOpenChange={(open) => {
+                    setSearchPopoverOpen(open)
+                    // Don't clear results when opening, only when explicitly clearing the search
+                    if (open && !studentSearchTerm.trim()) {
+                      setSearchResults([])
+                    }
+                  }}
+                  modal={false}
+                >
                   <PopoverTrigger asChild>
                     <Button
                       variant="outline"
                       role="combobox"
                       aria-expanded={searchPopoverOpen}
                       className="w-full justify-between"
+                      onClick={() => setSearchPopoverOpen(true)}
                     >
                       {studentSearchTerm || "Search students..."}
                       <Search className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                     </Button>
                   </PopoverTrigger>
-                  <PopoverContent className="w-full p-0" align="start">
-                    <Command>
+                  <PopoverContent className="w-full p-0" align="start" sideOffset={4} side="bottom">
+                    <Command shouldFilter={false}>
                       <CommandInput
                         placeholder="Search students..."
                         value={studentSearchTerm}
-                        onValueChange={setStudentSearchTerm}
+                        onValueChange={(value) => {
+                          setStudentSearchTerm(value)
+                          // Ensure popover stays open while typing
+                          if (!searchPopoverOpen) {
+                            setSearchPopoverOpen(true)
+                          }
+                        }}
+                        className="border-none focus:ring-0"
+                        autoComplete="off"
+                        autoFocus
                       />
-                      <CommandList>
+                      <CommandList className="max-h-[300px] overflow-auto">
                         <CommandEmpty>
                           {isSearching ? (
                             <div className="flex items-center justify-center p-4">
                               <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                               <span>Searching...</span>
                             </div>
-                          ) : (
+                          ) : studentSearchTerm.trim() ? (
                             "No students found."
+                          ) : (
+                            "Type to search for students."
                           )}
                         </CommandEmpty>
-                        {/* Update the CommandItem to improve display and selection */}
                         <CommandGroup>
                           {searchResults.map((student) => (
                             <CommandItem
                               key={student.$id}
                               onSelect={() => handleSelectStudent(student)}
-                              className="cursor-pointer"
+                              className="cursor-pointer flex items-center"
+                              value={`${student.name} ${student.studentId}`}
                             >
                               <Check
                                 className={`mr-2 h-4 w-4 ${
@@ -801,8 +838,10 @@ export default function SupplyFinesManagement() {
                                     : "opacity-0"
                                 }`}
                               />
-                              <span className="font-medium">{student.name}</span>
-                              <span className="ml-2 text-xs text-gray-500">({student.studentId})</span>
+                              <div className="flex flex-col">
+                                <span className="font-medium">{student.name}</span>
+                                <span className="text-xs text-gray-500">{student.studentId}</span>
+                              </div>
                             </CommandItem>
                           ))}
                         </CommandGroup>

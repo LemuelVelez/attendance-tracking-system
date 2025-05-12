@@ -393,7 +393,7 @@ export const getFineDocuments = async (queries: string[] = []): Promise<FineDocu
   }
 }
 
-// Replace the searchStudents function with this improved version
+// Replace the entire searchStudents function with this improved version
 export const searchStudents = async (searchTerm: string): Promise<FineDocument[]> => {
   try {
     if (!DATABASE_ID || !FINES_MANAGEMENT_COLLECTION_ID) {
@@ -405,18 +405,19 @@ export const searchStudents = async (searchTerm: string): Promise<FineDocument[]
       return []
     }
 
-    // Fetch all records (with a reasonable limit)
+    console.log(`Searching for: "${searchTerm}"`)
+
+    // Fetch all documents without any filtering
     const response = await databases.listDocuments(DATABASE_ID, FINES_MANAGEMENT_COLLECTION_ID, [
-      Query.limit(500), // Increased limit to find more potential matches
+      Query.limit(1000), // Increased limit to ensure we find all potential matches
     ])
 
-    // Filter documents client-side based on the search term
-    const searchTermLower = searchTerm.toLowerCase().trim()
-
-    // Log for debugging
-    console.log(`Searching for: "${searchTermLower}"`)
     console.log(`Total documents fetched: ${response.documents.length}`)
 
+    // Normalize search term for case-insensitive comparison
+    const searchTermLower = searchTerm.toLowerCase().trim()
+
+    // Filter documents client-side
     const filteredDocuments = response.documents.filter((doc) => {
       if (!doc || typeof doc !== "object") return false
 
@@ -424,16 +425,8 @@ export const searchStudents = async (searchTerm: string): Promise<FineDocument[]
       const name = doc.name ? String(doc.name).toLowerCase() : ""
       const studentId = doc.studentId ? String(doc.studentId).toLowerCase() : ""
 
-      // Check if name or studentId contains the search term (case-insensitive)
-      const nameMatch = name.includes(searchTermLower)
-      const idMatch = studentId.includes(searchTermLower)
-
-      // For debugging
-      if (nameMatch || idMatch) {
-        console.log(`Match found: ${doc.name} (${doc.studentId})`)
-      }
-
-      return nameMatch || idMatch
+      // Simple includes matching for both name and ID
+      return name.includes(searchTermLower) || studentId.includes(searchTermLower)
     })
 
     console.log(`Matches found: ${filteredDocuments.length}`)
@@ -441,8 +434,37 @@ export const searchStudents = async (searchTerm: string): Promise<FineDocument[]
     // Ensure all returned documents are valid FineDocuments
     const validDocuments = filteredDocuments.filter(isFineDocument)
 
-    // Return up to 20 results (increased from 10)
-    return validDocuments.slice(0, 20)
+    // Sort results to prioritize exact matches and matches at the beginning of words
+    const sortedResults = validDocuments.sort((a, b) => {
+      const aName = a.name.toLowerCase()
+      const bName = b.name.toLowerCase()
+      const aId = a.studentId.toLowerCase()
+      const bId = b.studentId.toLowerCase()
+
+      // Exact matches first
+      if (aName === searchTermLower || aId === searchTermLower) return -1
+      if (bName === searchTermLower || bId === searchTermLower) return 1
+
+      // Then matches at the beginning of the name or ID
+      if (aName.startsWith(searchTermLower) || aId.startsWith(searchTermLower)) return -1
+      if (bName.startsWith(searchTermLower) || bId.startsWith(searchTermLower)) return 1
+
+      // Then matches at the beginning of any word in the name
+      const aNameWords = aName.split(" ")
+      const bNameWords = bName.split(" ")
+
+      const aStartsWithWord = aNameWords.some((word) => word.startsWith(searchTermLower))
+      const bStartsWithWord = bNameWords.some((word) => word.startsWith(searchTermLower))
+
+      if (aStartsWithWord && !bStartsWithWord) return -1
+      if (!aStartsWithWord && bStartsWithWord) return 1
+
+      // Default to alphabetical order
+      return aName.localeCompare(bName)
+    })
+
+    // Return up to 20 results
+    return sortedResults.slice(0, 20)
   } catch (error) {
     console.error("Error searching students:", error)
     throw error
