@@ -1,66 +1,62 @@
-"use client";
+"use client"
 
-import React, { useEffect, useState } from "react";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { ScrollArea } from "@/components/ui/scroll-area";
+import { useEffect, useState } from "react"
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Badge } from "@/components/ui/badge"
+import { ScrollArea } from "@/components/ui/scroll-area"
 import {
   getCurrentUser,
   getPersonalFineDocuments,
   getPersonalGeneralAttendance,
   getUserAvatar,
-  FineDocument,
-  User,
-  Attendance,
-} from "@/lib/personalrecords/personalrecords";
-import { Calendar, CreditCard, Loader2 } from "lucide-react";
+  type FineDocument,
+  type User,
+  type Attendance,
+} from "@/lib/personalrecords/personalrecords"
+import { Calendar, CreditCard, Loader2 } from 'lucide-react'
 
 export function SupplyFinesManagement() {
-  const [fines, setFines] = useState<FineDocument[]>([]);
-  const [currentUser, setCurrentUser] = useState<User | null>(null);
-  const [avatar, setAvatar] = useState<string | null>(null);
-  const [events, setEvents] = useState<string[]>([]);
+  const [fines, setFines] = useState<FineDocument[]>([])
+  const [currentUser, setCurrentUser] = useState<User | null>(null)
+  const [avatar, setAvatar] = useState<string | null>(null)
+  const [events, setEvents] = useState<string[]>([])
 
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const user = await getCurrentUser();
-        setCurrentUser(user);
+        const user = await getCurrentUser()
+        setCurrentUser(user)
 
         if (user) {
           const [personalFines, generalAttendance] = await Promise.all([
             getPersonalFineDocuments(),
             getPersonalGeneralAttendance(),
-          ]);
-          setFines(personalFines);
+          ])
+          setFines(personalFines)
 
-          const userAvatar = await getUserAvatar(user.$id);
-          setAvatar(userAvatar);
+          const userAvatar = await getUserAvatar(user.$id)
+          setAvatar(userAvatar)
 
           const uniqueEvents = Array.from(
-            new Set(
-              generalAttendance.map(
-                (attendance: Attendance) => attendance.eventName
-              )
-            )
-          );
-          setEvents(uniqueEvents);
+            new Set(generalAttendance.map((attendance: Attendance) => attendance.eventName)),
+          )
+          setEvents(uniqueEvents)
         }
       } catch (error) {
-        console.error("Error fetching data:", error);
+        console.error("Error fetching data:", error)
       }
-    };
+    }
 
-    fetchData();
-  }, []);
+    fetchData()
+  }, [])
 
   if (!currentUser) {
     return (
       <div className="flex justify-center items-center h-screen">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
       </div>
-    );
+    )
   }
 
   return (
@@ -73,12 +69,8 @@ export function SupplyFinesManagement() {
               <AvatarFallback>{currentUser.name.charAt(0)}</AvatarFallback>
             </Avatar>
             <div>
-              <CardTitle className="text-2xl font-bold">
-                {currentUser.name}
-              </CardTitle>
-              <p className="text-sm text-muted-foreground">
-                {currentUser.studentId}
-              </p>
+              <CardTitle className="text-2xl font-bold">{currentUser.name}</CardTitle>
+              <p className="text-sm text-muted-foreground">{currentUser.studentId}</p>
             </div>
           </div>
           <Badge variant="secondary" className="text-lg px-4 py-2">
@@ -99,11 +91,7 @@ export function SupplyFinesManagement() {
             <ScrollArea className="h-[300px] w-full pr-4">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                 {events.map((event, index) => (
-                  <Badge
-                    key={index}
-                    variant="outline"
-                    className="justify-center py-2 text-sm"
-                  >
+                  <Badge key={index} variant="outline" className="justify-center py-2 text-sm">
                     {event}
                   </Badge>
                 ))}
@@ -120,15 +108,15 @@ export function SupplyFinesManagement() {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <ScrollArea className="h-[300px] w-full">
+            <div className="overflow-auto h-[300px]">
               {/* Hidden on small devices, visible on medium and up */}
               <div className="hidden md:block">
-                <table className="w-full">
+                <table className="w-full min-w-[600px]">
                   <thead>
                     <tr>
                       <th className="text-left p-2">Absences</th>
                       <th className="text-left p-2">Presences</th>
-                      <th className="text-left p-2">Penalties</th>
+                      <th className="text-left p-2 min-w-[200px]">Penalties</th>
                       <th className="text-left p-2 min-w-28">Date Issued</th>
                       <th className="text-left p-2">Status</th>
                     </tr>
@@ -146,14 +134,10 @@ export function SupplyFinesManagement() {
                               fine.status === "Cleared"
                                 ? "default"
                                 : fine.status === "Pending"
-                                ? "destructive"
-                                : "secondary"
+                                  ? "destructive"
+                                  : "secondary"
                             }
-                            className={
-                              fine.status === "Cleared"
-                                ? "bg-green-500 hover:bg-green-600 text-white"
-                                : ""
-                            }
+                            className={fine.status === "Cleared" ? "bg-green-500 hover:bg-green-600 text-white" : ""}
                           >
                             {fine.status}
                           </Badge>
@@ -183,14 +167,10 @@ export function SupplyFinesManagement() {
                             fine.status === "Cleared"
                               ? "default"
                               : fine.status === "Pending"
-                              ? "destructive"
-                              : "secondary"
+                                ? "destructive"
+                                : "secondary"
                           }
-                          className={
-                            fine.status === "Cleared"
-                              ? "bg-green-500 hover:bg-green-600 text-white"
-                              : ""
-                          }
+                          className={fine.status === "Cleared" ? "bg-green-500 hover:bg-green-600 text-white" : ""}
                         >
                           {fine.status}
                         </Badge>
@@ -199,7 +179,7 @@ export function SupplyFinesManagement() {
                   </div>
                 ))}
               </div>
-            </ScrollArea>
+            </div>
           </CardContent>
         </Card>
       </div>
@@ -208,5 +188,5 @@ export function SupplyFinesManagement() {
         <p className="text-xs mt-1">© SSG QR Attendance</p>
       </footer>
     </div>
-  );
+  )
 }
