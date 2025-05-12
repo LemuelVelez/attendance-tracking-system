@@ -393,7 +393,7 @@ export const getFineDocuments = async (queries: string[] = []): Promise<FineDocu
   }
 }
 
-// Function to search for students by name
+// Replace the searchStudents function with this updated version that doesn't use Query.search
 export const searchStudents = async (searchTerm: string): Promise<FineDocument[]> => {
   try {
     if (!DATABASE_ID || !FINES_MANAGEMENT_COLLECTION_ID) {
@@ -405,12 +405,21 @@ export const searchStudents = async (searchTerm: string): Promise<FineDocument[]
       return []
     }
 
+    // Instead of using Query.search, we'll fetch records and filter them client-side
     const response = await databases.listDocuments(DATABASE_ID, FINES_MANAGEMENT_COLLECTION_ID, [
-      Query.search("name", searchTerm),
-      Query.limit(10),
+      Query.limit(100), // Limit to a reasonable number
     ])
 
-    return response.documents.filter(isFineDocument)
+    // Filter documents client-side based on the search term
+    const searchTermLower = searchTerm.toLowerCase()
+    const filteredDocuments = response.documents.filter((doc) => {
+      if (!isFineDocument(doc)) return false
+
+      // Check if name contains the search term (case-insensitive)
+      return doc.name.toLowerCase().includes(searchTermLower) || doc.studentId.toLowerCase().includes(searchTermLower)
+    })
+
+    return filteredDocuments.filter(isFineDocument).slice(0, 10) // Limit to 10 results
   } catch (error) {
     console.error("Error searching students:", error)
     throw error
