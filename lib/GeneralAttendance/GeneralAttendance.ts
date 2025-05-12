@@ -48,7 +48,7 @@ export interface FineDocumentData {
 
 export interface FineDocument extends FineDocumentData, Models.Document {}
 
-// Remove the added level 11 from the default PENALTIES_MAP and revert to the original
+// Default penalties map
 let PENALTIES_MAP: Record<number, string> = {
   0: "No penalty",
   1: "1 pad grade 1 paper, 1 pencil",
@@ -156,12 +156,48 @@ export const updatePenaltiesMap = async (penaltiesMap: Record<number, string>): 
   }
 }
 
-// Function to update a fine document
+// Enhanced function to update a fine document with automatic absence calculation
 export const updateFineDocument = async (documentId: string, fineData: FineDocumentData): Promise<FineDocument> => {
   try {
     if (!DATABASE_ID || !FINES_MANAGEMENT_COLLECTION_ID) {
       throw new Error("Missing Appwrite environment variables. Please check your .env file.")
     }
+
+    // Get total events
+    const totalEvents = await getTotalUniqueEvents()
+
+    // Get current penalties map
+    const penaltiesMap = await getPenaltiesMap()
+
+    // Ensure presences is a non-negative number
+    const presences = Math.max(0, Number.parseInt(fineData.presences) || 0)
+
+    // Calculate absences based on presences and total events
+    const absences = Math.max(0, totalEvents - presences)
+
+    // Update the fineData with calculated values
+    fineData.presences = presences.toString()
+    fineData.absences = absences.toString()
+
+    // Determine penalty based on absences
+    const penaltyLevels = Object.keys(penaltiesMap)
+      .map(Number)
+      .sort((a, b) => b - a)
+    const highestPenaltyLevel = penaltyLevels.length > 0 ? penaltyLevels[0] : 10
+
+    let penalty = "No penalty"
+    if (penaltiesMap[absences]) {
+      penalty = penaltiesMap[absences]
+    } else if (absences > 0) {
+      // Find the closest penalty level that's less than or equal to the absences
+      const closestLevel = penaltyLevels.find((level) => level <= absences) || highestPenaltyLevel
+      penalty = penaltiesMap[closestLevel] || penaltiesMap[highestPenaltyLevel] || "No penalty"
+    }
+
+    fineData.penalties = penalty
+
+    // Update status based on penalty
+    fineData.status = penalty === "No penalty" ? "Cleared" : "Pending"
 
     const updatedDoc = await databases.updateDocument(DATABASE_ID, FINES_MANAGEMENT_COLLECTION_ID, documentId, fineData)
 
@@ -353,6 +389,30 @@ export const getFineDocuments = async (queries: string[] = []): Promise<FineDocu
     return allDocuments
   } catch (error) {
     console.error("Error in getFineDocuments:", error)
+    throw error
+  }
+}
+
+// Function to search for students by name
+export const searchStudents = async (searchTerm: string): Promise<FineDocument[]> => {
+  try {
+    if (!DATABASE_ID || !FINES_MANAGEMENT_COLLECTION_ID) {
+      throw new Error("Missing Appwrite environment variables. Please check your .env file.")
+    }
+
+    // If search term is empty, return empty array
+    if (!searchTerm.trim()) {
+      return []
+    }
+
+    const response = await databases.listDocuments(DATABASE_ID, FINES_MANAGEMENT_COLLECTION_ID, [
+      Query.search("name", searchTerm),
+      Query.limit(10),
+    ])
+
+    return response.documents.filter(isFineDocument)
+  } catch (error) {
+    console.error("Error searching students:", error)
     throw error
   }
 }
@@ -639,6 +699,85 @@ export const updateTotalEvents = async (totalEvents: number | string): Promise<v
     }
   } catch (error) {
     console.error("Error updating total events:", error)
+    throw error
+  }
+}
+
+// New function to decrease presences for selected students
+export const decreasePresencesForSelected = async (studentIds: string[], decreaseAmount: number): Promise<void> => {
+  try {
+    if (!DATABASE_ID || !FINES_MANAGEMENT_COLLECTION_ID) {
+      throw new Error("Missing Appwrite environment variables. Please check your .env file.")
+    }
+
+    // Ensure decrease amount is positive
+    const amount = Math.max(0, decreaseAmount)
+    if (amount === 0) return
+
+    // Get all fine documents
+    const fines = await getFineDocuments()
+
+    // Filter for selected students
+    const selectedFines = fines.filter((fine) => studentIds.includes(fine.studentId))
+
+    // Update each selected fine
+    for (const fine of selectedFines) {
+      // Calculate new presences value (ensure it doesn't go below 0)
+      const currentPresences = Number.parseInt(fine.presences) || 0
+      const newPresences = Math.max(0, currentPresences - amount)
+
+      // Update the fine document
+      await updateFineDocument(fine.$id, {
+        ...fine,
+        presences: newPresences.toString(),
+        // absences will be automatically calculated in updateFineDocument
+      })
+    }
+
+    console.log(`Decreased presences by ${amount} for ${selectedFines.length} students`)
+  } catch (error) {
+    console.error("Error decreasing presences for selected students:", error)
+    throw error
+  }
+}
+
+// New function to decrease presences for all except exempted students
+export const decreasePresencesExceptExempted = async (
+  exemptedStudentIds: string[],
+  decreaseAmount: number,
+): Promise<void> => {
+  try {
+    if (!DATABASE_ID || !FINES_MANAGEMENT_COLLECTION_ID) {
+      throw new Error("Missing Appwrite environment variables. Please check your .env file.")
+    }
+
+    // Ensure decrease amount is positive
+    const amount = Math.max(0, decreaseAmount)
+    if (amount === 0) return
+
+    // Get all fine documents
+    const fines = await getFineDocuments()
+
+    // Filter for non-exempted students
+    const nonExemptedFines = fines.filter((fine) => !exemptedStudentIds.includes(fine.studentId))
+
+    // Update each non-exempted fine
+    for (const fine of nonExemptedFines) {
+      // Calculate new presences value (ensure it doesn't go below 0)
+      const currentPresences = Number.parseInt(fine.presences) || 0
+      const newPresences = Math.max(0, currentPresences - amount)
+
+      // Update the fine document
+      await updateFineDocument(fine.$id, {
+        ...fine,
+        presences: newPresences.toString(),
+        // absences will be automatically calculated in updateFineDocument
+      })
+    }
+
+    console.log(`Decreased presences by ${amount} for ${nonExemptedFines.length} non-exempted students`)
+  } catch (error) {
+    console.error("Error decreasing presences for non-exempted students:", error)
     throw error
   }
 }

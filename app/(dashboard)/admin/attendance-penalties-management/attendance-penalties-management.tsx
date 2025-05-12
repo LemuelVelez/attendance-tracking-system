@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect, useCallback } from "react"
+import { useState, useEffect, useCallback, useRef } from "react"
 import { Button } from "@/components/ui/button"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -37,6 +37,9 @@ import {
   Edit,
   Plus,
   Settings,
+  MinusCircle,
+  UserMinus,
+  X,
 } from "lucide-react"
 import {
   getFineDocuments,
@@ -50,11 +53,16 @@ import {
   updatePenaltiesMap,
   updateFineDocument,
   updateTotalEvents,
+  searchStudents,
+  decreasePresencesForSelected,
+  decreasePresencesExceptExempted,
 } from "@/lib/GeneralAttendance/GeneralAttendance"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command"
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 
 export default function SupplyFinesManagement() {
   const [fines, setFines] = useState<FineDocument[]>([])
@@ -78,14 +86,14 @@ export default function SupplyFinesManagement() {
   const [selectAll, setSelectAll] = useState(false)
   const [isLoading, setIsLoading] = useState(true)
 
-  // New state for editing presences and absences
+  // State for editing presences and absences
   const [editDialogOpen, setEditDialogOpen] = useState(false)
   const [editingFine, setEditingFine] = useState<FineDocument | null>(null)
   const [editedPresences, setEditedPresences] = useState("")
   const [editedAbsences, setEditedAbsences] = useState("")
   const [isSaving, setIsSaving] = useState(false)
 
-  // New state for penalties management
+  // State for penalties management
   const [penaltiesMap, setPenaltiesMap] = useState<Record<number, string>>({})
   const [penaltiesDialogOpen, setPenaltiesDialogOpen] = useState(false)
   const [newPenaltyKey, setNewPenaltyKey] = useState("")
@@ -94,17 +102,17 @@ export default function SupplyFinesManagement() {
   const [editingPenaltyValue, setEditingPenaltyValue] = useState("")
   const [isPenaltiesSaving, setIsPenaltiesSaving] = useState(false)
 
-  // New state for editing total events
+  // State for editing total events
   const [totalEventsDialogOpen, setTotalEventsDialogOpen] = useState(false)
   const [editedTotalEvents, setEditedTotalEvents] = useState("")
   const [isSavingTotalEvents, setIsSavingTotalEvents] = useState(false)
 
-  // New state for confirmation dialogs
+  // State for confirmation dialogs
   const [confirmTotalEventsDialog, setConfirmTotalEventsDialog] = useState(false)
   const [confirmPenaltiesDialog, setConfirmPenaltiesDialog] = useState(false)
   const [confirmEditAttendanceDialog, setConfirmEditAttendanceDialog] = useState(false)
 
-  // New state for penalty management confirmation dialogs
+  // State for penalty management confirmation dialogs
   const [confirmAddPenaltyDialog, setConfirmAddPenaltyDialog] = useState(false)
   const [confirmDeletePenaltyDialog, setConfirmDeletePenaltyDialog] = useState(false)
   const [penaltyToDelete, setPenaltyToDelete] = useState<number | null>(null)
@@ -112,6 +120,20 @@ export default function SupplyFinesManagement() {
 
   // State for mobile tab view
   const [activeTab, setActiveTab] = useState<"view" | "add">("view")
+
+  // New state for student search and bulk operations
+  const [studentSearchTerm, setStudentSearchTerm] = useState("")
+  const [searchResults, setSearchResults] = useState<FineDocument[]>([])
+  const [isSearching, setIsSearching] = useState(false)
+  const [searchPopoverOpen, setSearchPopoverOpen] = useState(false)
+  const [selectedStudents, setSelectedStudents] = useState<FineDocument[]>([])
+  const [bulkOperationDialogOpen, setBulkOperationDialogOpen] = useState(false)
+  const [bulkOperationType, setBulkOperationType] = useState<"decrease" | "exempt">("decrease")
+  const [decreaseAmount, setDecreaseAmount] = useState("1")
+  const [isProcessingBulkOperation, setIsProcessingBulkOperation] = useState(false)
+  const [confirmBulkOperationDialog, setConfirmBulkOperationDialog] = useState(false)
+
+  const searchTimeoutRef = useRef<NodeJS.Timeout | null>(null)
 
   const fetchData = useCallback(async () => {
     setIsLoading(true)
@@ -149,6 +171,41 @@ export default function SupplyFinesManagement() {
   useEffect(() => {
     fetchData()
   }, [fetchData])
+
+  // Handle student search with debounce
+  useEffect(() => {
+    if (searchTimeoutRef.current) {
+      clearTimeout(searchTimeoutRef.current)
+    }
+
+    if (studentSearchTerm.trim().length < 2) {
+      setSearchResults([])
+      return
+    }
+
+    searchTimeoutRef.current = setTimeout(async () => {
+      setIsSearching(true)
+      try {
+        const results = await searchStudents(studentSearchTerm)
+        setSearchResults(results)
+      } catch (error) {
+        console.error("Error searching students:", error)
+        toast({
+          title: "Error",
+          description: "Failed to search students. Please try again.",
+          variant: "destructive",
+        })
+      } finally {
+        setIsSearching(false)
+      }
+    }, 300)
+
+    return () => {
+      if (searchTimeoutRef.current) {
+        clearTimeout(searchTimeoutRef.current)
+      }
+    }
+  }, [studentSearchTerm, toast])
 
   const handleUpdateFines = async () => {
     setIsUpdatingFines(true)
@@ -246,7 +303,7 @@ export default function SupplyFinesManagement() {
     }
   }
 
-  // New function to handle editing a fine
+  // Function to handle editing a fine
   const handleEditFine = (fine: FineDocument) => {
     setEditingFine(fine)
     setEditedPresences(fine.presences)
@@ -254,24 +311,21 @@ export default function SupplyFinesManagement() {
     setEditDialogOpen(true)
   }
 
-  // New function to save edited fine
+  // Function to save edited fine
   const handleSaveEditedFine = async () => {
     if (!editingFine) return
 
     setIsSaving(true)
     try {
-      const absencesNum = Number.parseInt(editedAbsences)
-      const penalty = penaltiesMap[absencesNum] || penaltiesMap[10] || "No penalty"
-
       const updatedFineData: FineDocumentData = {
         userId: editingFine.userId,
         studentId: editingFine.studentId,
         name: editingFine.name,
         absences: editedAbsences,
         presences: editedPresences,
-        penalties: penalty,
+        penalties: editingFine.penalties,
         dateIssued: editingFine.dateIssued,
-        status: penalty === "No penalty" ? "Cleared" : "Pending",
+        status: editingFine.status,
       }
 
       const updatedFine = await updateFineDocument(editingFine.$id, updatedFineData)
@@ -299,7 +353,7 @@ export default function SupplyFinesManagement() {
     }
   }
 
-  // New function to save penalties map
+  // Function to save penalties map
   const handleSavePenaltiesMap = async () => {
     setIsPenaltiesSaving(true)
     try {
@@ -324,7 +378,7 @@ export default function SupplyFinesManagement() {
     }
   }
 
-  // New function to add a penalty
+  // Function to add a penalty
   const handleAddPenalty = () => {
     const key = Number.parseInt(newPenaltyKey)
     if (isNaN(key) || newPenaltyValue.trim() === "") {
@@ -354,7 +408,7 @@ export default function SupplyFinesManagement() {
     setConfirmAddPenaltyDialog(false)
   }
 
-  // New function to delete a penalty
+  // Function to delete a penalty
   const handleDeletePenalty = (key: number) => {
     setPenaltiesMap((prev) => {
       const newMap = { ...prev }
@@ -373,13 +427,13 @@ export default function SupplyFinesManagement() {
     setPenaltyToDelete(null)
   }
 
-  // New function to start editing a penalty
+  // Function to start editing a penalty
   const handleStartEditPenalty = (key: number, value: string) => {
     setEditingPenaltyKey(key)
     setEditingPenaltyValue(value)
   }
 
-  // New function to save edited penalty
+  // Function to save edited penalty
   const handleSaveEditedPenalty = () => {
     if (editingPenaltyKey === null || editingPenaltyValue.trim() === "") return
 
@@ -400,7 +454,7 @@ export default function SupplyFinesManagement() {
     setConfirmEditPenaltyDialog(false)
   }
 
-  // New function to save edited total events
+  // Function to save edited total events
   const handleSaveTotalEvents = async () => {
     setIsSavingTotalEvents(true)
     try {
@@ -435,6 +489,80 @@ export default function SupplyFinesManagement() {
       })
     } finally {
       setIsSavingTotalEvents(false)
+    }
+  }
+
+  // Function to handle selecting a student from search results
+  const handleSelectStudent = (student: FineDocument) => {
+    setSelectedStudents((prev) => {
+      // Check if student is already selected
+      if (prev.some((s) => s.studentId === student.studentId)) {
+        return prev
+      }
+      return [...prev, student]
+    })
+    setSearchPopoverOpen(false)
+    setStudentSearchTerm("")
+  }
+
+  // Function to remove a student from selection
+  const handleRemoveSelectedStudent = (studentId: string) => {
+    setSelectedStudents((prev) => prev.filter((s) => s.studentId !== studentId))
+  }
+
+  // Function to handle bulk operation
+  const handleBulkOperation = async () => {
+    setIsProcessingBulkOperation(true)
+    try {
+      const amount = Number.parseInt(decreaseAmount)
+      if (isNaN(amount) || amount <= 0) {
+        toast({
+          title: "Error",
+          description: "Please enter a valid positive number for the decrease amount.",
+          variant: "destructive",
+        })
+        return
+      }
+
+      const studentIds = selectedStudents.map((s) => s.studentId)
+
+      if (bulkOperationType === "decrease") {
+        // Decrease presences for selected students
+        await decreasePresencesForSelected(studentIds, amount)
+        toast({
+          title: "Success",
+          description: `Decreased presences by ${amount} for ${studentIds.length} selected students.`,
+          variant: "success",
+          className: "border-green-500 text-green-700 bg-green-50",
+        })
+      } else {
+        // Decrease presences for all except exempted students
+        await decreasePresencesExceptExempted(studentIds, amount)
+        toast({
+          title: "Success",
+          description: `Decreased presences by ${amount} for all students except ${studentIds.length} exempted students.`,
+          variant: "success",
+          className: "border-green-500 text-green-700 bg-green-50",
+        })
+      }
+
+      // Refresh data
+      await fetchData()
+
+      // Reset state
+      setBulkOperationDialogOpen(false)
+      setConfirmBulkOperationDialog(false)
+      setSelectedStudents([])
+      setDecreaseAmount("1")
+    } catch (error) {
+      console.error("Error performing bulk operation:", error)
+      toast({
+        title: "Error",
+        description: "Failed to perform bulk operation. Please try again.",
+        variant: "destructive",
+      })
+    } finally {
+      setIsProcessingBulkOperation(false)
     }
   }
 
@@ -582,6 +710,194 @@ export default function SupplyFinesManagement() {
         </Card>
       </div>
 
+      {/* New Card for Student Selection and Bulk Operations */}
+      <Card className="mb-6">
+        <CardHeader>
+          <CardTitle className="flex items-center text-lg">
+            <Users className="w-5 h-5 mr-2" />
+            Student Selection and Bulk Operations
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-4">
+            <div className="flex flex-col sm:flex-row gap-4">
+              <div className="flex-1">
+                <Label htmlFor="studentSearch" className="mb-2 block">
+                  Search and Select Students
+                </Label>
+                <Popover open={searchPopoverOpen} onOpenChange={setSearchPopoverOpen}>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant="outline"
+                      role="combobox"
+                      aria-expanded={searchPopoverOpen}
+                      className="w-full justify-between"
+                    >
+                      {studentSearchTerm || "Search students..."}
+                      <Search className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-full p-0" align="start">
+                    <Command>
+                      <CommandInput
+                        placeholder="Search students..."
+                        value={studentSearchTerm}
+                        onValueChange={setStudentSearchTerm}
+                      />
+                      <CommandList>
+                        <CommandEmpty>
+                          {isSearching ? (
+                            <div className="flex items-center justify-center p-4">
+                              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                              <span>Searching...</span>
+                            </div>
+                          ) : (
+                            "No students found."
+                          )}
+                        </CommandEmpty>
+                        <CommandGroup>
+                          {searchResults.map((student) => (
+                            <CommandItem
+                              key={student.$id}
+                              onSelect={() => handleSelectStudent(student)}
+                              className="cursor-pointer"
+                            >
+                              <Check
+                                className={`mr-2 h-4 w-4 ${selectedStudents.some((s) => s.studentId === student.studentId)
+                                  ? "opacity-100"
+                                  : "opacity-0"
+                                  }`}
+                              />
+                              <span>{student.name}</span>
+                              <span className="ml-2 text-xs text-gray-500">({student.studentId})</span>
+                            </CommandItem>
+                          ))}
+                        </CommandGroup>
+                      </CommandList>
+                    </Command>
+                  </PopoverContent>
+                </Popover>
+              </div>
+
+              <div className="flex-1">
+                <Label className="mb-2 block">Selected Students ({selectedStudents.length})</Label>
+                <div className="border rounded-md p-2 min-h-[38px] max-h-[100px] overflow-y-auto">
+                  {selectedStudents.length === 0 ? (
+                    <p className="text-sm text-gray-500">No students selected</p>
+                  ) : (
+                    <div className="flex flex-wrap gap-2">
+                      {selectedStudents.map((student) => (
+                        <Badge key={student.studentId} variant="secondary" className="flex items-center gap-1">
+                          {student.name}
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="h-4 w-4 p-0"
+                            onClick={() => handleRemoveSelectedStudent(student.studentId)}
+                          >
+                            <X className="h-3 w-3" />
+                          </Button>
+                        </Badge>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            <div className="flex flex-col sm:flex-row gap-4 mt-4">
+              <Button
+                onClick={() => {
+                  setBulkOperationType("decrease")
+                  setBulkOperationDialogOpen(true)
+                }}
+                disabled={selectedStudents.length === 0}
+                className="flex-1"
+              >
+                <MinusCircle className="mr-2 h-4 w-4" />
+                Decrease Presences for Selected Students
+              </Button>
+              <Button
+                onClick={() => {
+                  setBulkOperationType("exempt")
+                  setBulkOperationDialogOpen(true)
+                }}
+                disabled={selectedStudents.length === 0}
+                className="flex-1"
+              >
+                <UserMinus className="mr-2 h-4 w-4" />
+                Exempt Selected Students from Decrease
+              </Button>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Bulk Operation Dialog */}
+      <AlertDialog open={bulkOperationDialogOpen} onOpenChange={setBulkOperationDialogOpen}>
+        <AlertDialogContent className="max-w-[90vw] sm:max-w-[425px]">
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              {bulkOperationType === "decrease"
+                ? "Decrease Presences for Selected Students"
+                : "Exempt Selected Students from Decrease"}
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              {bulkOperationType === "decrease"
+                ? `This will decrease the presences count for ${selectedStudents.length} selected students.`
+                : `This will decrease the presences count for all students EXCEPT the ${selectedStudents.length} selected students.`}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <div className="py-4">
+            <div className="space-y-2">
+              <Label htmlFor="decreaseAmount">Decrease Amount</Label>
+              <Input
+                id="decreaseAmount"
+                type="number"
+                min="1"
+                value={decreaseAmount}
+                onChange={(e) => setDecreaseAmount(e.target.value)}
+                placeholder="Enter decrease amount"
+              />
+            </div>
+          </div>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => setBulkOperationDialogOpen(false)}>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={() => setConfirmBulkOperationDialog(true)} disabled={isProcessingBulkOperation}>
+              Continue
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Confirmation dialog for Bulk Operation */}
+      <AlertDialog open={confirmBulkOperationDialog} onOpenChange={setConfirmBulkOperationDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Confirm Operation</AlertDialogTitle>
+            <AlertDialogDescription>
+              {bulkOperationType === "decrease"
+                ? `Are you sure you want to decrease presences by ${decreaseAmount} for ${selectedStudents.length} selected students?`
+                : `Are you sure you want to decrease presences by ${decreaseAmount} for all students EXCEPT the ${selectedStudents.length} selected students?`}
+              This will affect their absences and penalties.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => setConfirmBulkOperationDialog(false)}>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleBulkOperation} disabled={isProcessingBulkOperation}>
+              {isProcessingBulkOperation ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Processing...
+                </>
+              ) : (
+                "Confirm"
+              )}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
       <div className="flex flex-wrap gap-4 mb-4">
         <AlertDialog open={updateDialogOpen} onOpenChange={setUpdateDialogOpen}>
           <AlertDialogTrigger asChild>
@@ -699,7 +1015,11 @@ export default function SupplyFinesManagement() {
                                   Save
                                 </Button>
                               ) : (
-                                <Button size="sm" variant="outline" onClick={() => handleStartEditPenalty(numKey, value)}>
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  onClick={() => handleStartEditPenalty(numKey, value)}
+                                >
                                   <Edit className="h-4 w-4" />
                                 </Button>
                               )}
@@ -915,9 +1235,7 @@ export default function SupplyFinesManagement() {
             </AlertDialogHeader>
             <AlertDialogFooter>
               <AlertDialogCancel onClick={() => setConfirmDeletePenaltyDialog(false)}>Cancel</AlertDialogCancel>
-              <AlertDialogAction
-                onClick={() => penaltyToDelete !== null && handleDeletePenalty(penaltyToDelete)}
-              >
+              <AlertDialogAction onClick={() => penaltyToDelete !== null && handleDeletePenalty(penaltyToDelete)}>
                 Delete
               </AlertDialogAction>
             </AlertDialogFooter>
