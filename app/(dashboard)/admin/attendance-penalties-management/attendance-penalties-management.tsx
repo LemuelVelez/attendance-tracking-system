@@ -177,11 +177,13 @@ export default function SupplyFinesManagement() {
   }, [fetchData])
 
   // Handle student search with debounce
+  // Update the student search effect to improve search behavior
   useEffect(() => {
     if (searchTimeoutRef.current) {
       clearTimeout(searchTimeoutRef.current)
     }
 
+    // Only search if we have at least 2 characters
     if (studentSearchTerm.trim().length < 2) {
       setSearchResults([])
       return
@@ -190,7 +192,9 @@ export default function SupplyFinesManagement() {
     searchTimeoutRef.current = setTimeout(async () => {
       setIsSearching(true)
       try {
-        const results = await searchStudents(studentSearchTerm)
+        console.log("Searching for:", studentSearchTerm.trim())
+        const results = await searchStudents(studentSearchTerm.trim())
+        console.log("Search results:", results.length)
         setSearchResults(results)
       } catch (error) {
         console.error("Error searching students:", error)
@@ -782,6 +786,7 @@ export default function SupplyFinesManagement() {
                             "No students found."
                           )}
                         </CommandEmpty>
+                        {/* Update the CommandItem to improve display and selection */}
                         <CommandGroup>
                           {searchResults.map((student) => (
                             <CommandItem
@@ -790,12 +795,13 @@ export default function SupplyFinesManagement() {
                               className="cursor-pointer"
                             >
                               <Check
-                                className={`mr-2 h-4 w-4 ${selectedStudents.some((s) => s.studentId === student.studentId)
+                                className={`mr-2 h-4 w-4 ${
+                                  selectedStudents.some((s) => s.studentId === student.studentId)
                                     ? "opacity-100"
                                     : "opacity-0"
-                                  }`}
+                                }`}
                               />
-                              <span>{student.name}</span>
+                              <span className="font-medium">{student.name}</span>
                               <span className="ml-2 text-xs text-gray-500">({student.studentId})</span>
                             </CommandItem>
                           ))}
@@ -1601,10 +1607,11 @@ export default function SupplyFinesManagement() {
                             variant={
                               fine.status === "Cleared" || fine.status === "penaltyCleared" ? "secondary" : "outline"
                             }
-                            className={`text-xs ${fine.status === "Cleared" || fine.status === "penaltyCleared"
+                            className={`text-xs ${
+                              fine.status === "Cleared" || fine.status === "penaltyCleared"
                                 ? "bg-green-500 text-white"
                                 : ""
-                              }`}
+                            }`}
                           >
                             {fine.status === "penaltyCleared" ? "Cleared" : fine.status}
                           </Badge>

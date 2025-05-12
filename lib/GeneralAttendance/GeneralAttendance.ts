@@ -393,7 +393,7 @@ export const getFineDocuments = async (queries: string[] = []): Promise<FineDocu
   }
 }
 
-// Replace the searchStudents function with this updated version that doesn't use Query.search
+// Replace the searchStudents function with this improved version
 export const searchStudents = async (searchTerm: string): Promise<FineDocument[]> => {
   try {
     if (!DATABASE_ID || !FINES_MANAGEMENT_COLLECTION_ID) {
@@ -405,21 +405,44 @@ export const searchStudents = async (searchTerm: string): Promise<FineDocument[]
       return []
     }
 
-    // Instead of using Query.search, we'll fetch records and filter them client-side
+    // Fetch all records (with a reasonable limit)
     const response = await databases.listDocuments(DATABASE_ID, FINES_MANAGEMENT_COLLECTION_ID, [
-      Query.limit(100), // Limit to a reasonable number
+      Query.limit(500), // Increased limit to find more potential matches
     ])
 
     // Filter documents client-side based on the search term
-    const searchTermLower = searchTerm.toLowerCase()
-    const filteredDocuments = response.documents.filter((doc) => {
-      if (!isFineDocument(doc)) return false
+    const searchTermLower = searchTerm.toLowerCase().trim()
 
-      // Check if name contains the search term (case-insensitive)
-      return doc.name.toLowerCase().includes(searchTermLower) || doc.studentId.toLowerCase().includes(searchTermLower)
+    // Log for debugging
+    console.log(`Searching for: "${searchTermLower}"`)
+    console.log(`Total documents fetched: ${response.documents.length}`)
+
+    const filteredDocuments = response.documents.filter((doc) => {
+      if (!doc || typeof doc !== "object") return false
+
+      // Safely access properties
+      const name = doc.name ? String(doc.name).toLowerCase() : ""
+      const studentId = doc.studentId ? String(doc.studentId).toLowerCase() : ""
+
+      // Check if name or studentId contains the search term (case-insensitive)
+      const nameMatch = name.includes(searchTermLower)
+      const idMatch = studentId.includes(searchTermLower)
+
+      // For debugging
+      if (nameMatch || idMatch) {
+        console.log(`Match found: ${doc.name} (${doc.studentId})`)
+      }
+
+      return nameMatch || idMatch
     })
 
-    return filteredDocuments.filter(isFineDocument).slice(0, 10) // Limit to 10 results
+    console.log(`Matches found: ${filteredDocuments.length}`)
+
+    // Ensure all returned documents are valid FineDocuments
+    const validDocuments = filteredDocuments.filter(isFineDocument)
+
+    // Return up to 20 results (increased from 10)
+    return validDocuments.slice(0, 20)
   } catch (error) {
     console.error("Error searching students:", error)
     throw error
