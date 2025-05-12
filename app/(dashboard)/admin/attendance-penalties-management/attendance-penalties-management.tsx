@@ -177,39 +177,74 @@ export default function SupplyFinesManagement() {
   }, [fetchData])
 
   // Handle student search with debounce
-  // Update the student search effect to improve search behavior
   useEffect(() => {
     if (searchTimeoutRef.current) {
       clearTimeout(searchTimeoutRef.current)
     }
 
-    // Set searching state immediately to show loading indicator
-    setIsSearching(studentSearchTerm.trim().length > 0)
-
-    // Don't clear previous results immediately - this causes flickering
-    // Only clear if the search term is empty
+    // Don't clear previous results immediately to avoid flickering
     if (studentSearchTerm.trim().length === 0) {
       setSearchResults([])
       setIsSearching(false)
       return
     }
 
+    // Set searching state immediately to show loading indicator
+    setIsSearching(true)
+
     // Make sure the popover is open when searching
     if (studentSearchTerm.trim().length > 0 && !searchPopoverOpen) {
       setSearchPopoverOpen(true)
     }
 
-    // Use a very short debounce time for more responsive search
+    // Use a short debounce time for responsive search
     searchTimeoutRef.current = setTimeout(async () => {
       try {
         console.log("Searching for:", studentSearchTerm.trim())
-        const results = await searchStudents(studentSearchTerm.trim())
-        console.log("Search results:", results.length)
 
-        // Update results and ensure popover stays open
-        setSearchResults(results)
-        if (results.length > 0 && !searchPopoverOpen) {
-          setSearchPopoverOpen(true)
+        // For direct search in the UI, use the same approach as the main search
+        if (studentSearchTerm.trim().length > 0) {
+          // First try the backend search
+          const results = await searchStudents(studentSearchTerm.trim())
+          console.log("Backend search results:", results.length)
+
+          // If backend search returns results, use them
+          if (results.length > 0) {
+            setSearchResults(results)
+            if (results.length > 0 && !searchPopoverOpen) {
+              setSearchPopoverOpen(true)
+            }
+          } else {
+            // If backend search fails, try a client-side search as fallback
+            console.log("Trying fallback client-side search")
+            const searchTermLower = studentSearchTerm.toLowerCase().trim()
+            const searchWords = searchTermLower.split(/\s+/).filter((word) => word.length > 0)
+
+            const clientResults = fines
+              .filter((fine) => {
+                const name = fine.name.toLowerCase()
+                const studentId = fine.studentId.toLowerCase()
+
+                // Check for direct match
+                if (name.includes(searchTermLower) || studentId.includes(searchTermLower)) {
+                  return true
+                }
+
+                // Check if all words in search term are in the name
+                if (searchWords.length > 1) {
+                  return searchWords.every((word) => name.includes(word))
+                }
+
+                return false
+              })
+              .slice(0, 20)
+
+            console.log("Client-side search results:", clientResults.length)
+            setSearchResults(clientResults)
+            if (clientResults.length > 0 && !searchPopoverOpen) {
+              setSearchPopoverOpen(true)
+            }
+          }
         }
       } catch (error) {
         console.error("Error searching students:", error)
@@ -228,7 +263,7 @@ export default function SupplyFinesManagement() {
         clearTimeout(searchTimeoutRef.current)
       }
     }
-  }, [studentSearchTerm, toast, searchPopoverOpen])
+  }, [studentSearchTerm, toast, searchPopoverOpen, fines])
 
   const handleUpdateFines = async () => {
     setIsUpdatingFines(true)
@@ -776,7 +811,7 @@ export default function SupplyFinesManagement() {
                   onOpenChange={(open) => {
                     setSearchPopoverOpen(open)
                     // Don't clear results when opening, only when explicitly clearing the search
-                    if (open && !studentSearchTerm.trim()) {
+                    if (!open && studentSearchTerm.trim() === "") {
                       setSearchResults([])
                     }
                   }}

@@ -417,7 +417,10 @@ export const searchStudents = async (searchTerm: string): Promise<FineDocument[]
     // Normalize search term for case-insensitive comparison
     const searchTermLower = searchTerm.toLowerCase().trim()
 
-    // Filter documents client-side
+    // Split search term into words for multi-word search
+    const searchWords = searchTermLower.split(/\s+/).filter((word) => word.length > 0)
+
+    // Filter documents client-side with detailed logging
     const filteredDocuments = response.documents.filter((doc) => {
       if (!doc || typeof doc !== "object") return false
 
@@ -425,39 +428,68 @@ export const searchStudents = async (searchTerm: string): Promise<FineDocument[]
       const name = doc.name ? String(doc.name).toLowerCase() : ""
       const studentId = doc.studentId ? String(doc.studentId).toLowerCase() : ""
 
-      // Simple includes matching for both name and ID
-      return name.includes(searchTermLower) || studentId.includes(searchTermLower)
+      // Log each document we're checking (for debugging)
+      // console.log(`Checking document: ${doc.$id}, name: ${name}, studentId: ${studentId}`)
+
+      // Check for full search term match
+      if (name.includes(searchTermLower) || studentId.includes(searchTermLower)) {
+        // console.log(`Full match found in document ${doc.$id}`)
+        return true
+      }
+
+      // For multi-word searches, check if all words are in the name
+      if (searchWords.length > 1) {
+        const allWordsFound = searchWords.every((word) => name.includes(word))
+        // if (allWordsFound) console.log(`Multi-word match found in document ${doc.$id}`)
+        return allWordsFound
+      }
+
+      return false
     })
 
     console.log(`Matches found: ${filteredDocuments.length}`)
 
+    // If we found matches, log the first few for debugging
+    if (filteredDocuments.length > 0) {
+      filteredDocuments.slice(0, 3).forEach((doc) => {
+        console.log(`Match: ${doc.$id}, name: ${doc.name}, studentId: ${doc.studentId}`)
+      })
+    }
+
     // Ensure all returned documents are valid FineDocuments
     const validDocuments = filteredDocuments.filter(isFineDocument)
 
-    // Sort results to prioritize exact matches and matches at the beginning of words
+    // Sort results with a simpler, more reliable algorithm
     const sortedResults = validDocuments.sort((a, b) => {
       const aName = a.name.toLowerCase()
       const bName = b.name.toLowerCase()
-      const aId = a.studentId.toLowerCase()
-      const bId = b.studentId.toLowerCase()
 
       // Exact matches first
-      if (aName === searchTermLower || aId === searchTermLower) return -1
-      if (bName === searchTermLower || bId === searchTermLower) return 1
+      const aExactMatch = aName === searchTermLower
+      const bExactMatch = bName === searchTermLower
+      if (aExactMatch && !bExactMatch) return -1
+      if (!aExactMatch && bExactMatch) return 1
 
-      // Then matches at the beginning of the name or ID
-      if (aName.startsWith(searchTermLower) || aId.startsWith(searchTermLower)) return -1
-      if (bName.startsWith(searchTermLower) || bId.startsWith(searchTermLower)) return 1
+      // Starts with search term
+      const aStartsWith = aName.startsWith(searchTermLower)
+      const bStartsWith = bName.startsWith(searchTermLower)
+      if (aStartsWith && !bStartsWith) return -1
+      if (!aStartsWith && bStartsWith) return 1
 
-      // Then matches at the beginning of any word in the name
-      const aNameWords = aName.split(" ")
-      const bNameWords = bName.split(" ")
+      // Contains all words in order
+      if (searchWords.length > 1) {
+        let aIndex = -1
+        let bIndex = -1
 
-      const aStartsWithWord = aNameWords.some((word) => word.startsWith(searchTermLower))
-      const bStartsWithWord = bNameWords.some((word) => word.startsWith(searchTermLower))
+        // Check if name contains all search words in sequence
+        for (const word of searchWords) {
+          aIndex = aName.indexOf(word, aIndex + 1)
+          bIndex = bName.indexOf(word, bIndex + 1)
 
-      if (aStartsWithWord && !bStartsWithWord) return -1
-      if (!aStartsWithWord && bStartsWithWord) return 1
+          if (aIndex === -1 && bIndex !== -1) return 1
+          if (aIndex !== -1 && bIndex === -1) return -1
+        }
+      }
 
       // Default to alphabetical order
       return aName.localeCompare(bName)
