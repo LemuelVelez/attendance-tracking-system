@@ -12,8 +12,7 @@ const DATABASE_ID = process.env.NEXT_PUBLIC_APPWRITE_DATABASE_ID || ""
 const GENERAL_ATTENDANCE_COLLECTION_ID = process.env.NEXT_PUBLIC_APPWRITE_GENERAL_ATTENDANCE_COLLECTION_ID || ""
 const FINES_MANAGEMENT_COLLECTION_ID = process.env.NEXT_PUBLIC_APPWRITE_FINES_MANAGEMENT_COLLECTION_ID || ""
 const USERS_COLLECTION_ID = process.env.NEXT_PUBLIC_APPWRITE_USERS_COLLECTION_ID || ""
-const PENALTIES_MAP_COLLECTION_ID = "penalties_map" // New collection for storing penalties map
-const TOTAL_EVENTS_COLLECTION_ID = "total_events"
+const PENALTIES_MAP_COLLECTION_ID = "penalties_map" // Collection for storing penalties map
 
 export interface Attendance extends Models.Document {
   userId: string
@@ -49,7 +48,7 @@ export interface FineDocumentData {
 
 export interface FineDocument extends FineDocumentData, Models.Document {}
 
-// Default penalties map
+// Remove the added level 11 from the default PENALTIES_MAP and revert to the original
 let PENALTIES_MAP: Record<number, string> = {
   0: "No penalty",
   1: "1 pad grade 1 paper, 1 pencil",
@@ -373,6 +372,7 @@ export const deleteFines = async (documentId: string): Promise<void> => {
   }
 }
 
+// Fixed function to get total unique events
 export const getTotalUniqueEvents = async (): Promise<number> => {
   try {
     if (!DATABASE_ID || !GENERAL_ATTENDANCE_COLLECTION_ID) {
@@ -383,7 +383,10 @@ export const getTotalUniqueEvents = async (): Promise<number> => {
     try {
       const document = await databases.getDocument(DATABASE_ID, PENALTIES_MAP_COLLECTION_ID, "penalties_map")
       if (document && document.totalEvents !== undefined) {
-        return Number.parseInt(document.totalEvents)
+        const totalEvents = Number.parseInt(document.totalEvents)
+        if (!isNaN(totalEvents) && totalEvents > 0) {
+          return totalEvents
+        }
       }
     } catch (_error) {
       // If document doesn't exist or doesn't have totalEvents, continue with counting
@@ -416,24 +419,27 @@ export const getTotalUniqueEvents = async (): Promise<number> => {
 
     const totalEventsCount = uniqueEvents.size
 
-    // Auto-create the total events in the penalties_map collection
-    try {
-      const document = await databases.getDocument(DATABASE_ID, PENALTIES_MAP_COLLECTION_ID, "penalties_map")
-      // Update existing document with total events
-      await databases.updateDocument(DATABASE_ID, PENALTIES_MAP_COLLECTION_ID, "penalties_map", {
-        totalEvents: totalEventsCount.toString(),
-      })
-      console.log("Total events updated automatically:", totalEventsCount)
-    } catch (_error) {
-      // Document doesn't exist, create it
+    // Only store the count if we actually found events
+    if (totalEventsCount > 0) {
+      // Auto-create or update the total events in the penalties_map collection
       try {
-        await databases.createDocument(DATABASE_ID, PENALTIES_MAP_COLLECTION_ID, "penalties_map", {
-          penalties: JSON.stringify(PENALTIES_MAP),
+        await databases.getDocument(DATABASE_ID, PENALTIES_MAP_COLLECTION_ID, "penalties_map")
+        // Update existing document with total events
+        await databases.updateDocument(DATABASE_ID, PENALTIES_MAP_COLLECTION_ID, "penalties_map", {
           totalEvents: totalEventsCount.toString(),
         })
-        console.log("Total events created automatically:", totalEventsCount)
-      } catch (createError) {
-        console.error("Error creating penalties map document with total events:", createError)
+        console.log("Total events updated automatically:", totalEventsCount)
+      } catch (_error) {
+        // Document doesn't exist, create it
+        try {
+          await databases.createDocument(DATABASE_ID, PENALTIES_MAP_COLLECTION_ID, "penalties_map", {
+            penalties: JSON.stringify(PENALTIES_MAP),
+            totalEvents: totalEventsCount.toString(),
+          })
+          console.log("Total events created automatically:", totalEventsCount)
+        } catch (createError) {
+          console.error("Error creating penalties map document with total events:", createError)
+        }
       }
     }
 
@@ -477,6 +483,7 @@ export const getAllUsers = async (): Promise<User[]> => {
   }
 }
 
+// Update the updateAttendance function to handle the highest penalty level dynamically
 export const updateAttendance = async (): Promise<void> => {
   try {
     if (!DATABASE_ID || !GENERAL_ATTENDANCE_COLLECTION_ID || !FINES_MANAGEMENT_COLLECTION_ID) {
@@ -487,6 +494,12 @@ export const updateAttendance = async (): Promise<void> => {
     const currentPenaltiesMap = await getPenaltiesMap()
     PENALTIES_MAP = currentPenaltiesMap
 
+    // Find the highest penalty level
+    const penaltyLevels = Object.keys(PENALTIES_MAP)
+      .map(Number)
+      .sort((a, b) => b - a)
+    const highestPenaltyLevel = penaltyLevels.length > 0 ? penaltyLevels[0] : 10
+
     // Delete all existing fine documents
     await deleteAllFineDocuments()
 
@@ -496,27 +509,78 @@ export const updateAttendance = async (): Promise<void> => {
       throw new Error("Not all documents were deleted. Please try again.")
     }
 
+    // Get all attendance records
     const generalAttendance = await getGeneralAttendance()
-    const users = await getAllUsers()
-    const totalEvents = await getTotalUniqueEvents()
 
+    // Get all users
+    const users = await getAllUsers()
+
+    // Get unique event names from attendance records
+    const uniqueEvents = new Set<string>()
+    generalAttendance.forEach((attendance) => {
+      if (attendance.eventName) {
+        uniqueEvents.add(attendance.eventName)
+      }
+    })
+
+    // Calculate total events
+    const totalEvents = uniqueEvents.size
+
+    // Update the total events in the penalties_map collection
+    try {
+      try {
+        await databases.getDocument(DATABASE_ID, PENALTIES_MAP_COLLECTION_ID, "penalties_map")
+        await databases.updateDocument(DATABASE_ID, PENALTIES_MAP_COLLECTION_ID, "penalties_map", {
+          totalEvents: totalEvents.toString(),
+        })
+      } catch (_error) {
+        await databases.createDocument(DATABASE_ID, PENALTIES_MAP_COLLECTION_ID, "penalties_map", {
+          penalties: JSON.stringify(PENALTIES_MAP),
+          totalEvents: totalEvents.toString(),
+        })
+      }
+    } catch (error) {
+      console.error("Error updating total events:", error)
+    }
+
+    // Process each user
     for (const user of users) {
+      // Get attendance records for this user
       const userAttendance = generalAttendance.filter((a) => a.userId === user.$id)
 
-      const presences = userAttendance.length
+      // Count unique events this user attended
+      const attendedEvents = new Set<string>()
+      userAttendance.forEach((attendance) => {
+        if (attendance.eventName) {
+          attendedEvents.add(attendance.eventName)
+        }
+      })
+
+      // Calculate presences and absences
+      const presences = attendedEvents.size
       const absences = Math.max(0, totalEvents - presences)
 
-      const penalties = PENALTIES_MAP[absences] || PENALTIES_MAP[10]
+      // Determine penalty based on absences
+      // If absences exceed the highest defined level, use the highest level penalty
+      let penalty = "No penalty"
+      if (PENALTIES_MAP[absences]) {
+        penalty = PENALTIES_MAP[absences]
+      } else if (absences > 0) {
+        // Find the closest penalty level that's less than or equal to the absences
+        const closestLevel = penaltyLevels.find((level) => level <= absences) || highestPenaltyLevel
+        penalty = PENALTIES_MAP[closestLevel] || PENALTIES_MAP[highestPenaltyLevel] || "No penalty"
+      }
 
+      // Create fine document
       const fineData: FineDocumentData = {
         userId: user.$id,
         studentId: user.studentId,
         name: user.name,
         absences: absences.toString(),
         presences: presences.toString(),
-        penalties,
+        penalties: penalty,
         dateIssued: new Date().toISOString().split("T")[0],
-        status: penalties === "No penalty" ? "Cleared" : "Pending",
+        status: penalty === "No penalty" ? "Cleared" : "Pending",
       }
 
       // Create new fine document
@@ -524,6 +588,7 @@ export const updateAttendance = async (): Promise<void> => {
     }
 
     console.log("Attendance and fines updated successfully")
+    console.log(`Total events: ${totalEvents}`)
   } catch (error) {
     console.error("Error in updateAttendance:", error)
     throw error
