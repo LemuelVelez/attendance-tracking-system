@@ -812,12 +812,20 @@ export const decreasePresencesForSelected = async (studentIds: string[], decreas
       const currentPresences = Number.parseInt(fine.presences) || 0
       const newPresences = Math.max(0, currentPresences - amount)
 
-      // Update the fine document
-      await updateFineDocument(fine.$id, {
-        ...fine,
+      // Create a clean data object with only the allowed fields
+      const updatedFineData: FineDocumentData = {
+        userId: fine.userId,
+        studentId: fine.studentId,
+        name: fine.name,
+        absences: fine.absences, // This will be recalculated in updateFineDocument
         presences: newPresences.toString(),
-        // absences will be automatically calculated in updateFineDocument
-      })
+        penalties: fine.penalties, // This will be recalculated in updateFineDocument
+        dateIssued: fine.dateIssued,
+        status: fine.status, // This will be recalculated in updateFineDocument
+      }
+
+      // Update the fine document
+      await updateFineDocument(fine.$id, updatedFineData)
     }
 
     console.log(`Decreased presences by ${amount} for ${selectedFines.length} students`)
@@ -853,12 +861,20 @@ export const decreasePresencesExceptExempted = async (
       const currentPresences = Number.parseInt(fine.presences) || 0
       const newPresences = Math.max(0, currentPresences - amount)
 
-      // Update the fine document
-      await updateFineDocument(fine.$id, {
-        ...fine,
+      // Create a clean data object with only the allowed fields
+      const updatedFineData: FineDocumentData = {
+        userId: fine.userId,
+        studentId: fine.studentId,
+        name: fine.name,
+        absences: fine.absences, // This will be recalculated in updateFineDocument
         presences: newPresences.toString(),
-        // absences will be automatically calculated in updateFineDocument
-      })
+        penalties: fine.penalties, // This will be recalculated in updateFineDocument
+        dateIssued: fine.dateIssued,
+        status: fine.status, // This will be recalculated in updateFineDocument
+      }
+
+      // Update the fine document
+      await updateFineDocument(fine.$id, updatedFineData)
     }
 
     console.log(`Decreased presences by ${amount} for ${nonExemptedFines.length} non-exempted students`)
@@ -891,12 +907,20 @@ export const increasePresencesForSelected = async (studentIds: string[], increas
       const currentPresences = Number.parseInt(fine.presences) || 0
       const newPresences = currentPresences + amount
 
-      // Update the fine document
-      await updateFineDocument(fine.$id, {
-        ...fine,
+      // Create a clean data object with only the allowed fields
+      const updatedFineData: FineDocumentData = {
+        userId: fine.userId,
+        studentId: fine.studentId,
+        name: fine.name,
+        absences: fine.absences, // This will be recalculated in updateFineDocument
         presences: newPresences.toString(),
-        // absences will be automatically calculated in updateFineDocument
-      })
+        penalties: fine.penalties, // This will be recalculated in updateFineDocument
+        dateIssued: fine.dateIssued,
+        status: fine.status, // This will be recalculated in updateFineDocument
+      }
+
+      // Update the fine document
+      await updateFineDocument(fine.$id, updatedFineData)
     }
 
     console.log(`Increased presences by ${amount} for ${selectedFines.length} students`)
@@ -932,12 +956,20 @@ export const increasePresencesExceptExempted = async (
       const currentPresences = Number.parseInt(fine.presences) || 0
       const newPresences = currentPresences + amount
 
-      // Update the fine document
-      await updateFineDocument(fine.$id, {
-        ...fine,
+      // Create a clean data object with only the allowed fields
+      const updatedFineData: FineDocumentData = {
+        userId: fine.userId,
+        studentId: fine.studentId,
+        name: fine.name,
+        absences: fine.absences, // This will be recalculated in updateFineDocument
         presences: newPresences.toString(),
-        // absences will be automatically calculated in updateFineDocument
-      })
+        penalties: fine.penalties, // This will be recalculated in updateFineDocument
+        dateIssued: fine.dateIssued,
+        status: fine.status, // This will be recalculated in updateFineDocument
+      }
+
+      // Update the fine document
+      await updateFineDocument(fine.$id, updatedFineData)
     }
 
     console.log(`Increased presences by ${amount} for ${nonExemptedFines.length} non-exempted students`)
