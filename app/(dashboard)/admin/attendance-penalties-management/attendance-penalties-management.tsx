@@ -56,6 +56,8 @@ import {
   searchStudents,
   decreasePresencesForSelected,
   decreasePresencesExceptExempted,
+  increasePresencesForSelected,
+  increasePresencesExceptExempted,
 } from "@/lib/GeneralAttendance/GeneralAttendance"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Label } from "@/components/ui/label"
@@ -128,8 +130,10 @@ export default function SupplyFinesManagement() {
   const [searchPopoverOpen, setSearchPopoverOpen] = useState(false)
   const [selectedStudents, setSelectedStudents] = useState<FineDocument[]>([])
   const [bulkOperationDialogOpen, setBulkOperationDialogOpen] = useState(false)
-  const [bulkOperationType, setBulkOperationType] = useState<"decrease" | "exempt">("decrease")
-  const [decreaseAmount, setDecreaseAmount] = useState("1")
+  const [bulkOperationType, setBulkOperationType] = useState<"decrease" | "exempt" | "increase" | "exempt-increase">(
+    "decrease",
+  )
+  const [changeAmount, setChangeAmount] = useState("1")
   const [isProcessingBulkOperation, setIsProcessingBulkOperation] = useState(false)
   const [confirmBulkOperationDialog, setConfirmBulkOperationDialog] = useState(false)
 
@@ -514,11 +518,11 @@ export default function SupplyFinesManagement() {
   const handleBulkOperation = async () => {
     setIsProcessingBulkOperation(true)
     try {
-      const amount = Number.parseInt(decreaseAmount)
+      const amount = Number.parseInt(changeAmount)
       if (isNaN(amount) || amount <= 0) {
         toast({
           title: "Error",
-          description: "Please enter a valid positive number for the decrease amount.",
+          description: "Please enter a valid positive number for the change amount.",
           variant: "destructive",
         })
         return
@@ -526,24 +530,47 @@ export default function SupplyFinesManagement() {
 
       const studentIds = selectedStudents.map((s) => s.studentId)
 
-      if (bulkOperationType === "decrease") {
-        // Decrease presences for selected students
-        await decreasePresencesForSelected(studentIds, amount)
-        toast({
-          title: "Success",
-          description: `Decreased presences by ${amount} for ${studentIds.length} selected students.`,
-          variant: "success",
-          className: "border-green-500 text-green-700 bg-green-50",
-        })
-      } else {
-        // Decrease presences for all except exempted students
-        await decreasePresencesExceptExempted(studentIds, amount)
-        toast({
-          title: "Success",
-          description: `Decreased presences by ${amount} for all students except ${studentIds.length} exempted students.`,
-          variant: "success",
-          className: "border-green-500 text-green-700 bg-green-50",
-        })
+      switch (bulkOperationType) {
+        case "decrease":
+          // Decrease presences for selected students
+          await decreasePresencesForSelected(studentIds, amount)
+          toast({
+            title: "Success",
+            description: `Decreased presences by ${amount} for ${studentIds.length} selected students.`,
+            variant: "success",
+            className: "border-green-500 text-green-700 bg-green-50",
+          })
+          break
+        case "exempt":
+          // Decrease presences for all except exempted students
+          await decreasePresencesExceptExempted(studentIds, amount)
+          toast({
+            title: "Success",
+            description: `Decreased presences by ${amount} for all students except ${studentIds.length} exempted students.`,
+            variant: "success",
+            className: "border-green-500 text-green-700 bg-green-50",
+          })
+          break
+        case "increase":
+          // Increase presences for selected students
+          await increasePresencesForSelected(studentIds, amount)
+          toast({
+            title: "Success",
+            description: `Increased presences by ${amount} for ${studentIds.length} selected students.`,
+            variant: "success",
+            className: "border-green-500 text-green-700 bg-green-50",
+          })
+          break
+        case "exempt-increase":
+          // Increase presences for all except exempted students
+          await increasePresencesExceptExempted(studentIds, amount)
+          toast({
+            title: "Success",
+            description: `Increased presences by ${amount} for all students except ${studentIds.length} exempted students.`,
+            variant: "success",
+            className: "border-green-500 text-green-700 bg-green-50",
+          })
+          break
       }
 
       // Refresh data
@@ -553,7 +580,7 @@ export default function SupplyFinesManagement() {
       setBulkOperationDialogOpen(false)
       setConfirmBulkOperationDialog(false)
       setSelectedStudents([])
-      setDecreaseAmount("1")
+      setChangeAmount("1")
     } catch (error) {
       console.error("Error performing bulk operation:", error)
       toast({
@@ -764,8 +791,8 @@ export default function SupplyFinesManagement() {
                             >
                               <Check
                                 className={`mr-2 h-4 w-4 ${selectedStudents.some((s) => s.studentId === student.studentId)
-                                  ? "opacity-100"
-                                  : "opacity-0"
+                                    ? "opacity-100"
+                                    : "opacity-0"
                                   }`}
                               />
                               <span>{student.name}</span>
@@ -815,7 +842,7 @@ export default function SupplyFinesManagement() {
                 className="flex-1"
               >
                 <MinusCircle className="mr-2 h-4 w-4" />
-                Decrease Presences for Selected Students
+                Decrease Presences for Selected
               </Button>
               <Button
                 onClick={() => {
@@ -826,7 +853,33 @@ export default function SupplyFinesManagement() {
                 className="flex-1"
               >
                 <UserMinus className="mr-2 h-4 w-4" />
-                Exempt Selected Students from Decrease
+                Exempt from Decrease
+              </Button>
+            </div>
+            <div className="flex flex-col sm:flex-row gap-4 mt-4">
+              <Button
+                onClick={() => {
+                  setBulkOperationType("increase")
+                  setBulkOperationDialogOpen(true)
+                }}
+                disabled={selectedStudents.length === 0}
+                className="flex-1"
+                variant="outline"
+              >
+                <Plus className="mr-2 h-4 w-4" />
+                Increase Presences for Selected
+              </Button>
+              <Button
+                onClick={() => {
+                  setBulkOperationType("exempt-increase")
+                  setBulkOperationDialogOpen(true)
+                }}
+                disabled={selectedStudents.length === 0}
+                className="flex-1"
+                variant="outline"
+              >
+                <Users className="mr-2 h-4 w-4" />
+                Exempt from Increase
               </Button>
             </div>
           </div>
@@ -840,24 +893,34 @@ export default function SupplyFinesManagement() {
             <AlertDialogTitle>
               {bulkOperationType === "decrease"
                 ? "Decrease Presences for Selected Students"
-                : "Exempt Selected Students from Decrease"}
+                : bulkOperationType === "exempt"
+                  ? "Exempt Selected Students from Decrease"
+                  : bulkOperationType === "increase"
+                    ? "Increase Presences for Selected Students"
+                    : "Exempt Selected Students from Increase"}
             </AlertDialogTitle>
             <AlertDialogDescription>
               {bulkOperationType === "decrease"
                 ? `This will decrease the presences count for ${selectedStudents.length} selected students.`
-                : `This will decrease the presences count for all students EXCEPT the ${selectedStudents.length} selected students.`}
+                : bulkOperationType === "exempt"
+                  ? `This will decrease the presences count for all students EXCEPT the ${selectedStudents.length} selected students.`
+                  : bulkOperationType === "increase"
+                    ? `This will increase the presences count for ${selectedStudents.length} selected students.`
+                    : `This will increase the presences count for all students EXCEPT the ${selectedStudents.length} selected students.`}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <div className="py-4">
             <div className="space-y-2">
-              <Label htmlFor="decreaseAmount">Decrease Amount</Label>
+              <Label htmlFor="changeAmount">
+                {bulkOperationType.includes("decrease") ? "Decrease" : "Increase"} Amount
+              </Label>
               <Input
-                id="decreaseAmount"
+                id="changeAmount"
                 type="number"
                 min="1"
-                value={decreaseAmount}
-                onChange={(e) => setDecreaseAmount(e.target.value)}
-                placeholder="Enter decrease amount"
+                value={changeAmount}
+                onChange={(e) => setChangeAmount(e.target.value)}
+                placeholder={`Enter ${bulkOperationType.includes("decrease") ? "decrease" : "increase"} amount`}
               />
             </div>
           </div>
@@ -877,8 +940,12 @@ export default function SupplyFinesManagement() {
             <AlertDialogTitle>Confirm Operation</AlertDialogTitle>
             <AlertDialogDescription>
               {bulkOperationType === "decrease"
-                ? `Are you sure you want to decrease presences by ${decreaseAmount} for ${selectedStudents.length} selected students?`
-                : `Are you sure you want to decrease presences by ${decreaseAmount} for all students EXCEPT the ${selectedStudents.length} selected students?`}
+                ? `Are you sure you want to decrease presences by ${changeAmount} for ${selectedStudents.length} selected students?`
+                : bulkOperationType === "exempt"
+                  ? `Are you sure you want to decrease presences by ${changeAmount} for all students EXCEPT the ${selectedStudents.length} selected students?`
+                  : bulkOperationType === "increase"
+                    ? `Are you sure you want to increase presences by ${changeAmount} for ${selectedStudents.length} selected students?`
+                    : `Are you sure you want to increase presences by ${changeAmount} for all students EXCEPT the ${selectedStudents.length} selected students?`}
               This will affect their absences and penalties.
             </AlertDialogDescription>
           </AlertDialogHeader>
@@ -1535,8 +1602,8 @@ export default function SupplyFinesManagement() {
                               fine.status === "Cleared" || fine.status === "penaltyCleared" ? "secondary" : "outline"
                             }
                             className={`text-xs ${fine.status === "Cleared" || fine.status === "penaltyCleared"
-                              ? "bg-green-500 text-white"
-                              : ""
+                                ? "bg-green-500 text-white"
+                                : ""
                               }`}
                           >
                             {fine.status === "penaltyCleared" ? "Cleared" : fine.status}

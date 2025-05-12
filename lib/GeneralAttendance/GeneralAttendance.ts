@@ -781,3 +781,82 @@ export const decreasePresencesExceptExempted = async (
     throw error
   }
 }
+
+// New function to increase presences for selected students
+export const increasePresencesForSelected = async (studentIds: string[], increaseAmount: number): Promise<void> => {
+  try {
+    if (!DATABASE_ID || !FINES_MANAGEMENT_COLLECTION_ID) {
+      throw new Error("Missing Appwrite environment variables. Please check your .env file.")
+    }
+
+    // Ensure increase amount is positive
+    const amount = Math.max(0, increaseAmount)
+    if (amount === 0) return
+
+    // Get all fine documents
+    const fines = await getFineDocuments()
+
+    // Filter for selected students
+    const selectedFines = fines.filter((fine) => studentIds.includes(fine.studentId))
+
+    // Update each selected fine
+    for (const fine of selectedFines) {
+      // Calculate new presences value
+      const currentPresences = Number.parseInt(fine.presences) || 0
+      const newPresences = currentPresences + amount
+
+      // Update the fine document
+      await updateFineDocument(fine.$id, {
+        ...fine,
+        presences: newPresences.toString(),
+        // absences will be automatically calculated in updateFineDocument
+      })
+    }
+
+    console.log(`Increased presences by ${amount} for ${selectedFines.length} students`)
+  } catch (error) {
+    console.error("Error increasing presences for selected students:", error)
+    throw error
+  }
+}
+
+// New function to increase presences for all except exempted students
+export const increasePresencesExceptExempted = async (
+  exemptedStudentIds: string[],
+  increaseAmount: number,
+): Promise<void> => {
+  try {
+    if (!DATABASE_ID || !FINES_MANAGEMENT_COLLECTION_ID) {
+      throw new Error("Missing Appwrite environment variables. Please check your .env file.")
+    }
+
+    // Ensure increase amount is positive
+    const amount = Math.max(0, increaseAmount)
+    if (amount === 0) return
+
+    // Get all fine documents
+    const fines = await getFineDocuments()
+
+    // Filter for non-exempted students
+    const nonExemptedFines = fines.filter((fine) => !exemptedStudentIds.includes(fine.studentId))
+
+    // Update each non-exempted fine
+    for (const fine of nonExemptedFines) {
+      // Calculate new presences value
+      const currentPresences = Number.parseInt(fine.presences) || 0
+      const newPresences = currentPresences + amount
+
+      // Update the fine document
+      await updateFineDocument(fine.$id, {
+        ...fine,
+        presences: newPresences.toString(),
+        // absences will be automatically calculated in updateFineDocument
+      })
+    }
+
+    console.log(`Increased presences by ${amount} for ${nonExemptedFines.length} non-exempted students`)
+  } catch (error) {
+    console.error("Error increasing presences for non-exempted students:", error)
+    throw error
+  }
+}
