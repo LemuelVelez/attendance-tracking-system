@@ -96,12 +96,38 @@ function isFineDocument(doc: unknown): doc is FineDocument {
   return true
 }
 
+// Helper function to retry API calls with exponential backoff
+async function retryOperation<T>(operation: () => Promise<T>, maxRetries = 3, initialDelay = 1000): Promise<T> {
+  let retries = 0
+  let delay = initialDelay
+
+  while (true) {
+    try {
+      return await operation()
+    } catch (error) {
+      retries++
+      if (retries > maxRetries) {
+        console.error(`Operation failed after ${maxRetries} retries:`, error)
+        throw error
+      }
+
+      console.log(`Retry ${retries}/${maxRetries} after ${delay}ms delay...`)
+      await new Promise((resolve) => setTimeout(resolve, delay))
+
+      // Exponential backoff with jitter
+      delay = delay * 2 + Math.floor(Math.random() * 1000)
+    }
+  }
+}
+
 // Function to get the penalties map from the database
 export const getPenaltiesMap = async (): Promise<Record<number, string>> => {
   try {
     // Try to get the penalties map document
     try {
-      const response = await databases.getDocument(DATABASE_ID, PENALTIES_MAP_COLLECTION_ID, "penalties_map")
+      const response = await retryOperation(() =>
+        databases.getDocument(DATABASE_ID, PENALTIES_MAP_COLLECTION_ID, "penalties_map"),
+      )
 
       if (response && response.penalties) {
         return JSON.parse(response.penalties)
@@ -111,9 +137,11 @@ export const getPenaltiesMap = async (): Promise<Record<number, string>> => {
 
       // Create a document with the default penalties map
       try {
-        await databases.createDocument(DATABASE_ID, PENALTIES_MAP_COLLECTION_ID, "penalties_map", {
-          penalties: JSON.stringify(PENALTIES_MAP),
-        })
+        await retryOperation(() =>
+          databases.createDocument(DATABASE_ID, PENALTIES_MAP_COLLECTION_ID, "penalties_map", {
+            penalties: JSON.stringify(PENALTIES_MAP),
+          }),
+        )
       } catch (createError) {
         console.error("Error creating penalties map document:", createError)
       }
@@ -134,16 +162,20 @@ export const updatePenaltiesMap = async (penaltiesMap: Record<number, string>): 
 
     // Update or create the penalties map document
     try {
-      await databases.updateDocument(DATABASE_ID, PENALTIES_MAP_COLLECTION_ID, "penalties_map", {
-        penalties: JSON.stringify(penaltiesMap),
-      })
+      await retryOperation(() =>
+        databases.updateDocument(DATABASE_ID, PENALTIES_MAP_COLLECTION_ID, "penalties_map", {
+          penalties: JSON.stringify(penaltiesMap),
+        }),
+      )
       console.log("Penalties map updated successfully")
     } catch (_updateError) {
       // Document doesn't exist, create it
       try {
-        await databases.createDocument(DATABASE_ID, PENALTIES_MAP_COLLECTION_ID, "penalties_map", {
-          penalties: JSON.stringify(penaltiesMap),
-        })
+        await retryOperation(() =>
+          databases.createDocument(DATABASE_ID, PENALTIES_MAP_COLLECTION_ID, "penalties_map", {
+            penalties: JSON.stringify(penaltiesMap),
+          }),
+        )
         console.log("Penalties map created successfully")
       } catch (createError) {
         console.error("Error creating penalties map document:", createError)
@@ -199,7 +231,10 @@ export const updateFineDocument = async (documentId: string, fineData: FineDocum
     // Update status based on penalty
     fineData.status = penalty === "No penalty" ? "Cleared" : "Pending"
 
-    const updatedDoc = await databases.updateDocument(DATABASE_ID, FINES_MANAGEMENT_COLLECTION_ID, documentId, fineData)
+    // Use retry mechanism for the update operation
+    const updatedDoc = await retryOperation(() =>
+      databases.updateDocument(DATABASE_ID, FINES_MANAGEMENT_COLLECTION_ID, documentId, fineData),
+    )
 
     console.log("Updated fine document:", updatedDoc)
 
@@ -229,7 +264,9 @@ export const getGeneralAttendance = async (): Promise<Attendance[]> => {
         queries.push(Query.cursorAfter(lastId))
       }
 
-      const response = await databases.listDocuments(DATABASE_ID, GENERAL_ATTENDANCE_COLLECTION_ID, queries)
+      const response = await retryOperation(() =>
+        databases.listDocuments(DATABASE_ID, GENERAL_ATTENDANCE_COLLECTION_ID, queries),
+      )
 
       const uniqueMap = new Map<string, Attendance>()
       const duplicatesToDelete: string[] = []
@@ -244,9 +281,11 @@ export const getGeneralAttendance = async (): Promise<Attendance[]> => {
         }
       })
 
-      await Promise.all(
-        duplicatesToDelete.map((id) => databases.deleteDocument(DATABASE_ID, GENERAL_ATTENDANCE_COLLECTION_ID, id)),
-      )
+      // Delete duplicates with delay between requests
+      for (const id of duplicatesToDelete) {
+        await new Promise((resolve) => setTimeout(resolve, 500)) // 500ms delay between delete operations
+        await retryOperation(() => databases.deleteDocument(DATABASE_ID, GENERAL_ATTENDANCE_COLLECTION_ID, id))
+      }
 
       console.log(`Deleted ${duplicatesToDelete.length} duplicate records.`)
 
@@ -272,7 +311,7 @@ export const deleteGeneralAttendance = async (documentId: string): Promise<void>
       throw new Error("Missing Appwrite environment variables. Please check your .env file.")
     }
 
-    await databases.deleteDocument(DATABASE_ID, GENERAL_ATTENDANCE_COLLECTION_ID, documentId)
+    await retryOperation(() => databases.deleteDocument(DATABASE_ID, GENERAL_ATTENDANCE_COLLECTION_ID, documentId))
 
     console.log(`Successfully deleted document with ID: ${documentId}`)
   } catch (error) {
@@ -287,21 +326,20 @@ export const createFineDocument = async (fineData: FineDocumentData): Promise<Fi
       throw new Error("Missing Appwrite environment variables. Please check your .env file.")
     }
 
-    const existingDocuments = await databases.listDocuments(DATABASE_ID, FINES_MANAGEMENT_COLLECTION_ID, [
-      Query.equal("userId", fineData.userId),
-      Query.equal("studentId", fineData.studentId),
-      Query.equal("dateIssued", fineData.dateIssued),
-    ])
+    const existingDocuments = await retryOperation(() =>
+      databases.listDocuments(DATABASE_ID, FINES_MANAGEMENT_COLLECTION_ID, [
+        Query.equal("userId", fineData.userId),
+        Query.equal("studentId", fineData.studentId),
+        Query.equal("dateIssued", fineData.dateIssued),
+      ]),
+    )
 
     if (existingDocuments.documents.length > 0) {
       const existingDoc = existingDocuments.documents[0]
       if (isFineDocument(existingDoc)) {
         // Update the existing document
-        const updatedDoc = await databases.updateDocument(
-          DATABASE_ID,
-          FINES_MANAGEMENT_COLLECTION_ID,
-          existingDoc.$id,
-          fineData,
+        const updatedDoc = await retryOperation(() =>
+          databases.updateDocument(DATABASE_ID, FINES_MANAGEMENT_COLLECTION_ID, existingDoc.$id, fineData),
         )
         console.log("Updated existing fine document:", updatedDoc)
         if (isFineDocument(updatedDoc)) {
@@ -314,11 +352,8 @@ export const createFineDocument = async (fineData: FineDocumentData): Promise<Fi
       }
     } else {
       // Create a new document
-      const response = await databases.createDocument(
-        DATABASE_ID,
-        FINES_MANAGEMENT_COLLECTION_ID,
-        ID.unique(),
-        fineData,
+      const response = await retryOperation(() =>
+        databases.createDocument(DATABASE_ID, FINES_MANAGEMENT_COLLECTION_ID, ID.unique(), fineData),
       )
 
       console.log("Created new fine document:", response)
@@ -352,7 +387,9 @@ export const getFineDocuments = async (queries: string[] = []): Promise<FineDocu
         currentQueries.push(Query.cursorAfter(lastId))
       }
 
-      const response = await databases.listDocuments(DATABASE_ID, FINES_MANAGEMENT_COLLECTION_ID, currentQueries)
+      const response = await retryOperation(() =>
+        databases.listDocuments(DATABASE_ID, FINES_MANAGEMENT_COLLECTION_ID, currentQueries),
+      )
 
       const fineDocuments = response.documents.filter(isFineDocument)
 
@@ -370,10 +407,11 @@ export const getFineDocuments = async (queries: string[] = []): Promise<FineDocu
         }
       }
 
-      // Delete duplicates
-      await Promise.all(
-        duplicatesToDelete.map((id) => databases.deleteDocument(DATABASE_ID, FINES_MANAGEMENT_COLLECTION_ID, id)),
-      )
+      // Delete duplicates with delay between requests
+      for (const id of duplicatesToDelete) {
+        await new Promise((resolve) => setTimeout(resolve, 500)) // 500ms delay between delete operations
+        await retryOperation(() => databases.deleteDocument(DATABASE_ID, FINES_MANAGEMENT_COLLECTION_ID, id))
+      }
 
       console.log(`Deleted ${duplicatesToDelete.length} duplicate fine(s).`)
 
@@ -408,9 +446,11 @@ export const searchStudents = async (searchTerm: string): Promise<FineDocument[]
     console.log(`Searching for: "${searchTerm}"`)
 
     // Fetch all documents without any filtering
-    const response = await databases.listDocuments(DATABASE_ID, FINES_MANAGEMENT_COLLECTION_ID, [
-      Query.limit(1000), // Increased limit to ensure we find all potential matches
-    ])
+    const response = await retryOperation(() =>
+      databases.listDocuments(DATABASE_ID, FINES_MANAGEMENT_COLLECTION_ID, [
+        Query.limit(1000), // Increased limit to ensure we find all potential matches
+      ]),
+    )
 
     console.log(`Total documents fetched: ${response.documents.length}`)
 
@@ -428,19 +468,14 @@ export const searchStudents = async (searchTerm: string): Promise<FineDocument[]
       const name = doc.name ? String(doc.name).toLowerCase() : ""
       const studentId = doc.studentId ? String(doc.studentId).toLowerCase() : ""
 
-      // Log each document we're checking (for debugging)
-      // console.log(`Checking document: ${doc.$id}, name: ${name}, studentId: ${studentId}`)
-
       // Check for full search term match
       if (name.includes(searchTermLower) || studentId.includes(searchTermLower)) {
-        // console.log(`Full match found in document ${doc.$id}`)
         return true
       }
 
       // For multi-word searches, check if all words are in the name
       if (searchWords.length > 1) {
         const allWordsFound = searchWords.every((word) => name.includes(word))
-        // if (allWordsFound) console.log(`Multi-word match found in document ${doc.$id}`)
         return allWordsFound
       }
 
@@ -448,13 +483,6 @@ export const searchStudents = async (searchTerm: string): Promise<FineDocument[]
     })
 
     console.log(`Matches found: ${filteredDocuments.length}`)
-
-    // If we found matches, log the first few for debugging
-    if (filteredDocuments.length > 0) {
-      filteredDocuments.slice(0, 3).forEach((doc) => {
-        console.log(`Match: ${doc.$id}, name: ${doc.name}, studentId: ${doc.studentId}`)
-      })
-    }
 
     // Ensure all returned documents are valid FineDocuments
     const validDocuments = filteredDocuments.filter(isFineDocument)
@@ -509,7 +537,7 @@ export const deleteFines = async (documentId: string): Promise<void> => {
       throw new Error("Missing Appwrite environment variables. Please check your .env file.")
     }
 
-    await databases.deleteDocument(DATABASE_ID, FINES_MANAGEMENT_COLLECTION_ID, documentId)
+    await retryOperation(() => databases.deleteDocument(DATABASE_ID, FINES_MANAGEMENT_COLLECTION_ID, documentId))
 
     console.log(`Successfully deleted fine document with ID: ${documentId}`)
   } catch (error) {
@@ -527,7 +555,9 @@ export const getTotalUniqueEvents = async (): Promise<number> => {
 
     // Try to get the stored total events value first
     try {
-      const document = await databases.getDocument(DATABASE_ID, PENALTIES_MAP_COLLECTION_ID, "penalties_map")
+      const document = await retryOperation(() =>
+        databases.getDocument(DATABASE_ID, PENALTIES_MAP_COLLECTION_ID, "penalties_map"),
+      )
       if (document && document.totalEvents !== undefined) {
         const totalEvents = Number.parseInt(document.totalEvents)
         if (!isNaN(totalEvents) && totalEvents > 0) {
@@ -548,7 +578,9 @@ export const getTotalUniqueEvents = async (): Promise<number> => {
         queries.push(Query.cursorAfter(lastId))
       }
 
-      const response = await databases.listDocuments(DATABASE_ID, GENERAL_ATTENDANCE_COLLECTION_ID, queries)
+      const response = await retryOperation(() =>
+        databases.listDocuments(DATABASE_ID, GENERAL_ATTENDANCE_COLLECTION_ID, queries),
+      )
 
       response.documents.forEach((doc: Models.Document) => {
         if ((doc as Attendance).eventName) {
@@ -569,19 +601,23 @@ export const getTotalUniqueEvents = async (): Promise<number> => {
     if (totalEventsCount > 0) {
       // Auto-create or update the total events in the penalties_map collection
       try {
-        await databases.getDocument(DATABASE_ID, PENALTIES_MAP_COLLECTION_ID, "penalties_map")
+        await retryOperation(() => databases.getDocument(DATABASE_ID, PENALTIES_MAP_COLLECTION_ID, "penalties_map"))
         // Update existing document with total events
-        await databases.updateDocument(DATABASE_ID, PENALTIES_MAP_COLLECTION_ID, "penalties_map", {
-          totalEvents: totalEventsCount.toString(),
-        })
+        await retryOperation(() =>
+          databases.updateDocument(DATABASE_ID, PENALTIES_MAP_COLLECTION_ID, "penalties_map", {
+            totalEvents: totalEventsCount.toString(),
+          }),
+        )
         console.log("Total events updated automatically:", totalEventsCount)
       } catch (_error) {
         // Document doesn't exist, create it
         try {
-          await databases.createDocument(DATABASE_ID, PENALTIES_MAP_COLLECTION_ID, "penalties_map", {
-            penalties: JSON.stringify(PENALTIES_MAP),
-            totalEvents: totalEventsCount.toString(),
-          })
+          await retryOperation(() =>
+            databases.createDocument(DATABASE_ID, PENALTIES_MAP_COLLECTION_ID, "penalties_map", {
+              penalties: JSON.stringify(PENALTIES_MAP),
+              totalEvents: totalEventsCount.toString(),
+            }),
+          )
           console.log("Total events created automatically:", totalEventsCount)
         } catch (createError) {
           console.error("Error creating penalties map document with total events:", createError)
@@ -611,7 +647,7 @@ export const getAllUsers = async (): Promise<User[]> => {
         queries.push(Query.cursorAfter(lastId))
       }
 
-      const response = await databases.listDocuments(DATABASE_ID, USERS_COLLECTION_ID, queries)
+      const response = await retryOperation(() => databases.listDocuments(DATABASE_ID, USERS_COLLECTION_ID, queries))
 
       allUsers.push(...(response.documents as User[]))
 
@@ -675,22 +711,29 @@ export const updateAttendance = async (): Promise<void> => {
     // Update the total events in the penalties_map collection
     try {
       try {
-        await databases.getDocument(DATABASE_ID, PENALTIES_MAP_COLLECTION_ID, "penalties_map")
-        await databases.updateDocument(DATABASE_ID, PENALTIES_MAP_COLLECTION_ID, "penalties_map", {
-          totalEvents: totalEvents.toString(),
-        })
+        await retryOperation(() => databases.getDocument(DATABASE_ID, PENALTIES_MAP_COLLECTION_ID, "penalties_map"))
+        await retryOperation(() =>
+          databases.updateDocument(DATABASE_ID, PENALTIES_MAP_COLLECTION_ID, "penalties_map", {
+            totalEvents: totalEvents.toString(),
+          }),
+        )
       } catch (_error) {
-        await databases.createDocument(DATABASE_ID, PENALTIES_MAP_COLLECTION_ID, "penalties_map", {
-          penalties: JSON.stringify(PENALTIES_MAP),
-          totalEvents: totalEvents.toString(),
-        })
+        await retryOperation(() =>
+          databases.createDocument(DATABASE_ID, PENALTIES_MAP_COLLECTION_ID, "penalties_map", {
+            penalties: JSON.stringify(PENALTIES_MAP),
+            totalEvents: totalEvents.toString(),
+          }),
+        )
       }
     } catch (error) {
       console.error("Error updating total events:", error)
     }
 
-    // Process each user
+    // Process each user with delay between operations
     for (const user of users) {
+      // Add a small delay between processing each user to avoid rate limiting
+      await new Promise((resolve) => setTimeout(resolve, 200))
+
       // Get attendance records for this user
       const userAttendance = generalAttendance.filter((a) => a.userId === user.$id)
 
@@ -745,11 +788,13 @@ async function deleteAllFineDocuments() {
   try {
     let documents
     do {
-      documents = await databases.listDocuments(DATABASE_ID, FINES_MANAGEMENT_COLLECTION_ID, [Query.limit(100)])
+      documents = await retryOperation(() =>
+        databases.listDocuments(DATABASE_ID, FINES_MANAGEMENT_COLLECTION_ID, [Query.limit(100)]),
+      )
 
       for (const doc of documents.documents) {
         await new Promise((resolve) => setTimeout(resolve, 1000)) // 1-second delay
-        await databases.deleteDocument(DATABASE_ID, FINES_MANAGEMENT_COLLECTION_ID, doc.$id)
+        await retryOperation(() => databases.deleteDocument(DATABASE_ID, FINES_MANAGEMENT_COLLECTION_ID, doc.$id))
         console.log(`Deleted document ${doc.$id}`)
       }
     } while (documents.documents.length > 0)
@@ -768,19 +813,25 @@ export const updateTotalEvents = async (totalEvents: number | string): Promise<v
 
     // Check if the penalties_map document exists
     try {
-      const document = await databases.getDocument(DATABASE_ID, PENALTIES_MAP_COLLECTION_ID, "penalties_map")
+      const document = await retryOperation(() =>
+        databases.getDocument(DATABASE_ID, PENALTIES_MAP_COLLECTION_ID, "penalties_map"),
+      )
 
       // Update the existing document with the total events
-      await databases.updateDocument(DATABASE_ID, PENALTIES_MAP_COLLECTION_ID, "penalties_map", {
-        totalEvents: totalEventsStr,
-      })
+      await retryOperation(() =>
+        databases.updateDocument(DATABASE_ID, PENALTIES_MAP_COLLECTION_ID, "penalties_map", {
+          totalEvents: totalEventsStr,
+        }),
+      )
       console.log("Total events updated successfully")
     } catch (_error) {
       // Document doesn't exist, create it
-      await databases.createDocument(DATABASE_ID, PENALTIES_MAP_COLLECTION_ID, "penalties_map", {
-        penalties: JSON.stringify(PENALTIES_MAP),
-        totalEvents: totalEventsStr,
-      })
+      await retryOperation(() =>
+        databases.createDocument(DATABASE_ID, PENALTIES_MAP_COLLECTION_ID, "penalties_map", {
+          penalties: JSON.stringify(PENALTIES_MAP),
+          totalEvents: totalEventsStr,
+        }),
+      )
       console.log("Total events created successfully")
     }
   } catch (error) {
@@ -806,8 +857,11 @@ export const decreasePresencesForSelected = async (studentIds: string[], decreas
     // Filter for selected students
     const selectedFines = fines.filter((fine) => studentIds.includes(fine.studentId))
 
-    // Update each selected fine
+    // Update each selected fine with delay between operations
     for (const fine of selectedFines) {
+      // Add a small delay between operations to avoid rate limiting
+      await new Promise((resolve) => setTimeout(resolve, 300))
+
       // Calculate new presences value (ensure it doesn't go below 0)
       const currentPresences = Number.parseInt(fine.presences) || 0
       const newPresences = Math.max(0, currentPresences - amount)
@@ -855,8 +909,11 @@ export const decreasePresencesExceptExempted = async (
     // Filter for non-exempted students
     const nonExemptedFines = fines.filter((fine) => !exemptedStudentIds.includes(fine.studentId))
 
-    // Update each non-exempted fine
+    // Update each non-exempted fine with delay between operations
     for (const fine of nonExemptedFines) {
+      // Add a small delay between operations to avoid rate limiting
+      await new Promise((resolve) => setTimeout(resolve, 300))
+
       // Calculate new presences value (ensure it doesn't go below 0)
       const currentPresences = Number.parseInt(fine.presences) || 0
       const newPresences = Math.max(0, currentPresences - amount)
@@ -901,8 +958,11 @@ export const increasePresencesForSelected = async (studentIds: string[], increas
     // Filter for selected students
     const selectedFines = fines.filter((fine) => studentIds.includes(fine.studentId))
 
-    // Update each selected fine
+    // Update each selected fine with delay between operations
     for (const fine of selectedFines) {
+      // Add a small delay between operations to avoid rate limiting
+      await new Promise((resolve) => setTimeout(resolve, 300))
+
       // Calculate new presences value
       const currentPresences = Number.parseInt(fine.presences) || 0
       const newPresences = currentPresences + amount
@@ -950,8 +1010,11 @@ export const increasePresencesExceptExempted = async (
     // Filter for non-exempted students
     const nonExemptedFines = fines.filter((fine) => !exemptedStudentIds.includes(fine.studentId))
 
-    // Update each non-exempted fine
+    // Update each non-exempted fine with delay between operations
     for (const fine of nonExemptedFines) {
+      // Add a small delay between operations to avoid rate limiting
+      await new Promise((resolve) => setTimeout(resolve, 300))
+
       // Calculate new presences value
       const currentPresences = Number.parseInt(fine.presences) || 0
       const newPresences = currentPresences + amount
@@ -993,26 +1056,51 @@ export const increasePresencesForAll = async (increaseAmount: number): Promise<v
     // Get all fine documents
     const fines = await getFineDocuments()
 
-    // Update each fine document
-    for (const fine of fines) {
-      // Calculate new presences value
-      const currentPresences = Number.parseInt(fine.presences) || 0
-      const newPresences = currentPresences + amount
+    // Process in smaller batches to avoid overwhelming the API
+    const batchSize = 20
+    const batches = []
 
-      // Create a clean data object with only the allowed fields
-      const updatedFineData: FineDocumentData = {
-        userId: fine.userId,
-        studentId: fine.studentId,
-        name: fine.name,
-        absences: fine.absences, // This will be recalculated in updateFineDocument
-        presences: newPresences.toString(),
-        penalties: fine.penalties, // This will be recalculated in updateFineDocument
-        dateIssued: fine.dateIssued,
-        status: fine.status, // This will be recalculated in updateFineDocument
+    for (let i = 0; i < fines.length; i += batchSize) {
+      batches.push(fines.slice(i, i + batchSize))
+    }
+
+    console.log(`Processing ${fines.length} students in ${batches.length} batches of ${batchSize}`)
+
+    // Process each batch with a delay between batches
+    for (let batchIndex = 0; batchIndex < batches.length; batchIndex++) {
+      const batch = batches[batchIndex]
+      console.log(`Processing batch ${batchIndex + 1}/${batches.length}`)
+
+      // Process each fine in the batch with a small delay between operations
+      for (const fine of batch) {
+        // Add a small delay between operations to avoid rate limiting
+        await new Promise((resolve) => setTimeout(resolve, 300))
+
+        // Calculate new presences value
+        const currentPresences = Number.parseInt(fine.presences) || 0
+        const newPresences = currentPresences + amount
+
+        // Create a clean data object with only the allowed fields
+        const updatedFineData: FineDocumentData = {
+          userId: fine.userId,
+          studentId: fine.studentId,
+          name: fine.name,
+          absences: fine.absences, // This will be recalculated in updateFineDocument
+          presences: newPresences.toString(),
+          penalties: fine.penalties, // This will be recalculated in updateFineDocument
+          dateIssued: fine.dateIssued,
+          status: fine.status, // This will be recalculated in updateFineDocument
+        }
+
+        // Update the fine document with retry
+        await updateFineDocument(fine.$id, updatedFineData)
       }
 
-      // Update the fine document
-      await updateFineDocument(fine.$id, updatedFineData)
+      // Add a longer delay between batches
+      if (batchIndex < batches.length - 1) {
+        console.log(`Batch ${batchIndex + 1} complete. Waiting before next batch...`)
+        await new Promise((resolve) => setTimeout(resolve, 2000))
+      }
     }
 
     console.log(`Increased presences by ${amount} for all ${fines.length} students`)
@@ -1036,26 +1124,51 @@ export const decreasePresencesForAll = async (decreaseAmount: number): Promise<v
     // Get all fine documents
     const fines = await getFineDocuments()
 
-    // Update each fine document
-    for (const fine of fines) {
-      // Calculate new presences value (ensure it doesn't go below 0)
-      const currentPresences = Number.parseInt(fine.presences) || 0
-      const newPresences = Math.max(0, currentPresences - amount)
+    // Process in smaller batches to avoid overwhelming the API
+    const batchSize = 20
+    const batches = []
 
-      // Create a clean data object with only the allowed fields
-      const updatedFineData: FineDocumentData = {
-        userId: fine.userId,
-        studentId: fine.studentId,
-        name: fine.name,
-        absences: fine.absences, // This will be recalculated in updateFineDocument
-        presences: newPresences.toString(),
-        penalties: fine.penalties, // This will be recalculated in updateFineDocument
-        dateIssued: fine.dateIssued,
-        status: fine.status, // This will be recalculated in updateFineDocument
+    for (let i = 0; i < fines.length; i += batchSize) {
+      batches.push(fines.slice(i, i + batchSize))
+    }
+
+    console.log(`Processing ${fines.length} students in ${batches.length} batches of ${batchSize}`)
+
+    // Process each batch with a delay between batches
+    for (let batchIndex = 0; batchIndex < batches.length; batchIndex++) {
+      const batch = batches[batchIndex]
+      console.log(`Processing batch ${batchIndex + 1}/${batches.length}`)
+
+      // Process each fine in the batch with a small delay between operations
+      for (const fine of batch) {
+        // Add a small delay between operations to avoid rate limiting
+        await new Promise((resolve) => setTimeout(resolve, 300))
+
+        // Calculate new presences value (ensure it doesn't go below 0)
+        const currentPresences = Number.parseInt(fine.presences) || 0
+        const newPresences = Math.max(0, currentPresences - amount)
+
+        // Create a clean data object with only the allowed fields
+        const updatedFineData: FineDocumentData = {
+          userId: fine.userId,
+          studentId: fine.studentId,
+          name: fine.name,
+          absences: fine.absences, // This will be recalculated in updateFineDocument
+          presences: newPresences.toString(),
+          penalties: fine.penalties, // This will be recalculated in updateFineDocument
+          dateIssued: fine.dateIssued,
+          status: fine.status, // This will be recalculated in updateFineDocument
+        }
+
+        // Update the fine document with retry
+        await updateFineDocument(fine.$id, updatedFineData)
       }
 
-      // Update the fine document
-      await updateFineDocument(fine.$id, updatedFineData)
+      // Add a longer delay between batches
+      if (batchIndex < batches.length - 1) {
+        console.log(`Batch ${batchIndex + 1} complete. Waiting before next batch...`)
+        await new Promise((resolve) => setTimeout(resolve, 2000))
+      }
     }
 
     console.log(`Decreased presences by ${amount} for all ${fines.length} students`)
