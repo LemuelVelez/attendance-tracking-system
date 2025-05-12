@@ -978,3 +978,89 @@ export const increasePresencesExceptExempted = async (
     throw error
   }
 }
+
+// New function to increase presences for all students
+export const increasePresencesForAll = async (increaseAmount: number): Promise<void> => {
+  try {
+    if (!DATABASE_ID || !FINES_MANAGEMENT_COLLECTION_ID) {
+      throw new Error("Missing Appwrite environment variables. Please check your .env file.")
+    }
+
+    // Ensure increase amount is positive
+    const amount = Math.max(0, increaseAmount)
+    if (amount === 0) return
+
+    // Get all fine documents
+    const fines = await getFineDocuments()
+
+    // Update each fine document
+    for (const fine of fines) {
+      // Calculate new presences value
+      const currentPresences = Number.parseInt(fine.presences) || 0
+      const newPresences = currentPresences + amount
+
+      // Create a clean data object with only the allowed fields
+      const updatedFineData: FineDocumentData = {
+        userId: fine.userId,
+        studentId: fine.studentId,
+        name: fine.name,
+        absences: fine.absences, // This will be recalculated in updateFineDocument
+        presences: newPresences.toString(),
+        penalties: fine.penalties, // This will be recalculated in updateFineDocument
+        dateIssued: fine.dateIssued,
+        status: fine.status, // This will be recalculated in updateFineDocument
+      }
+
+      // Update the fine document
+      await updateFineDocument(fine.$id, updatedFineData)
+    }
+
+    console.log(`Increased presences by ${amount} for all ${fines.length} students`)
+  } catch (error) {
+    console.error("Error increasing presences for all students:", error)
+    throw error
+  }
+}
+
+// New function to decrease presences for all students
+export const decreasePresencesForAll = async (decreaseAmount: number): Promise<void> => {
+  try {
+    if (!DATABASE_ID || !FINES_MANAGEMENT_COLLECTION_ID) {
+      throw new Error("Missing Appwrite environment variables. Please check your .env file.")
+    }
+
+    // Ensure decrease amount is positive
+    const amount = Math.max(0, decreaseAmount)
+    if (amount === 0) return
+
+    // Get all fine documents
+    const fines = await getFineDocuments()
+
+    // Update each fine document
+    for (const fine of fines) {
+      // Calculate new presences value (ensure it doesn't go below 0)
+      const currentPresences = Number.parseInt(fine.presences) || 0
+      const newPresences = Math.max(0, currentPresences - amount)
+
+      // Create a clean data object with only the allowed fields
+      const updatedFineData: FineDocumentData = {
+        userId: fine.userId,
+        studentId: fine.studentId,
+        name: fine.name,
+        absences: fine.absences, // This will be recalculated in updateFineDocument
+        presences: newPresences.toString(),
+        penalties: fine.penalties, // This will be recalculated in updateFineDocument
+        dateIssued: fine.dateIssued,
+        status: fine.status, // This will be recalculated in updateFineDocument
+      }
+
+      // Update the fine document
+      await updateFineDocument(fine.$id, updatedFineData)
+    }
+
+    console.log(`Decreased presences by ${amount} for all ${fines.length} students`)
+  } catch (error) {
+    console.error("Error decreasing presences for all students:", error)
+    throw error
+  }
+}
