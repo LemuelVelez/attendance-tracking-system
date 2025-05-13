@@ -21,31 +21,7 @@ import {
 } from "@/components/ui/alert-dialog"
 import { useToast } from "@/hooks/use-toast"
 import { Toaster } from "@/components/ui/toaster"
-import {
-  ChevronLeft,
-  ChevronRight,
-  ChevronsLeft,
-  ChevronsRight,
-  Search,
-  Check,
-  Calendar,
-  Users,
-  Rows,
-  Loader2,
-  Trash2,
-  RefreshCw,
-  FileX,
-  Edit,
-  Plus,
-  Settings,
-  MinusCircle,
-  UserMinus,
-  X,
-  PlusCircle,
-  UserPlus,
-  CheckSquare,
-  Filter,
-} from "lucide-react"
+import { ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, Search, Check, Calendar, Users, Rows, Loader2, Trash2, RefreshCw, FileX, Edit, Plus, Settings, MinusCircle, UserMinus, X, PlusCircle, UserPlus, CheckSquare } from 'lucide-react'
 import {
   getFineDocuments,
   getTotalUniqueEvents,
@@ -188,8 +164,6 @@ export default function SupplyFinesManagement() {
   const [selectedDegreePrograms, setSelectedDegreePrograms] = useState<string[]>([])
   const [selectAllYearLevels, setSelectAllYearLevels] = useState(false)
   const [selectAllDegreePrograms, setSelectAllDegreePrograms] = useState(false)
-  const [showYearLevelSearch, setShowYearLevelSearch] = useState(false)
-  const [showDegreeProgramSearch, setShowDegreeProgramSearch] = useState(false)
 
   const searchTimeoutRef = useRef<NodeJS.Timeout | null>(null)
 
@@ -1288,11 +1262,10 @@ export default function SupplyFinesManagement() {
                               value={`${student.name} ${student.studentId}`}
                             >
                               <Check
-                                className={`mr-2 h-4 w-4 ${
-                                  selectedStudents.some((s) => s.studentId === student.studentId)
-                                    ? "opacity-100"
-                                    : "opacity-0"
-                                }`}
+                                className={`mr-2 h-4 w-4 ${selectedStudents.some((s) => s.studentId === student.studentId)
+                                  ? "opacity-100"
+                                  : "opacity-0"
+                                  }`}
                               />
                               <div className="flex flex-col">
                                 <span className="font-medium">{student.name}</span>
@@ -1479,90 +1452,65 @@ export default function SupplyFinesManagement() {
                   <Label htmlFor="yearLevel" className="font-medium">
                     Year Level
                   </Label>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="h-8 px-2"
-                    onClick={() => setShowYearLevelSearch(!showYearLevelSearch)}
-                  >
-                    <Filter className="h-4 w-4 mr-1" />
-                    {showYearLevelSearch ? "Hide Search" : "Search & Select"}
-                  </Button>
                 </div>
 
-                {showYearLevelSearch ? (
-                  <div className="space-y-2 border rounded-md p-3">
-                    <div className="relative">
-                      <Input
-                        placeholder="Search year levels..."
-                        value={yearLevelSearchTerm}
-                        onChange={(e) => setYearLevelSearchTerm(e.target.value)}
-                        className="pl-10"
-                      />
-                      <Search className="w-4 h-4 absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
-                    </div>
-
-                    <div className="max-h-[150px] overflow-y-auto border rounded-md p-2">
-                      <div className="flex items-center mb-2 pb-1 border-b">
-                        <Checkbox
-                          id="select-all-year-levels"
-                          checked={selectAllYearLevels}
-                          onCheckedChange={handleSelectAllYearLevels}
-                        />
-                        <Label htmlFor="select-all-year-levels" className="ml-2 font-medium">
-                          Select All ({filteredYearLevels.length})
-                        </Label>
-                      </div>
-
-                      {filteredYearLevels.length === 0 ? (
-                        <p className="text-sm text-gray-500 p-2">No year levels found</p>
-                      ) : (
-                        <div className="space-y-2">
-                          {filteredYearLevels.map((yearLevel) => (
-                            <div key={yearLevel} className="flex items-center">
-                              <Checkbox
-                                id={`year-level-${yearLevel}`}
-                                checked={selectedYearLevels.includes(yearLevel)}
-                                onCheckedChange={(checked) => handleSelectYearLevel(yearLevel, !!checked)}
-                              />
-                              <Label htmlFor={`year-level-${yearLevel}`} className="ml-2">
-                                {yearLevel}
-                              </Label>
-                            </div>
-                          ))}
-                        </div>
-                      )}
-                    </div>
-
-                    <div className="flex justify-between items-center">
-                      <span className="text-sm text-gray-500">{selectedYearLevels.length} selected</span>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => {
-                          setSelectedYearLevels([])
-                          setSelectAllYearLevels(false)
-                        }}
-                      >
-                        Clear Selection
-                      </Button>
-                    </div>
+                <div className="space-y-2 border rounded-md p-3">
+                  <div className="relative">
+                    <Input
+                      placeholder="Search year levels..."
+                      value={yearLevelSearchTerm}
+                      onChange={(e) => setYearLevelSearchTerm(e.target.value)}
+                      className="pl-10"
+                    />
+                    <Search className="w-4 h-4 absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
                   </div>
-                ) : (
-                  <Select value={selectedYearLevel} onValueChange={setSelectedYearLevel}>
-                    <SelectTrigger id="yearLevel">
-                      <SelectValue placeholder="Select Year Level" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">All Year Levels</SelectItem>
-                      {yearLevels.map((year) => (
-                        <SelectItem key={year} value={year.toString()}>
-                          {year}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                )}
+
+                  <div className="max-h-[150px] overflow-y-auto border rounded-md p-2">
+                    <div className="flex items-center mb-2 pb-1 border-b">
+                      <Checkbox
+                        id="select-all-year-levels"
+                        checked={selectAllYearLevels}
+                        onCheckedChange={handleSelectAllYearLevels}
+                      />
+                      <Label htmlFor="select-all-year-levels" className="ml-2 font-medium">
+                        Select All ({filteredYearLevels.length})
+                      </Label>
+                    </div>
+
+                    {filteredYearLevels.length === 0 ? (
+                      <p className="text-sm text-gray-500 p-2">No year levels found</p>
+                    ) : (
+                      <div className="space-y-2">
+                        {filteredYearLevels.map((yearLevel) => (
+                          <div key={yearLevel} className="flex items-center">
+                            <Checkbox
+                              id={`year-level-${yearLevel}`}
+                              checked={selectedYearLevels.includes(yearLevel)}
+                              onCheckedChange={(checked) => handleSelectYearLevel(yearLevel, !!checked)}
+                            />
+                            <Label htmlFor={`year-level-${yearLevel}`} className="ml-2">
+                              {yearLevel}
+                            </Label>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm text-gray-500">{selectedYearLevels.length} selected</span>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => {
+                        setSelectedYearLevels([])
+                        setSelectAllYearLevels(false)
+                      }}
+                    >
+                      Clear Selection
+                    </Button>
+                  </div>
+                </div>
               </div>
 
               {/* Degree Program Search and Selection */}
@@ -1571,90 +1519,65 @@ export default function SupplyFinesManagement() {
                   <Label htmlFor="degreeProgram" className="font-medium">
                     Degree Program
                   </Label>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="h-8 px-2"
-                    onClick={() => setShowDegreeProgramSearch(!showDegreeProgramSearch)}
-                  >
-                    <Filter className="h-4 w-4 mr-1" />
-                    {showDegreeProgramSearch ? "Hide Search" : "Search & Select"}
-                  </Button>
                 </div>
 
-                {showDegreeProgramSearch ? (
-                  <div className="space-y-2 border rounded-md p-3">
-                    <div className="relative">
-                      <Input
-                        placeholder="Search degree programs..."
-                        value={degreeProgramSearchTerm}
-                        onChange={(e) => setDegreeProgramSearchTerm(e.target.value)}
-                        className="pl-10"
-                      />
-                      <Search className="w-4 h-4 absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
-                    </div>
-
-                    <div className="max-h-[150px] overflow-y-auto border rounded-md p-2">
-                      <div className="flex items-center mb-2 pb-1 border-b">
-                        <Checkbox
-                          id="select-all-degree-programs"
-                          checked={selectAllDegreePrograms}
-                          onCheckedChange={handleSelectAllDegreePrograms}
-                        />
-                        <Label htmlFor="select-all-degree-programs" className="ml-2 font-medium">
-                          Select All ({filteredDegreePrograms.length})
-                        </Label>
-                      </div>
-
-                      {filteredDegreePrograms.length === 0 ? (
-                        <p className="text-sm text-gray-500 p-2">No degree programs found</p>
-                      ) : (
-                        <div className="space-y-2">
-                          {filteredDegreePrograms.map((program) => (
-                            <div key={program} className="flex items-center">
-                              <Checkbox
-                                id={`degree-program-${program}`}
-                                checked={selectedDegreePrograms.includes(program)}
-                                onCheckedChange={(checked) => handleSelectDegreeProgram(program, !!checked)}
-                              />
-                              <Label htmlFor={`degree-program-${program}`} className="ml-2">
-                                {program}
-                              </Label>
-                            </div>
-                          ))}
-                        </div>
-                      )}
-                    </div>
-
-                    <div className="flex justify-between items-center">
-                      <span className="text-sm text-gray-500">{selectedDegreePrograms.length} selected</span>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => {
-                          setSelectedDegreePrograms([])
-                          setSelectAllDegreePrograms(false)
-                        }}
-                      >
-                        Clear Selection
-                      </Button>
-                    </div>
+                <div className="space-y-2 border rounded-md p-3">
+                  <div className="relative">
+                    <Input
+                      placeholder="Search degree programs..."
+                      value={degreeProgramSearchTerm}
+                      onChange={(e) => setDegreeProgramSearchTerm(e.target.value)}
+                      className="pl-10"
+                    />
+                    <Search className="w-4 h-4 absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
                   </div>
-                ) : (
-                  <Select value={selectedDegreeProgram} onValueChange={setSelectedDegreeProgram}>
-                    <SelectTrigger id="degreeProgram">
-                      <SelectValue placeholder="Select Degree Program" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">All Programs</SelectItem>
-                      {degreePrograms.map((program) => (
-                        <SelectItem key={program} value={program}>
-                          {program}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                )}
+
+                  <div className="max-h-[150px] overflow-y-auto border rounded-md p-2">
+                    <div className="flex items-center mb-2 pb-1 border-b">
+                      <Checkbox
+                        id="select-all-degree-programs"
+                        checked={selectAllDegreePrograms}
+                        onCheckedChange={handleSelectAllDegreePrograms}
+                      />
+                      <Label htmlFor="select-all-degree-programs" className="ml-2 font-medium">
+                        Select All ({filteredDegreePrograms.length})
+                      </Label>
+                    </div>
+
+                    {filteredDegreePrograms.length === 0 ? (
+                      <p className="text-sm text-gray-500 p-2">No degree programs found</p>
+                    ) : (
+                      <div className="space-y-2">
+                        {filteredDegreePrograms.map((program) => (
+                          <div key={program} className="flex items-center">
+                            <Checkbox
+                              id={`degree-program-${program}`}
+                              checked={selectedDegreePrograms.includes(program)}
+                              onCheckedChange={(checked) => handleSelectDegreeProgram(program, !!checked)}
+                            />
+                            <Label htmlFor={`degree-program-${program}`} className="ml-2">
+                              {program}
+                            </Label>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm text-gray-500">{selectedDegreePrograms.length} selected</span>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => {
+                        setSelectedDegreePrograms([])
+                        setSelectAllDegreePrograms(false)
+                      }}
+                    >
+                      Clear Selection
+                    </Button>
+                  </div>
+                </div>
               </div>
 
               {/* Selection Summary */}
@@ -1854,7 +1777,7 @@ export default function SupplyFinesManagement() {
               ) : (
                 <>
                   <RefreshCw className="mr-2 h-4 w-4" />
-                  Update Fines
+                  Generate Fines
                 </>
               )}
             </Button>
@@ -2748,11 +2671,10 @@ export default function SupplyFinesManagement() {
                             variant={
                               fine.status === "Cleared" || fine.status === "penaltyCleared" ? "secondary" : "outline"
                             }
-                            className={`text-xs ${
-                              fine.status === "Cleared" || fine.status === "penaltyCleared"
-                                ? "bg-green-500 text-white"
-                                : ""
-                            }`}
+                            className={`text-xs ${fine.status === "Cleared" || fine.status === "penaltyCleared"
+                              ? "bg-green-500 text-white"
+                              : ""
+                              }`}
                           >
                             {fine.status === "penaltyCleared" ? "Cleared" : fine.status}
                           </Badge>

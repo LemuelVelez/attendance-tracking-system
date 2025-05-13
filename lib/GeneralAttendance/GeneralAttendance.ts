@@ -1222,7 +1222,7 @@ export const decreasePresencesForAll = async (decreaseAmount: number): Promise<v
   }
 }
 
-// New function to increase presences by year level and degree program
+// Updated function to increase presences by year level and degree program
 export const increasePresencesByYearAndProgram = async (
   yearLevel: string,
   degreeProgram: string,
@@ -1240,16 +1240,45 @@ export const increasePresencesByYearAndProgram = async (
     // Get all fine documents
     const fines = await getFineDocuments()
 
+    console.log(`Filtering with yearLevel: "${yearLevel}" and degreeProgram: "${degreeProgram}"`)
+
     // Filter by year level and degree program if provided
     const filteredFines = fines.filter((fine) => {
-      const matchesYear = !yearLevel || yearLevel === "all" || fine.yearLevel === yearLevel
-      const matchesProgram = !degreeProgram || fine.degreeProgram === degreeProgram
-      return matchesYear && matchesProgram
+      // More explicit filtering logic with better handling of specific cases
+      let matchesYear = false;
+      let matchesProgram = false;
+      
+      // Year level matching
+      if (!yearLevel || yearLevel === "all") {
+        matchesYear = true; // Include all year levels
+      } else if (fine.yearLevel === yearLevel) {
+        matchesYear = true; // Include only the specific year level
+      }
+      
+      // Degree program matching
+      if (!degreeProgram || degreeProgram === "all") {
+        matchesProgram = true; // Include all degree programs
+      } else if (fine.degreeProgram === degreeProgram) {
+        matchesProgram = true; // Include only the specific degree program
+      }
+      
+      // Both conditions must be true for the student to be included
+      return matchesYear && matchesProgram;
     })
 
+    console.log(`Found ${filteredFines.length} students matching the criteria`)
+    
     if (filteredFines.length === 0) {
       console.log("No students match the specified year level and degree program")
       return
+    }
+
+    // Log some sample data to help with debugging
+    if (filteredFines.length > 0) {
+      console.log("Sample matched students:");
+      filteredFines.slice(0, 3).forEach(fine => {
+        console.log(`- Name: ${fine.name}, Year: ${fine.yearLevel}, Program: ${fine.degreeProgram}`);
+      });
     }
 
     // Process in smaller batches to avoid overwhelming the API
@@ -1310,7 +1339,7 @@ export const increasePresencesByYearAndProgram = async (
   }
 }
 
-// New function to decrease presences by year level and degree program
+// Updated function to decrease presences by year level and degree program
 export const decreasePresencesByYearAndProgram = async (
   yearLevel: string,
   degreeProgram: string,
@@ -1328,16 +1357,45 @@ export const decreasePresencesByYearAndProgram = async (
     // Get all fine documents
     const fines = await getFineDocuments()
 
+    console.log(`Filtering with yearLevel: "${yearLevel}" and degreeProgram: "${degreeProgram}"`)
+
     // Filter by year level and degree program if provided
     const filteredFines = fines.filter((fine) => {
-      const matchesYear = !yearLevel || yearLevel === "all" || fine.yearLevel === yearLevel
-      const matchesProgram = !degreeProgram || fine.degreeProgram === degreeProgram
-      return matchesYear && matchesProgram
+      // More explicit filtering logic with better handling of specific cases
+      let matchesYear = false;
+      let matchesProgram = false;
+      
+      // Year level matching
+      if (!yearLevel || yearLevel === "all") {
+        matchesYear = true; // Include all year levels
+      } else if (fine.yearLevel === yearLevel) {
+        matchesYear = true; // Include only the specific year level
+      }
+      
+      // Degree program matching
+      if (!degreeProgram || degreeProgram === "all") {
+        matchesProgram = true; // Include all degree programs
+      } else if (fine.degreeProgram === degreeProgram) {
+        matchesProgram = true; // Include only the specific degree program
+      }
+      
+      // Both conditions must be true for the student to be included
+      return matchesYear && matchesProgram;
     })
 
+    console.log(`Found ${filteredFines.length} students matching the criteria`)
+    
     if (filteredFines.length === 0) {
       console.log("No students match the specified year level and degree program")
       return
+    }
+
+    // Log some sample data to help with debugging
+    if (filteredFines.length > 0) {
+      console.log("Sample matched students:");
+      filteredFines.slice(0, 3).forEach(fine => {
+        console.log(`- Name: ${fine.name}, Year: ${fine.yearLevel}, Program: ${fine.degreeProgram}`);
+      });
     }
 
     // Process in smaller batches to avoid overwhelming the API
