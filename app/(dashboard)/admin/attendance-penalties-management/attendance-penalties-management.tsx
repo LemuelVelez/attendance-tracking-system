@@ -1659,7 +1659,7 @@ export default function SupplyFinesManagement() {
 
               {/* Selection Summary */}
               {(selectedYearLevels.length > 0 || selectedDegreePrograms.length > 0) && (
-                <div className="mb-4 p-3 bg-gray-50 rounded-md">
+                <div className="mb-4 p-3rounded-md">
                   <h4 className="text-sm font-medium mb-2">Current Selection:</h4>
                   {selectedYearLevels.length > 0 && (
                     <div className="mb-2">
