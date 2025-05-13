@@ -781,6 +781,15 @@ export const updateAttendance = async (): Promise<void> => {
         degreeProgram = latestAttendance.degreeProgram || ""
       }
 
+      // If year level or degree program is still empty, try to get it from the user object
+      if (!yearLevel && user.yearLevel) {
+        yearLevel = user.yearLevel
+      }
+
+      if (!degreeProgram && user.degreeProgram) {
+        degreeProgram = user.degreeProgram
+      }
+
       // Create fine document
       const fineData: FineDocumentData = {
         userId: user.$id,
