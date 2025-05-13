@@ -1240,34 +1240,44 @@ export const increasePresencesByYearAndProgram = async (
     // Get all fine documents
     const fines = await getFineDocuments()
 
-    console.log(`Filtering with yearLevel: "${yearLevel}" and degreeProgram: "${degreeProgram}"`)
+    console.log(`Starting operation with yearLevel: "${yearLevel}" and degreeProgram: "${degreeProgram}"`)
+
+    // Normalize inputs for consistent comparison
+    const normalizedYearLevel = yearLevel?.trim().toLowerCase() || ""
+    const normalizedDegreeProgram = degreeProgram?.trim().toLowerCase() || ""
+
+    console.log(`Normalized inputs - yearLevel: "${normalizedYearLevel}", degreeProgram: "${normalizedDegreeProgram}"`)
 
     // Filter by year level and degree program if provided
     const filteredFines = fines.filter((fine) => {
-      // More explicit filtering logic with better handling of specific cases
-      let matchesYear = false;
-      let matchesProgram = false;
-      
-      // Year level matching
-      if (!yearLevel || yearLevel === "all") {
-        matchesYear = true; // Include all year levels
-      } else if (fine.yearLevel === yearLevel) {
-        matchesYear = true; // Include only the specific year level
-      }
-      
-      // Degree program matching
-      if (!degreeProgram || degreeProgram === "all") {
-        matchesProgram = true; // Include all degree programs
-      } else if (fine.degreeProgram === degreeProgram) {
-        matchesProgram = true; // Include only the specific degree program
-      }
-      
+      // Normalize student data for consistent comparison
+      const studentYearLevel = (fine.yearLevel || "").trim().toLowerCase()
+      const studentDegreeProgram = (fine.degreeProgram || "").trim().toLowerCase()
+
+      // Debug individual student data
+      console.log(
+        `Checking student: ${fine.name}, yearLevel: "${studentYearLevel}", degreeProgram: "${studentDegreeProgram}"`,
+      )
+
+      // Year level matching logic
+      const matchesYear =
+        !normalizedYearLevel || normalizedYearLevel === "all" || studentYearLevel === normalizedYearLevel
+
+      // Degree program matching logic
+      const matchesProgram =
+        !normalizedDegreeProgram ||
+        normalizedDegreeProgram === "all" ||
+        studentDegreeProgram === normalizedDegreeProgram
+
+      // Log the matching results for debugging
+      console.log(`  - Matches year: ${matchesYear}, Matches program: ${matchesProgram}`)
+
       // Both conditions must be true for the student to be included
-      return matchesYear && matchesProgram;
+      return matchesYear && matchesProgram
     })
 
-    console.log(`Found ${filteredFines.length} students matching the criteria`)
-    
+    console.log(`Found ${filteredFines.length} students matching the criteria out of ${fines.length} total students`)
+
     if (filteredFines.length === 0) {
       console.log("No students match the specified year level and degree program")
       return
@@ -1275,10 +1285,10 @@ export const increasePresencesByYearAndProgram = async (
 
     // Log some sample data to help with debugging
     if (filteredFines.length > 0) {
-      console.log("Sample matched students:");
-      filteredFines.slice(0, 3).forEach(fine => {
-        console.log(`- Name: ${fine.name}, Year: ${fine.yearLevel}, Program: ${fine.degreeProgram}`);
-      });
+      console.log("Sample matched students:")
+      filteredFines.slice(0, 5).forEach((fine) => {
+        console.log(`- Name: ${fine.name}, Year: ${fine.yearLevel || "N/A"}, Program: ${fine.degreeProgram || "N/A"}`)
+      })
     }
 
     // Process in smaller batches to avoid overwhelming the API
@@ -1304,6 +1314,8 @@ export const increasePresencesByYearAndProgram = async (
         // Calculate new presences value
         const currentPresences = Number.parseInt(fine.presences) || 0
         const newPresences = currentPresences + amount
+
+        console.log(`Updating ${fine.name}: presences ${currentPresences} -> ${newPresences}`)
 
         // Create a clean data object with only the allowed fields
         const updatedFineData: FineDocumentData = {
@@ -1357,34 +1369,44 @@ export const decreasePresencesByYearAndProgram = async (
     // Get all fine documents
     const fines = await getFineDocuments()
 
-    console.log(`Filtering with yearLevel: "${yearLevel}" and degreeProgram: "${degreeProgram}"`)
+    console.log(`Starting operation with yearLevel: "${yearLevel}" and degreeProgram: "${degreeProgram}"`)
+
+    // Normalize inputs for consistent comparison
+    const normalizedYearLevel = yearLevel?.trim().toLowerCase() || ""
+    const normalizedDegreeProgram = degreeProgram?.trim().toLowerCase() || ""
+
+    console.log(`Normalized inputs - yearLevel: "${normalizedYearLevel}", degreeProgram: "${normalizedDegreeProgram}"`)
 
     // Filter by year level and degree program if provided
     const filteredFines = fines.filter((fine) => {
-      // More explicit filtering logic with better handling of specific cases
-      let matchesYear = false;
-      let matchesProgram = false;
-      
-      // Year level matching
-      if (!yearLevel || yearLevel === "all") {
-        matchesYear = true; // Include all year levels
-      } else if (fine.yearLevel === yearLevel) {
-        matchesYear = true; // Include only the specific year level
-      }
-      
-      // Degree program matching
-      if (!degreeProgram || degreeProgram === "all") {
-        matchesProgram = true; // Include all degree programs
-      } else if (fine.degreeProgram === degreeProgram) {
-        matchesProgram = true; // Include only the specific degree program
-      }
-      
+      // Normalize student data for consistent comparison
+      const studentYearLevel = (fine.yearLevel || "").trim().toLowerCase()
+      const studentDegreeProgram = (fine.degreeProgram || "").trim().toLowerCase()
+
+      // Debug individual student data
+      console.log(
+        `Checking student: ${fine.name}, yearLevel: "${studentYearLevel}", degreeProgram: "${studentDegreeProgram}"`,
+      )
+
+      // Year level matching logic
+      const matchesYear =
+        !normalizedYearLevel || normalizedYearLevel === "all" || studentYearLevel === normalizedYearLevel
+
+      // Degree program matching logic
+      const matchesProgram =
+        !normalizedDegreeProgram ||
+        normalizedDegreeProgram === "all" ||
+        studentDegreeProgram === normalizedDegreeProgram
+
+      // Log the matching results for debugging
+      console.log(`  - Matches year: ${matchesYear}, Matches program: ${matchesProgram}`)
+
       // Both conditions must be true for the student to be included
-      return matchesYear && matchesProgram;
+      return matchesYear && matchesProgram
     })
 
-    console.log(`Found ${filteredFines.length} students matching the criteria`)
-    
+    console.log(`Found ${filteredFines.length} students matching the criteria out of ${fines.length} total students`)
+
     if (filteredFines.length === 0) {
       console.log("No students match the specified year level and degree program")
       return
@@ -1392,10 +1414,10 @@ export const decreasePresencesByYearAndProgram = async (
 
     // Log some sample data to help with debugging
     if (filteredFines.length > 0) {
-      console.log("Sample matched students:");
-      filteredFines.slice(0, 3).forEach(fine => {
-        console.log(`- Name: ${fine.name}, Year: ${fine.yearLevel}, Program: ${fine.degreeProgram}`);
-      });
+      console.log("Sample matched students:")
+      filteredFines.slice(0, 5).forEach((fine) => {
+        console.log(`- Name: ${fine.name}, Year: ${fine.yearLevel || "N/A"}, Program: ${fine.degreeProgram || "N/A"}`)
+      })
     }
 
     // Process in smaller batches to avoid overwhelming the API
@@ -1421,6 +1443,8 @@ export const decreasePresencesByYearAndProgram = async (
         // Calculate new presences value (ensure it doesn't go below 0)
         const currentPresences = Number.parseInt(fine.presences) || 0
         const newPresences = Math.max(0, currentPresences - amount)
+
+        console.log(`Updating ${fine.name}: presences ${currentPresences} -> ${newPresences}`)
 
         // Create a clean data object with only the allowed fields
         const updatedFineData: FineDocumentData = {
