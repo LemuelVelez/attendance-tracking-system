@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 "use client"
 
 import { useState, useEffect, useCallback, useRef } from "react"
@@ -20,7 +21,30 @@ import {
 } from "@/components/ui/alert-dialog"
 import { useToast } from "@/hooks/use-toast"
 import { Toaster } from "@/components/ui/toaster"
-import { ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, Search, Check, Calendar, Users, Rows, Loader2, Trash2, RefreshCw, FileX, Edit, Plus, Settings, MinusCircle, UserMinus, X, PlusCircle } from 'lucide-react'
+import {
+  ChevronLeft,
+  ChevronRight,
+  ChevronsLeft,
+  ChevronsRight,
+  Search,
+  Check,
+  Calendar,
+  Users,
+  Rows,
+  Loader2,
+  Trash2,
+  RefreshCw,
+  FileX,
+  Edit,
+  Plus,
+  Settings,
+  MinusCircle,
+  UserMinus,
+  X,
+  PlusCircle,
+  UserPlus,
+  CheckSquare,
+} from "lucide-react"
 import {
   getFineDocuments,
   getTotalUniqueEvents,
@@ -40,6 +64,9 @@ import {
   increasePresencesExceptExempted,
   increasePresencesForAll,
   decreasePresencesForAll,
+  getAllUsers,
+  increasePresencesByYearAndProgram,
+  decreasePresencesByYearAndProgram,
 } from "@/lib/GeneralAttendance/GeneralAttendance"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Label } from "@/components/ui/label"
@@ -75,6 +102,8 @@ export default function SupplyFinesManagement() {
   const [editingFine, setEditingFine] = useState<FineDocument | null>(null)
   const [editedPresences, setEditedPresences] = useState("")
   const [editedAbsences, setEditedAbsences] = useState("")
+  const [editedYearLevel, setEditedYearLevel] = useState("")
+  const [editedDegreeProgram, setEditedDegreeProgram] = useState("")
   const [isSaving, setIsSaving] = useState(false)
 
   // State for penalties management
@@ -112,12 +141,42 @@ export default function SupplyFinesManagement() {
   const [searchPopoverOpen, setSearchPopoverOpen] = useState(false)
   const [selectedStudents, setSelectedStudents] = useState<FineDocument[]>([])
   const [bulkOperationDialogOpen, setBulkOperationDialogOpen] = useState(false)
-  const [bulkOperationType, setBulkOperationType] = useState<"decrease" | "exempt" | "increase" | "exempt-increase" | "increase-all" | "decrease-all">(
-    "decrease",
-  )
+  const [bulkOperationType, setBulkOperationType] = useState<
+    | "decrease"
+    | "exempt"
+    | "increase"
+    | "exempt-increase"
+    | "increase-all"
+    | "decrease-all"
+    | "increase-by-year-program"
+    | "decrease-by-year-program"
+  >("decrease")
   const [changeAmount, setChangeAmount] = useState("1")
   const [isProcessingBulkOperation, setIsProcessingBulkOperation] = useState(false)
   const [confirmBulkOperationDialog, setConfirmBulkOperationDialog] = useState(false)
+
+  // New state for year level and degree program filters
+  const [selectedYearLevel, setSelectedYearLevel] = useState<string>("")
+  const [selectedDegreeProgram, setSelectedDegreeProgram] = useState<string>("")
+  const [yearLevels, setYearLevels] = useState<string[]>([])
+  const [degreePrograms, setDegreePrograms] = useState<string[]>([])
+
+  // New state for new students table
+  const [newStudentsDialogOpen, setNewStudentsDialogOpen] = useState(false)
+  const [allUsers, setAllUsers] = useState<any[]>([])
+  const [newStudentsSearchTerm, setNewStudentsSearchTerm] = useState("")
+  const [filteredUsers, setFilteredUsers] = useState<any[]>([])
+  const [isLoadingUsers, setIsLoadingUsers] = useState(false)
+  const [selectedUser, setSelectedUser] = useState<any | null>(null)
+  const [isAddingNewStudent, setIsAddingNewStudent] = useState(false)
+  const [confirmAddNewStudentDialog, setConfirmAddNewStudentDialog] = useState(false)
+
+  // New state for adding multiple students
+  const [selectedNewUsers, setSelectedNewUsers] = useState<any[]>([])
+  const [selectAllNewUsers, setSelectAllNewUsers] = useState(false)
+  const [initialPresences, setInitialPresences] = useState("0")
+  const [confirmAddMultipleDialog, setConfirmAddMultipleDialog] = useState(false)
+  const [isAddingMultipleStudents, setIsAddingMultipleStudents] = useState(false)
 
   const searchTimeoutRef = useRef<NodeJS.Timeout | null>(null)
 
@@ -142,6 +201,15 @@ export default function SupplyFinesManagement() {
       // Fetch penalties map
       const penalties = await getPenaltiesMap()
       setPenaltiesMap(penalties)
+
+      // Extract unique year levels and degree programs
+      const uniqueYearLevels = [...new Set(finesData.map((f) => f.yearLevel).filter((y): y is string => Boolean(y)))]
+      const uniqueDegreePrograms = [
+        ...new Set(finesData.map((f) => f.degreeProgram).filter((d): d is string => Boolean(d))),
+      ]
+
+      setYearLevels(uniqueYearLevels)
+      setDegreePrograms(uniqueDegreePrograms)
     } catch (error) {
       console.error("Error fetching data:", error)
       toast({
@@ -247,6 +315,221 @@ export default function SupplyFinesManagement() {
     }
   }, [studentSearchTerm, toast, searchPopoverOpen, fines])
 
+  // Handle new students search
+  useEffect(() => {
+    if (!allUsers.length) return
+
+    const filtered = allUsers.filter((user) => {
+      if (newStudentsSearchTerm.trim() === "") return true
+
+      const searchTermLower = newStudentsSearchTerm.toLowerCase().trim()
+      return (
+        user.name.toLowerCase().includes(searchTermLower) ||
+        user.studentId.toLowerCase().includes(searchTermLower) ||
+        (user.email && user.email.toLowerCase().includes(searchTermLower))
+      )
+    })
+
+    setFilteredUsers(filtered)
+  }, [newStudentsSearchTerm, allUsers])
+
+  // Function to fetch users not in fines
+  const fetchNewUsers = async () => {
+    setIsLoadingUsers(true)
+    try {
+      // Get all users
+      const users = await getAllUsers()
+
+      // Get all existing fines
+      const existingFines = await getFineDocuments()
+
+      // Create a set of student IDs that already have fines
+      const existingStudentIds = new Set(existingFines.map((fine) => fine.studentId))
+
+      // Filter users to only include those not in the fines collection
+      const newUsers = users.filter((user) => !existingStudentIds.has(user.studentId))
+
+      setAllUsers(newUsers)
+      setFilteredUsers(newUsers)
+      setSelectedNewUsers([]) // Reset selected users
+      setSelectAllNewUsers(false) // Reset select all checkbox
+    } catch (error) {
+      console.error("Error fetching new users:", error)
+      toast({
+        title: "Error",
+        description: "Failed to fetch new users. Please try again.",
+        variant: "destructive",
+      })
+    } finally {
+      setIsLoadingUsers(false)
+    }
+  }
+
+  // Function to add a new student to fines management
+  const handleAddNewStudent = async () => {
+    if (!selectedUser) return
+
+    setIsAddingNewStudent(true)
+    try {
+      // Get total events
+      const totalEventsCount = await getTotalUniqueEvents()
+
+      // Create a new fine document for the user
+      const fineData: FineDocumentData = {
+        userId: selectedUser.$id,
+        studentId: selectedUser.studentId,
+        name: selectedUser.name,
+        absences: (totalEventsCount - Number(initialPresences)).toString(), // Calculate absences based on presences
+        presences: initialPresences, // Use the specified initial presences
+        penalties: "", // Will be calculated by createFineDocument
+        dateIssued: new Date().toISOString().split("T")[0],
+        status: "Pending",
+        yearLevel: selectedUser.yearLevel || "",
+        degreeProgram: selectedUser.degreeProgram || "",
+      }
+
+      await createFineDocument(fineData)
+
+      toast({
+        title: "Success",
+        description: `${selectedUser.name} has been added to the fines management system.`,
+        variant: "success",
+        className: "border-green-500 text-green-700 bg-green-50",
+      })
+
+      // Refresh data
+      await fetchData()
+
+      // Reset state
+      setSelectedUser(null)
+      setNewStudentsDialogOpen(false)
+      setInitialPresences("0") // Reset initial presences
+    } catch (error) {
+      console.error("Error adding new student:", error)
+      toast({
+        title: "Error",
+        description: "Failed to add new student. Please try again.",
+        variant: "destructive",
+      })
+    } finally {
+      setIsAddingNewStudent(false)
+      setConfirmAddNewStudentDialog(false)
+    }
+  }
+
+  // Function to add multiple students
+  const handleAddMultipleStudents = async () => {
+    if (selectedNewUsers.length === 0) {
+      toast({
+        title: "Error",
+        description: "No students selected for adding.",
+        variant: "destructive",
+      })
+      return
+    }
+
+    setIsAddingMultipleStudents(true)
+    try {
+      // Get total events
+      const totalEventsCount = await getTotalUniqueEvents()
+
+      // Show a processing toast
+      toast({
+        title: "Processing",
+        description: `Adding ${selectedNewUsers.length} students. Please wait...`,
+        variant: "default",
+      })
+
+      // Process in batches to avoid overwhelming the API
+      const batchSize = 10
+      const batches = []
+
+      for (let i = 0; i < selectedNewUsers.length; i += batchSize) {
+        batches.push(selectedNewUsers.slice(i, i + batchSize))
+      }
+
+      let addedCount = 0
+
+      // Process each batch with a delay between batches
+      for (let batchIndex = 0; batchIndex < batches.length; batchIndex++) {
+        const batch = batches[batchIndex]
+
+        // Process each user in the batch
+        for (const user of batch) {
+          // Create a new fine document for the user
+          const fineData: FineDocumentData = {
+            userId: user.$id,
+            studentId: user.studentId,
+            name: user.name,
+            absences: (totalEventsCount - Number(initialPresences)).toString(), // Calculate absences based on presences
+            presences: initialPresences, // Use the specified initial presences
+            penalties: "", // Will be calculated by createFineDocument
+            dateIssued: new Date().toISOString().split("T")[0],
+            status: "Pending",
+            yearLevel: user.yearLevel || "",
+            degreeProgram: user.degreeProgram || "",
+          }
+
+          await createFineDocument(fineData)
+          addedCount++
+
+          // Add a small delay between operations
+          await new Promise((resolve) => setTimeout(resolve, 200))
+        }
+
+        // Add a longer delay between batches
+        if (batchIndex < batches.length - 1) {
+          await new Promise((resolve) => setTimeout(resolve, 1000))
+        }
+      }
+
+      toast({
+        title: "Success",
+        description: `Added ${addedCount} students to the fines management system.`,
+        variant: "success",
+        className: "border-green-500 text-green-700 bg-green-50",
+      })
+
+      // Refresh data
+      await fetchData()
+
+      // Reset state
+      setSelectedNewUsers([])
+      setSelectAllNewUsers(false)
+      setNewStudentsDialogOpen(false)
+      setInitialPresences("0") // Reset initial presences
+    } catch (error) {
+      console.error("Error adding multiple students:", error)
+      toast({
+        title: "Error",
+        description: "Failed to add students. Please try again.",
+        variant: "destructive",
+      })
+    } finally {
+      setIsAddingMultipleStudents(false)
+      setConfirmAddMultipleDialog(false)
+    }
+  }
+
+  // Function to handle selecting/deselecting all new users
+  const handleSelectAllNewUsers = (checked: boolean) => {
+    setSelectAllNewUsers(checked)
+    if (checked) {
+      setSelectedNewUsers([...filteredUsers])
+    } else {
+      setSelectedNewUsers([])
+    }
+  }
+
+  // Function to handle selecting/deselecting a single new user
+  const handleSelectNewUser = (user: any, checked: boolean) => {
+    if (checked) {
+      setSelectedNewUsers((prev) => [...prev, user])
+    } else {
+      setSelectedNewUsers((prev) => prev.filter((u) => u.$id !== user.$id))
+    }
+  }
+
   const handleUpdateFines = async () => {
     setIsUpdatingFines(true)
     setIsLoadingFines(true)
@@ -293,6 +576,8 @@ export default function SupplyFinesManagement() {
         penalties: fineToUpdate.penalties,
         dateIssued: fineToUpdate.dateIssued,
         status: "penaltyCleared",
+        yearLevel: fineToUpdate.yearLevel || "",
+        degreeProgram: fineToUpdate.degreeProgram || "",
       }
 
       const updatedFineDocument = await createFineDocument(updatedFineData)
@@ -348,6 +633,8 @@ export default function SupplyFinesManagement() {
     setEditingFine(fine)
     setEditedPresences(fine.presences)
     setEditedAbsences(fine.absences)
+    setEditedYearLevel(fine.yearLevel || "")
+    setEditedDegreeProgram(fine.degreeProgram || "")
     setEditDialogOpen(true)
   }
 
@@ -366,6 +653,8 @@ export default function SupplyFinesManagement() {
         penalties: editingFine.penalties,
         dateIssued: editingFine.dateIssued,
         status: editingFine.status,
+        yearLevel: editedYearLevel,
+        degreeProgram: editedDegreeProgram,
       }
 
       const updatedFine = await updateFineDocument(editingFine.$id, updatedFineData)
@@ -633,6 +922,26 @@ export default function SupplyFinesManagement() {
           toast({
             title: "Success",
             description: `Decreased presences by ${amount} for all students.`,
+            variant: "success",
+            className: "border-green-500 text-green-700 bg-green-50",
+          })
+          break
+        case "increase-by-year-program":
+          // Increase presences by year level and degree program
+          await increasePresencesByYearAndProgram(selectedYearLevel, selectedDegreeProgram, amount)
+          toast({
+            title: "Success",
+            description: `Increased presences by ${amount} for students in ${selectedYearLevel || "all years"}, ${selectedDegreeProgram || "all programs"}.`,
+            variant: "success",
+            className: "border-green-500 text-green-700 bg-green-50",
+          })
+          break
+        case "decrease-by-year-program":
+          // Decrease presences by year level and degree program
+          await decreasePresencesByYearAndProgram(selectedYearLevel, selectedDegreeProgram, amount)
+          toast({
+            title: "Success",
+            description: `Decreased presences by ${amount} for students in ${selectedYearLevel || "all years"}, ${selectedDegreeProgram || "all programs"}.`,
             variant: "success",
             className: "border-green-500 text-green-700 bg-green-50",
           })
@@ -1057,6 +1366,93 @@ export default function SupplyFinesManagement() {
                 )}
               </Button>
             </div>
+
+            {/* New row for year level and degree program operations */}
+            <div className="mt-6 border-t pt-4">
+              <h3 className="text-md font-medium mb-3">Operations by Year Level and Degree Program</h3>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
+                <div>
+                  <Label htmlFor="yearLevel" className="mb-2 block">
+                    Year Level
+                  </Label>
+                  <Select value={selectedYearLevel} onValueChange={setSelectedYearLevel}>
+                    <SelectTrigger id="yearLevel">
+                      <SelectValue placeholder="Select Year Level" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All Year Levels</SelectItem>
+                      {yearLevels.map((year) => (
+                        <SelectItem key={year} value={year.toString()}>
+                          {year}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <Label htmlFor="degreeProgram" className="mb-2 block">
+                    Degree Program
+                  </Label>
+                  <Select value={selectedDegreeProgram} onValueChange={setSelectedDegreeProgram}>
+                    <SelectTrigger id="degreeProgram">
+                      <SelectValue placeholder="Select Degree Program" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All Programs</SelectItem>
+                      {degreePrograms.map((program) => (
+                        <SelectItem key={program} value={program}>
+                          {program}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+              <div className="flex flex-col sm:flex-row gap-4">
+                <Button
+                  onClick={() => {
+                    setBulkOperationType("increase-by-year-program")
+                    setBulkOperationDialogOpen(true)
+                  }}
+                  disabled={isProcessingBulkOperation}
+                  className="flex-1"
+                  variant="outline"
+                >
+                  {isProcessingBulkOperation && bulkOperationType === "increase-by-year-program" ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Processing...
+                    </>
+                  ) : (
+                    <>
+                      <PlusCircle className="mr-2 h-4 w-4" />
+                      Increase Presences
+                    </>
+                  )}
+                </Button>
+                <Button
+                  onClick={() => {
+                    setBulkOperationType("decrease-by-year-program")
+                    setBulkOperationDialogOpen(true)
+                  }}
+                  disabled={isProcessingBulkOperation}
+                  className="flex-1"
+                  variant="outline"
+                >
+                  {isProcessingBulkOperation && bulkOperationType === "decrease-by-year-program" ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Processing...
+                    </>
+                  ) : (
+                    <>
+                      <MinusCircle className="mr-2 h-4 w-4" />
+                      Decrease Presences
+                    </>
+                  )}
+                </Button>
+              </div>
+            </div>
           </div>
         </CardContent>
       </Card>
@@ -1076,7 +1472,11 @@ export default function SupplyFinesManagement() {
                       ? "Exempt Selected Students from Increase"
                       : bulkOperationType === "increase-all"
                         ? "Increase Presences for All Students"
-                        : "Decrease Presences for All Students"}
+                        : bulkOperationType === "decrease-all"
+                          ? "Decrease Presences for All Students"
+                          : bulkOperationType === "increase-by-year-program"
+                            ? "Increase Presences by Year Level and Program"
+                            : "Decrease Presences by Year Level and Program"}
             </AlertDialogTitle>
             <AlertDialogDescription>
               {bulkOperationType === "decrease"
@@ -1089,7 +1489,11 @@ export default function SupplyFinesManagement() {
                       ? `This will increase the presences count for all students EXCEPT the ${selectedStudents.length} selected students.`
                       : bulkOperationType === "increase-all"
                         ? "This will increase the presences count for ALL students."
-                        : "This will decrease the presences count for ALL students."}
+                        : bulkOperationType === "decrease-all"
+                          ? "This will decrease the presences count for ALL students."
+                          : bulkOperationType === "increase-by-year-program"
+                            ? `This will increase the presences count for students in ${selectedYearLevel || "all years"}, ${selectedDegreeProgram || "all programs"}.`
+                            : `This will decrease the presences count for students in ${selectedYearLevel || "all years"}, ${selectedDegreeProgram || "all programs"}.`}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <div className="py-4">
@@ -1132,7 +1536,11 @@ export default function SupplyFinesManagement() {
                       ? `Are you sure you want to increase presences by ${changeAmount} for all students EXCEPT the ${selectedStudents.length} selected students?`
                       : bulkOperationType === "increase-all"
                         ? `Are you sure you want to increase presences by ${changeAmount} for ALL students?`
-                        : `Are you sure you want to decrease presences by ${changeAmount} for ALL students?`}
+                        : bulkOperationType === "decrease-all"
+                          ? `Are you sure you want to decrease presences by ${changeAmount} for ALL students?`
+                          : bulkOperationType === "increase-by-year-program"
+                            ? `Are you sure you want to increase presences by ${changeAmount} for students in ${selectedYearLevel || "all years"}, ${selectedDegreeProgram || "all programs"}?`
+                            : `Are you sure you want to decrease presences by ${changeAmount} for students in ${selectedYearLevel || "all years"}, ${selectedDegreeProgram || "all programs"}?`}
               This will affect their absences and penalties.
             </AlertDialogDescription>
           </AlertDialogHeader>
@@ -1193,6 +1601,249 @@ export default function SupplyFinesManagement() {
                   </>
                 ) : (
                   "Confirm"
+                )}
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+
+        {/* Button for adding new students */}
+        <AlertDialog open={newStudentsDialogOpen} onOpenChange={setNewStudentsDialogOpen}>
+          <AlertDialogTrigger asChild>
+            <Button variant="outline" onClick={() => fetchNewUsers()}>
+              <UserPlus className="mr-2 h-4 w-4" />
+              Add New Student
+            </Button>
+          </AlertDialogTrigger>
+          <AlertDialogContent className="max-w-[90vw] sm:max-w-3xl max-h-[80vh] overflow-y-auto">
+            <AlertDialogHeader>
+              <AlertDialogTitle>Add New Student to Fines Management</AlertDialogTitle>
+              <AlertDialogDescription>
+                Add students who were registered after fines were generated without updating all fines.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+
+            <div className="py-4">
+              <div className="mb-4 space-y-4">
+                <div className="flex flex-col sm:flex-row gap-4 items-end">
+                  <div className="flex-1">
+                    <Label htmlFor="newStudentSearch" className="mb-2 block">
+                      Search for Student
+                    </Label>
+                    <div className="relative">
+                      <Input
+                        id="newStudentSearch"
+                        placeholder="Search by name or student ID"
+                        value={newStudentsSearchTerm}
+                        onChange={(e) => setNewStudentsSearchTerm(e.target.value)}
+                        className="pl-10"
+                      />
+                      <Search className="w-5 h-5 absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
+                    </div>
+                  </div>
+                  <div className="flex-1">
+                    <Label htmlFor="initialPresences" className="mb-2 block">
+                      Initial Presences
+                    </Label>
+                    <Input
+                      id="initialPresences"
+                      type="number"
+                      min="0"
+                      value={initialPresences}
+                      onChange={(e) => setInitialPresences(e.target.value)}
+                      placeholder="Enter initial presences"
+                    />
+                  </div>
+                </div>
+
+                <div className="flex justify-end space-x-2">
+                  <Button
+                    variant="outline"
+                    onClick={() => {
+                      if (selectedNewUsers.length > 0) {
+                        setConfirmAddMultipleDialog(true)
+                      } else {
+                        toast({
+                          title: "No Students Selected",
+                          description: "Please select at least one student to add.",
+                          variant: "destructive",
+                        })
+                      }
+                    }}
+                    disabled={selectedNewUsers.length === 0 || isAddingMultipleStudents}
+                  >
+                    <CheckSquare className="mr-2 h-4 w-4" />
+                    Add Selected ({selectedNewUsers.length})
+                  </Button>
+                  <Button
+                    variant="default"
+                    onClick={() => {
+                      if (filteredUsers.length > 0) {
+                        setSelectedNewUsers(filteredUsers)
+                        setSelectAllNewUsers(true)
+                        setConfirmAddMultipleDialog(true)
+                      } else {
+                        toast({
+                          title: "No Students Available",
+                          description: "There are no new students to add.",
+                          variant: "destructive",
+                        })
+                      }
+                    }}
+                    disabled={filteredUsers.length === 0 || isAddingMultipleStudents}
+                  >
+                    <CheckSquare className="mr-2 h-4 w-4" />
+                    Add All ({filteredUsers.length})
+                  </Button>
+                </div>
+              </div>
+
+              {isLoadingUsers ? (
+                <div className="flex items-center justify-center p-8">
+                  <Loader2 className="mr-2 h-6 w-6 animate-spin" />
+                  <span>Loading students...</span>
+                </div>
+              ) : filteredUsers.length === 0 ? (
+                <div className="text-center p-8 border rounded-md">
+                  <p className="text-gray-500">
+                    No new students found. All registered students are already in the fines management system.
+                  </p>
+                </div>
+              ) : (
+                <div className="border rounded-md overflow-hidden">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead className="w-[50px]">
+                          <Checkbox
+                            checked={selectAllNewUsers}
+                            onCheckedChange={handleSelectAllNewUsers}
+                            id="select-all-new-users"
+                          />
+                        </TableHead>
+                        <TableHead>Student ID</TableHead>
+                        <TableHead>Name</TableHead>
+                        <TableHead>Year Level</TableHead>
+                        <TableHead>Degree Program</TableHead>
+                        <TableHead>Action</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {filteredUsers.map((user) => (
+                        <TableRow key={user.$id}>
+                          <TableCell>
+                            <Checkbox
+                              checked={selectedNewUsers.some((u) => u.$id === user.$id)}
+                              onCheckedChange={(checked) => handleSelectNewUser(user, !!checked)}
+                              id={`select-user-${user.$id}`}
+                            />
+                          </TableCell>
+                          <TableCell>{user.studentId}</TableCell>
+                          <TableCell>{user.name}</TableCell>
+                          <TableCell>{user.yearLevel || "-"}</TableCell>
+                          <TableCell>{user.degreeProgram || "-"}</TableCell>
+                          <TableCell>
+                            <Button
+                              size="sm"
+                              onClick={() => {
+                                setSelectedUser(user)
+                                setConfirmAddNewStudentDialog(true)
+                              }}
+                            >
+                              <Plus className="h-4 w-4 mr-1" />
+                              Add
+                            </Button>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
+              )}
+            </div>
+
+            <AlertDialogFooter>
+              <AlertDialogCancel onClick={() => setNewStudentsDialogOpen(false)}>Close</AlertDialogCancel>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+
+        {/* Confirmation dialog for adding new student */}
+        <AlertDialog open={confirmAddNewStudentDialog} onOpenChange={setConfirmAddNewStudentDialog}>
+          <AlertDialogContent className="max-w-[90vw] sm:max-w-[425px]">
+            <AlertDialogHeader>
+              <AlertDialogTitle>Add Student to Fines Management</AlertDialogTitle>
+              <AlertDialogDescription>
+                {selectedUser
+                  ? `Add ${selectedUser.name} to the fines management system.`
+                  : "Add student to the fines management system."}
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <div className="py-4 space-y-4">
+              <div className="space-y-2">
+                <Label>Year Level</Label>
+                <p className="text-sm border p-2 rounded-md bg-gray-50">{selectedUser?.yearLevel || "Not specified"}</p>
+              </div>
+              <div className="space-y-2">
+                <Label>Degree Program</Label>
+                <p className="text-sm border p-2 rounded-md bg-gray-50">
+                  {selectedUser?.degreeProgram || "Not specified"}
+                </p>
+              </div>
+              <div className="space-y-2">
+                <Label>Initial Presences</Label>
+                <p className="text-sm border p-2 rounded-md bg-gray-50">{initialPresences}</p>
+              </div>
+            </div>
+            <AlertDialogFooter>
+              <AlertDialogCancel onClick={() => setConfirmAddNewStudentDialog(false)}>Cancel</AlertDialogCancel>
+              <AlertDialogAction onClick={handleAddNewStudent} disabled={isAddingNewStudent}>
+                {isAddingNewStudent ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Adding...
+                  </>
+                ) : (
+                  "Add Student"
+                )}
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+
+        {/* Confirmation dialog for adding multiple students */}
+        <AlertDialog open={confirmAddMultipleDialog} onOpenChange={setConfirmAddMultipleDialog}>
+          <AlertDialogContent className="max-w-[90vw] sm:max-w-[425px]">
+            <AlertDialogHeader>
+              <AlertDialogTitle>Add Multiple Students</AlertDialogTitle>
+              <AlertDialogDescription>
+                Add {selectedNewUsers.length} students to the fines management system with {initialPresences} initial
+                presences.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <div className="py-4">
+              <p>This will add the following students:</p>
+              <div className="mt-2 max-h-[200px] overflow-y-auto border rounded-md p-2">
+                {selectedNewUsers.slice(0, 10).map((user) => (
+                  <div key={user.$id} className="text-sm py-1 border-b last:border-0">
+                    {user.name} ({user.studentId})
+                  </div>
+                ))}
+                {selectedNewUsers.length > 10 && (
+                  <div className="text-sm py-1 text-gray-500 italic">...and {selectedNewUsers.length - 10} more</div>
+                )}
+              </div>
+            </div>
+            <AlertDialogFooter>
+              <AlertDialogCancel onClick={() => setConfirmAddMultipleDialog(false)}>Cancel</AlertDialogCancel>
+              <AlertDialogAction onClick={handleAddMultipleStudents} disabled={isAddingMultipleStudents}>
+                {isAddingMultipleStudents ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Adding...
+                  </>
+                ) : (
+                  "Add Students"
                 )}
               </AlertDialogAction>
             </AlertDialogFooter>
@@ -1559,9 +2210,7 @@ export default function SupplyFinesManagement() {
         <AlertDialogContent className="max-w-[90vw] sm:max-w-[425px]">
           <AlertDialogHeader>
             <AlertDialogTitle>Edit Attendance</AlertDialogTitle>
-            <AlertDialogDescription>
-              Update the number of presences and absences for {editingFine?.name}.
-            </AlertDialogDescription>
+            <AlertDialogDescription>Update the attendance information for {editingFine?.name}.</AlertDialogDescription>
           </AlertDialogHeader>
 
           <div className="grid gap-4 py-4">
@@ -1591,6 +2240,30 @@ export default function SupplyFinesManagement() {
                 className="col-span-3"
               />
             </div>
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="yearLevel" className="text-right">
+                Year Level
+              </Label>
+              <Input
+                id="yearLevel"
+                value={editedYearLevel}
+                onChange={(e) => setEditedYearLevel(e.target.value)}
+                className="col-span-3"
+                placeholder="e.g. 1st Year"
+              />
+            </div>
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="degreeProgram" className="text-right">
+                Degree Program
+              </Label>
+              <Input
+                id="degreeProgram"
+                value={editedDegreeProgram}
+                onChange={(e) => setEditedDegreeProgram(e.target.value)}
+                className="col-span-3"
+                placeholder="e.g. BSIT"
+              />
+            </div>
           </div>
 
           <AlertDialogFooter>
@@ -1609,7 +2282,8 @@ export default function SupplyFinesManagement() {
             <AlertDialogTitle>Confirm Attendance Update</AlertDialogTitle>
             <AlertDialogDescription>
               Are you sure you want to update the attendance for {editingFine?.name}? This will change their presences
-              to {editedPresences} and absences to {editedAbsences}.
+              to {editedPresences}, absences to {editedAbsences}, year level to {editedYearLevel || "(none)"}, and
+              degree program to {editedDegreeProgram || "(none)"}.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -1667,6 +2341,8 @@ export default function SupplyFinesManagement() {
                       </TableHead>
                       <TableHead>Student ID</TableHead>
                       <TableHead>Name</TableHead>
+                      <TableHead>Year Level</TableHead>
+                      <TableHead>Degree Program</TableHead>
                       <TableHead>Presences</TableHead>
                       <TableHead>Absences</TableHead>
                       <TableHead>Required Supplies</TableHead>
@@ -1692,6 +2368,8 @@ export default function SupplyFinesManagement() {
                         </TableCell>
                         <TableCell>{fine.studentId}</TableCell>
                         <TableCell>{fine.name}</TableCell>
+                        <TableCell>{fine.yearLevel || "-"}</TableCell>
+                        <TableCell>{fine.degreeProgram || "-"}</TableCell>
                         <TableCell>{fine.presences}</TableCell>
                         <TableCell>{fine.absences}</TableCell>
                         <TableCell>{fine.penalties}</TableCell>
@@ -1799,6 +2477,8 @@ export default function SupplyFinesManagement() {
                         {[
                           { label: "Student ID", value: fine.studentId },
                           { label: "Name", value: fine.name },
+                          { label: "Year Level", value: fine.yearLevel || "-" },
+                          { label: "Degree Program", value: fine.degreeProgram || "-" },
                           { label: "Presences", value: fine.presences },
                           { label: "Absences", value: fine.absences },
                           { label: "Required Supplies", value: fine.penalties },

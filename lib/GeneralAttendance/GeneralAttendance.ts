@@ -28,11 +28,14 @@ export interface Attendance extends Models.Document {
   time: string
 }
 
+// Update the User interface to include yearLevel and degreeProgram
 export interface User extends Models.Document {
   $id: string
   studentId: string
   name: string
   email: string
+  yearLevel?: string
+  degreeProgram?: string
 }
 
 export interface FineDocumentData {
@@ -44,9 +47,14 @@ export interface FineDocumentData {
   penalties: string
   dateIssued: string
   status: "Pending" | "Cleared" | "penaltyCleared"
+  yearLevel?: string
+  degreeProgram?: string
 }
 
-export interface FineDocument extends FineDocumentData, Models.Document {}
+export interface FineDocument extends FineDocumentData, Models.Document {
+  yearLevel?: string
+  degreeProgram?: string
+}
 
 // Default penalties map
 let PENALTIES_MAP: Record<number, string> = {
@@ -760,6 +768,19 @@ export const updateAttendance = async (): Promise<void> => {
         penalty = PENALTIES_MAP[closestLevel] || PENALTIES_MAP[highestPenaltyLevel] || "No penalty"
       }
 
+      // Get year level and degree program from attendance records if available
+      let yearLevel = ""
+      let degreeProgram = ""
+
+      if (userAttendance.length > 0) {
+        const latestAttendance = userAttendance.sort((a, b) => {
+          return new Date(b.date).getTime() - new Date(a.date).getTime()
+        })[0]
+
+        yearLevel = latestAttendance.yearLevel || ""
+        degreeProgram = latestAttendance.degreeProgram || ""
+      }
+
       // Create fine document
       const fineData: FineDocumentData = {
         userId: user.$id,
@@ -770,6 +791,8 @@ export const updateAttendance = async (): Promise<void> => {
         penalties: penalty,
         dateIssued: new Date().toISOString().split("T")[0],
         status: penalty === "No penalty" ? "Cleared" : "Pending",
+        yearLevel: yearLevel,
+        degreeProgram: degreeProgram,
       }
 
       // Create new fine document
@@ -876,6 +899,8 @@ export const decreasePresencesForSelected = async (studentIds: string[], decreas
         penalties: fine.penalties, // This will be recalculated in updateFineDocument
         dateIssued: fine.dateIssued,
         status: fine.status, // This will be recalculated in updateFineDocument
+        yearLevel: fine.yearLevel,
+        degreeProgram: fine.degreeProgram,
       }
 
       // Update the fine document
@@ -928,6 +953,8 @@ export const decreasePresencesExceptExempted = async (
         penalties: fine.penalties, // This will be recalculated in updateFineDocument
         dateIssued: fine.dateIssued,
         status: fine.status, // This will be recalculated in updateFineDocument
+        yearLevel: fine.yearLevel,
+        degreeProgram: fine.degreeProgram,
       }
 
       // Update the fine document
@@ -977,6 +1004,8 @@ export const increasePresencesForSelected = async (studentIds: string[], increas
         penalties: fine.penalties, // This will be recalculated in updateFineDocument
         dateIssued: fine.dateIssued,
         status: fine.status, // This will be recalculated in updateFineDocument
+        yearLevel: fine.yearLevel,
+        degreeProgram: fine.degreeProgram,
       }
 
       // Update the fine document
@@ -1029,6 +1058,8 @@ export const increasePresencesExceptExempted = async (
         penalties: fine.penalties, // This will be recalculated in updateFineDocument
         dateIssued: fine.dateIssued,
         status: fine.status, // This will be recalculated in updateFineDocument
+        yearLevel: fine.yearLevel,
+        degreeProgram: fine.degreeProgram,
       }
 
       // Update the fine document
@@ -1090,6 +1121,8 @@ export const increasePresencesForAll = async (increaseAmount: number): Promise<v
           penalties: fine.penalties, // This will be recalculated in updateFineDocument
           dateIssued: fine.dateIssued,
           status: fine.status, // This will be recalculated in updateFineDocument
+          yearLevel: fine.yearLevel,
+          degreeProgram: fine.degreeProgram,
         }
 
         // Update the fine document with retry
@@ -1158,6 +1191,8 @@ export const decreasePresencesForAll = async (decreaseAmount: number): Promise<v
           penalties: fine.penalties, // This will be recalculated in updateFineDocument
           dateIssued: fine.dateIssued,
           status: fine.status, // This will be recalculated in updateFineDocument
+          yearLevel: fine.yearLevel,
+          degreeProgram: fine.degreeProgram,
         }
 
         // Update the fine document with retry
@@ -1174,6 +1209,182 @@ export const decreasePresencesForAll = async (decreaseAmount: number): Promise<v
     console.log(`Decreased presences by ${amount} for all ${fines.length} students`)
   } catch (error) {
     console.error("Error decreasing presences for all students:", error)
+    throw error
+  }
+}
+
+// New function to increase presences by year level and degree program
+export const increasePresencesByYearAndProgram = async (
+  yearLevel: string,
+  degreeProgram: string,
+  increaseAmount: number,
+): Promise<void> => {
+  try {
+    if (!DATABASE_ID || !FINES_MANAGEMENT_COLLECTION_ID) {
+      throw new Error("Missing Appwrite environment variables. Please check your .env file.")
+    }
+
+    // Ensure increase amount is positive
+    const amount = Math.max(0, increaseAmount)
+    if (amount === 0) return
+
+    // Get all fine documents
+    const fines = await getFineDocuments()
+
+    // Filter by year level and degree program if provided
+    const filteredFines = fines.filter((fine) => {
+      const matchesYear = !yearLevel || yearLevel === "all" || fine.yearLevel === yearLevel
+      const matchesProgram = !degreeProgram || fine.degreeProgram === degreeProgram
+      return matchesYear && matchesProgram
+    })
+
+    if (filteredFines.length === 0) {
+      console.log("No students match the specified year level and degree program")
+      return
+    }
+
+    // Process in smaller batches to avoid overwhelming the API
+    const batchSize = 20
+    const batches = []
+
+    for (let i = 0; i < filteredFines.length; i += batchSize) {
+      batches.push(filteredFines.slice(i, i + batchSize))
+    }
+
+    console.log(`Processing ${filteredFines.length} students in ${batches.length} batches of ${batchSize}`)
+
+    // Process each batch with a delay between batches
+    for (let batchIndex = 0; batchIndex < batches.length; batchIndex++) {
+      const batch = batches[batchIndex]
+      console.log(`Processing batch ${batchIndex + 1}/${batches.length}`)
+
+      // Process each fine in the batch with a small delay between operations
+      for (const fine of batch) {
+        // Add a small delay between operations to avoid rate limiting
+        await new Promise((resolve) => setTimeout(resolve, 300))
+
+        // Calculate new presences value
+        const currentPresences = Number.parseInt(fine.presences) || 0
+        const newPresences = currentPresences + amount
+
+        // Create a clean data object with only the allowed fields
+        const updatedFineData: FineDocumentData = {
+          userId: fine.userId,
+          studentId: fine.studentId,
+          name: fine.name,
+          absences: fine.absences, // This will be recalculated in updateFineDocument
+          presences: newPresences.toString(),
+          penalties: fine.penalties, // This will be recalculated in updateFineDocument
+          dateIssued: fine.dateIssued,
+          status: fine.status, // This will be recalculated in updateFineDocument
+          yearLevel: fine.yearLevel,
+          degreeProgram: fine.degreeProgram,
+        }
+
+        // Update the fine document with retry
+        await updateFineDocument(fine.$id, updatedFineData)
+      }
+
+      // Add a longer delay between batches
+      if (batchIndex < batches.length - 1) {
+        console.log(`Batch ${batchIndex + 1} complete. Waiting before next batch...`)
+        await new Promise((resolve) => setTimeout(resolve, 2000))
+      }
+    }
+
+    console.log(
+      `Increased presences by ${amount} for ${filteredFines.length} students in ${yearLevel || "all years"}, ${degreeProgram || "all programs"}`,
+    )
+  } catch (error) {
+    console.error("Error increasing presences by year level and degree program:", error)
+    throw error
+  }
+}
+
+// New function to decrease presences by year level and degree program
+export const decreasePresencesByYearAndProgram = async (
+  yearLevel: string,
+  degreeProgram: string,
+  decreaseAmount: number,
+): Promise<void> => {
+  try {
+    if (!DATABASE_ID || !FINES_MANAGEMENT_COLLECTION_ID) {
+      throw new Error("Missing Appwrite environment variables. Please check your .env file.")
+    }
+
+    // Ensure decrease amount is positive
+    const amount = Math.max(0, decreaseAmount)
+    if (amount === 0) return
+
+    // Get all fine documents
+    const fines = await getFineDocuments()
+
+    // Filter by year level and degree program if provided
+    const filteredFines = fines.filter((fine) => {
+      const matchesYear = !yearLevel || yearLevel === "all" || fine.yearLevel === yearLevel
+      const matchesProgram = !degreeProgram || fine.degreeProgram === degreeProgram
+      return matchesYear && matchesProgram
+    })
+
+    if (filteredFines.length === 0) {
+      console.log("No students match the specified year level and degree program")
+      return
+    }
+
+    // Process in smaller batches to avoid overwhelming the API
+    const batchSize = 20
+    const batches = []
+
+    for (let i = 0; i < filteredFines.length; i += batchSize) {
+      batches.push(filteredFines.slice(i, i + batchSize))
+    }
+
+    console.log(`Processing ${filteredFines.length} students in ${batches.length} batches of ${batchSize}`)
+
+    // Process each batch with a delay between batches
+    for (let batchIndex = 0; batchIndex < batches.length; batchIndex++) {
+      const batch = batches[batchIndex]
+      console.log(`Processing batch ${batchIndex + 1}/${batches.length}`)
+
+      // Process each fine in the batch with a small delay between operations
+      for (const fine of batch) {
+        // Add a small delay between operations to avoid rate limiting
+        await new Promise((resolve) => setTimeout(resolve, 300))
+
+        // Calculate new presences value (ensure it doesn't go below 0)
+        const currentPresences = Number.parseInt(fine.presences) || 0
+        const newPresences = Math.max(0, currentPresences - amount)
+
+        // Create a clean data object with only the allowed fields
+        const updatedFineData: FineDocumentData = {
+          userId: fine.userId,
+          studentId: fine.studentId,
+          name: fine.name,
+          absences: fine.absences, // This will be recalculated in updateFineDocument
+          presences: newPresences.toString(),
+          penalties: fine.penalties, // This will be recalculated in updateFineDocument
+          dateIssued: fine.dateIssued,
+          status: fine.status, // This will be recalculated in updateFineDocument
+          yearLevel: fine.yearLevel,
+          degreeProgram: fine.degreeProgram,
+        }
+
+        // Update the fine document with retry
+        await updateFineDocument(fine.$id, updatedFineData)
+      }
+
+      // Add a longer delay between batches
+      if (batchIndex < batches.length - 1) {
+        console.log(`Batch ${batchIndex + 1} complete. Waiting before next batch...`)
+        await new Promise((resolve) => setTimeout(resolve, 2000))
+      }
+    }
+
+    console.log(
+      `Decreased presences by ${amount} for ${filteredFines.length} students in ${yearLevel || "all years"}, ${degreeProgram || "all programs"}`,
+    )
+  } catch (error) {
+    console.error("Error decreasing presences by year level and degree program:", error)
     throw error
   }
 }
