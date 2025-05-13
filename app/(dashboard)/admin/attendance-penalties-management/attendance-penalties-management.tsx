@@ -44,6 +44,7 @@ import {
   PlusCircle,
   UserPlus,
   CheckSquare,
+  Filter,
 } from "lucide-react"
 import {
   getFineDocuments,
@@ -178,6 +179,18 @@ export default function SupplyFinesManagement() {
   const [confirmAddMultipleDialog, setConfirmAddMultipleDialog] = useState(false)
   const [isAddingMultipleStudents, setIsAddingMultipleStudents] = useState(false)
 
+  // New state for year level and degree program search and selection
+  const [yearLevelSearchTerm, setYearLevelSearchTerm] = useState("")
+  const [degreeProgramSearchTerm, setDegreeProgramSearchTerm] = useState("")
+  const [filteredYearLevels, setFilteredYearLevels] = useState<string[]>([])
+  const [filteredDegreePrograms, setFilteredDegreePrograms] = useState<string[]>([])
+  const [selectedYearLevels, setSelectedYearLevels] = useState<string[]>([])
+  const [selectedDegreePrograms, setSelectedDegreePrograms] = useState<string[]>([])
+  const [selectAllYearLevels, setSelectAllYearLevels] = useState(false)
+  const [selectAllDegreePrograms, setSelectAllDegreePrograms] = useState(false)
+  const [showYearLevelSearch, setShowYearLevelSearch] = useState(false)
+  const [showDegreeProgramSearch, setShowDegreeProgramSearch] = useState(false)
+
   const searchTimeoutRef = useRef<NodeJS.Timeout | null>(null)
 
   const fetchData = useCallback(async () => {
@@ -210,6 +223,8 @@ export default function SupplyFinesManagement() {
 
       setYearLevels(uniqueYearLevels)
       setDegreePrograms(uniqueDegreePrograms)
+      setFilteredYearLevels(uniqueYearLevels)
+      setFilteredDegreePrograms(uniqueDegreePrograms)
     } catch (error) {
       console.error("Error fetching data:", error)
       toast({
@@ -225,6 +240,28 @@ export default function SupplyFinesManagement() {
   useEffect(() => {
     fetchData()
   }, [fetchData])
+
+  // Filter year levels based on search term
+  useEffect(() => {
+    if (yearLevelSearchTerm.trim() === "") {
+      setFilteredYearLevels(yearLevels)
+    } else {
+      const searchTermLower = yearLevelSearchTerm.toLowerCase()
+      const filtered = yearLevels.filter((yearLevel) => yearLevel.toLowerCase().includes(searchTermLower))
+      setFilteredYearLevels(filtered)
+    }
+  }, [yearLevelSearchTerm, yearLevels])
+
+  // Filter degree programs based on search term
+  useEffect(() => {
+    if (degreeProgramSearchTerm.trim() === "") {
+      setFilteredDegreePrograms(degreePrograms)
+    } else {
+      const searchTermLower = degreeProgramSearchTerm.toLowerCase()
+      const filtered = degreePrograms.filter((program) => program.toLowerCase().includes(searchTermLower))
+      setFilteredDegreePrograms(filtered)
+    }
+  }, [degreeProgramSearchTerm, degreePrograms])
 
   // Handle student search with debounce
   useEffect(() => {
@@ -528,6 +565,70 @@ export default function SupplyFinesManagement() {
     } else {
       setSelectedNewUsers((prev) => prev.filter((u) => u.$id !== user.$id))
     }
+  }
+
+  // Function to handle selecting/deselecting all year levels
+  const handleSelectAllYearLevels = (checked: boolean) => {
+    setSelectAllYearLevels(checked)
+    if (checked) {
+      setSelectedYearLevels([...filteredYearLevels])
+    } else {
+      setSelectedYearLevels([])
+    }
+  }
+
+  // Function to handle selecting/deselecting a single year level
+  const handleSelectYearLevel = (yearLevel: string, checked: boolean) => {
+    if (checked) {
+      setSelectedYearLevels((prev) => [...prev, yearLevel])
+    } else {
+      setSelectedYearLevels((prev) => prev.filter((yl) => yl !== yearLevel))
+    }
+  }
+
+  // Function to handle selecting/deselecting all degree programs
+  const handleSelectAllDegreePrograms = (checked: boolean) => {
+    setSelectAllDegreePrograms(checked)
+    if (checked) {
+      setSelectedDegreePrograms([...filteredDegreePrograms])
+    } else {
+      setSelectedDegreePrograms([])
+    }
+  }
+
+  // Function to handle selecting/deselecting a single degree program
+  const handleSelectDegreeProgram = (program: string, checked: boolean) => {
+    if (checked) {
+      setSelectedDegreePrograms((prev) => [...prev, program])
+    } else {
+      setSelectedDegreePrograms((prev) => prev.filter((p) => p !== program))
+    }
+  }
+
+  // Function to handle bulk operations for selected year levels and degree programs
+  const handleYearLevelDegreeProgramOperation = (operationType: "increase" | "decrease") => {
+    // If no selections made, use the dropdown values
+    const yearLevelsToUse =
+      selectedYearLevels.length > 0 ? selectedYearLevels : selectedYearLevel ? [selectedYearLevel] : []
+    const degreeProgramsToUse =
+      selectedDegreePrograms.length > 0 ? selectedDegreePrograms : selectedDegreeProgram ? [selectedDegreeProgram] : []
+
+    // Set the operation type
+    setBulkOperationType(operationType === "increase" ? "increase-by-year-program" : "decrease-by-year-program")
+
+    // If multiple year levels or degree programs are selected, process them sequentially
+    if (yearLevelsToUse.length > 1 || degreeProgramsToUse.length > 1) {
+      // Store the selections for processing
+      localStorage.setItem("yearLevelsToProcess", JSON.stringify(yearLevelsToUse))
+      localStorage.setItem("degreeProgramsToProcess", JSON.stringify(degreeProgramsToUse))
+
+      // Start with the first combination
+      setSelectedYearLevel(yearLevelsToUse.length > 0 ? yearLevelsToUse[0] : "all")
+      setSelectedDegreeProgram(degreeProgramsToUse.length > 0 ? degreeProgramsToUse[0] : "all")
+    }
+
+    // Open the bulk operation dialog
+    setBulkOperationDialogOpen(true)
   }
 
   const handleUpdateFines = async () => {
@@ -1187,10 +1288,11 @@ export default function SupplyFinesManagement() {
                               value={`${student.name} ${student.studentId}`}
                             >
                               <Check
-                                className={`mr-2 h-4 w-4 ${selectedStudents.some((s) => s.studentId === student.studentId)
+                                className={`mr-2 h-4 w-4 ${
+                                  selectedStudents.some((s) => s.studentId === student.studentId)
                                     ? "opacity-100"
                                     : "opacity-0"
-                                  }`}
+                                }`}
                               />
                               <div className="flex flex-col">
                                 <span className="font-medium">{student.name}</span>
@@ -1367,14 +1469,86 @@ export default function SupplyFinesManagement() {
               </Button>
             </div>
 
-            {/* New row for year level and degree program operations */}
+            {/* Enhanced section for year level and degree program operations */}
             <div className="mt-6 border-t pt-4">
               <h3 className="text-md font-medium mb-3">Operations by Year Level and Degree Program</h3>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
-                <div>
-                  <Label htmlFor="yearLevel" className="mb-2 block">
+
+              {/* Year Level Search and Selection */}
+              <div className="mb-4">
+                <div className="flex items-center justify-between mb-2">
+                  <Label htmlFor="yearLevel" className="font-medium">
                     Year Level
                   </Label>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-8 px-2"
+                    onClick={() => setShowYearLevelSearch(!showYearLevelSearch)}
+                  >
+                    <Filter className="h-4 w-4 mr-1" />
+                    {showYearLevelSearch ? "Hide Search" : "Search & Select"}
+                  </Button>
+                </div>
+
+                {showYearLevelSearch ? (
+                  <div className="space-y-2 border rounded-md p-3">
+                    <div className="relative">
+                      <Input
+                        placeholder="Search year levels..."
+                        value={yearLevelSearchTerm}
+                        onChange={(e) => setYearLevelSearchTerm(e.target.value)}
+                        className="pl-10"
+                      />
+                      <Search className="w-4 h-4 absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
+                    </div>
+
+                    <div className="max-h-[150px] overflow-y-auto border rounded-md p-2">
+                      <div className="flex items-center mb-2 pb-1 border-b">
+                        <Checkbox
+                          id="select-all-year-levels"
+                          checked={selectAllYearLevels}
+                          onCheckedChange={handleSelectAllYearLevels}
+                        />
+                        <Label htmlFor="select-all-year-levels" className="ml-2 font-medium">
+                          Select All ({filteredYearLevels.length})
+                        </Label>
+                      </div>
+
+                      {filteredYearLevels.length === 0 ? (
+                        <p className="text-sm text-gray-500 p-2">No year levels found</p>
+                      ) : (
+                        <div className="space-y-2">
+                          {filteredYearLevels.map((yearLevel) => (
+                            <div key={yearLevel} className="flex items-center">
+                              <Checkbox
+                                id={`year-level-${yearLevel}`}
+                                checked={selectedYearLevels.includes(yearLevel)}
+                                onCheckedChange={(checked) => handleSelectYearLevel(yearLevel, !!checked)}
+                              />
+                              <Label htmlFor={`year-level-${yearLevel}`} className="ml-2">
+                                {yearLevel}
+                              </Label>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="flex justify-between items-center">
+                      <span className="text-sm text-gray-500">{selectedYearLevels.length} selected</span>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => {
+                          setSelectedYearLevels([])
+                          setSelectAllYearLevels(false)
+                        }}
+                      >
+                        Clear Selection
+                      </Button>
+                    </div>
+                  </div>
+                ) : (
                   <Select value={selectedYearLevel} onValueChange={setSelectedYearLevel}>
                     <SelectTrigger id="yearLevel">
                       <SelectValue placeholder="Select Year Level" />
@@ -1388,11 +1562,85 @@ export default function SupplyFinesManagement() {
                       ))}
                     </SelectContent>
                   </Select>
-                </div>
-                <div>
-                  <Label htmlFor="degreeProgram" className="mb-2 block">
+                )}
+              </div>
+
+              {/* Degree Program Search and Selection */}
+              <div className="mb-4">
+                <div className="flex items-center justify-between mb-2">
+                  <Label htmlFor="degreeProgram" className="font-medium">
                     Degree Program
                   </Label>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-8 px-2"
+                    onClick={() => setShowDegreeProgramSearch(!showDegreeProgramSearch)}
+                  >
+                    <Filter className="h-4 w-4 mr-1" />
+                    {showDegreeProgramSearch ? "Hide Search" : "Search & Select"}
+                  </Button>
+                </div>
+
+                {showDegreeProgramSearch ? (
+                  <div className="space-y-2 border rounded-md p-3">
+                    <div className="relative">
+                      <Input
+                        placeholder="Search degree programs..."
+                        value={degreeProgramSearchTerm}
+                        onChange={(e) => setDegreeProgramSearchTerm(e.target.value)}
+                        className="pl-10"
+                      />
+                      <Search className="w-4 h-4 absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
+                    </div>
+
+                    <div className="max-h-[150px] overflow-y-auto border rounded-md p-2">
+                      <div className="flex items-center mb-2 pb-1 border-b">
+                        <Checkbox
+                          id="select-all-degree-programs"
+                          checked={selectAllDegreePrograms}
+                          onCheckedChange={handleSelectAllDegreePrograms}
+                        />
+                        <Label htmlFor="select-all-degree-programs" className="ml-2 font-medium">
+                          Select All ({filteredDegreePrograms.length})
+                        </Label>
+                      </div>
+
+                      {filteredDegreePrograms.length === 0 ? (
+                        <p className="text-sm text-gray-500 p-2">No degree programs found</p>
+                      ) : (
+                        <div className="space-y-2">
+                          {filteredDegreePrograms.map((program) => (
+                            <div key={program} className="flex items-center">
+                              <Checkbox
+                                id={`degree-program-${program}`}
+                                checked={selectedDegreePrograms.includes(program)}
+                                onCheckedChange={(checked) => handleSelectDegreeProgram(program, !!checked)}
+                              />
+                              <Label htmlFor={`degree-program-${program}`} className="ml-2">
+                                {program}
+                              </Label>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="flex justify-between items-center">
+                      <span className="text-sm text-gray-500">{selectedDegreePrograms.length} selected</span>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => {
+                          setSelectedDegreePrograms([])
+                          setSelectAllDegreePrograms(false)
+                        }}
+                      >
+                        Clear Selection
+                      </Button>
+                    </div>
+                  </div>
+                ) : (
                   <Select value={selectedDegreeProgram} onValueChange={setSelectedDegreeProgram}>
                     <SelectTrigger id="degreeProgram">
                       <SelectValue placeholder="Select Degree Program" />
@@ -1406,14 +1654,43 @@ export default function SupplyFinesManagement() {
                       ))}
                     </SelectContent>
                   </Select>
-                </div>
+                )}
               </div>
+
+              {/* Selection Summary */}
+              {(selectedYearLevels.length > 0 || selectedDegreePrograms.length > 0) && (
+                <div className="mb-4 p-3 bg-gray-50 rounded-md">
+                  <h4 className="text-sm font-medium mb-2">Current Selection:</h4>
+                  {selectedYearLevels.length > 0 && (
+                    <div className="mb-2">
+                      <span className="text-xs font-medium">Year Levels:</span>
+                      <div className="flex flex-wrap gap-1 mt-1">
+                        {selectedYearLevels.map((yl) => (
+                          <Badge key={yl} variant="outline" className="text-xs">
+                            {yl}
+                          </Badge>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                  {selectedDegreePrograms.length > 0 && (
+                    <div>
+                      <span className="text-xs font-medium">Degree Programs:</span>
+                      <div className="flex flex-wrap gap-1 mt-1">
+                        {selectedDegreePrograms.map((dp) => (
+                          <Badge key={dp} variant="outline" className="text-xs">
+                            {dp}
+                          </Badge>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+
               <div className="flex flex-col sm:flex-row gap-4">
                 <Button
-                  onClick={() => {
-                    setBulkOperationType("increase-by-year-program")
-                    setBulkOperationDialogOpen(true)
-                  }}
+                  onClick={() => handleYearLevelDegreeProgramOperation("increase")}
                   disabled={isProcessingBulkOperation}
                   className="flex-1"
                   variant="outline"
@@ -1431,10 +1708,7 @@ export default function SupplyFinesManagement() {
                   )}
                 </Button>
                 <Button
-                  onClick={() => {
-                    setBulkOperationType("decrease-by-year-program")
-                    setBulkOperationDialogOpen(true)
-                  }}
+                  onClick={() => handleYearLevelDegreeProgramOperation("decrease")}
                   disabled={isProcessingBulkOperation}
                   className="flex-1"
                   variant="outline"
@@ -1492,8 +1766,12 @@ export default function SupplyFinesManagement() {
                         : bulkOperationType === "decrease-all"
                           ? "This will decrease the presences count for ALL students."
                           : bulkOperationType === "increase-by-year-program"
-                            ? `This will increase the presences count for students in ${selectedYearLevel || "all years"}, ${selectedDegreeProgram || "all programs"}.`
-                            : `This will decrease the presences count for students in ${selectedYearLevel || "all years"}, ${selectedDegreeProgram || "all programs"}.`}
+                            ? selectedYearLevels.length > 0 || selectedDegreePrograms.length > 0
+                              ? `This will increase the presences count for students in ${selectedYearLevels.length > 0 ? `selected year levels (${selectedYearLevels.length})` : selectedYearLevel || "all years"}, ${selectedDegreePrograms.length > 0 ? `selected programs (${selectedDegreePrograms.length})` : selectedDegreeProgram || "all programs"}.`
+                              : `This will increase the presences count for students in ${selectedYearLevel || "all years"}, ${selectedDegreeProgram || "all programs"}.`
+                            : selectedYearLevels.length > 0 || selectedDegreePrograms.length > 0
+                              ? `This will decrease the presences count for students in ${selectedYearLevels.length > 0 ? `selected year levels (${selectedYearLevels.length})` : selectedYearLevel || "all years"}, ${selectedDegreePrograms.length > 0 ? `selected programs (${selectedDegreePrograms.length})` : selectedDegreeProgram || "all programs"}.`
+                              : `This will decrease the presences count for students in ${selectedYearLevel || "all years"}, ${selectedDegreeProgram || "all programs"}.`}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <div className="py-4">
@@ -1539,8 +1817,12 @@ export default function SupplyFinesManagement() {
                         : bulkOperationType === "decrease-all"
                           ? `Are you sure you want to decrease presences by ${changeAmount} for ALL students?`
                           : bulkOperationType === "increase-by-year-program"
-                            ? `Are you sure you want to increase presences by ${changeAmount} for students in ${selectedYearLevel || "all years"}, ${selectedDegreeProgram || "all programs"}?`
-                            : `Are you sure you want to decrease presences by ${changeAmount} for students in ${selectedYearLevel || "all years"}, ${selectedDegreeProgram || "all programs"}?`}
+                            ? selectedYearLevels.length > 0 || selectedDegreePrograms.length > 0
+                              ? `Are you sure you want to increase presences by ${changeAmount} for students in ${selectedYearLevels.length > 0 ? `selected year levels (${selectedYearLevels.length})` : selectedYearLevel || "all years"}, ${selectedDegreePrograms.length > 0 ? `selected programs (${selectedDegreePrograms.length})` : selectedDegreeProgram || "all programs"}?`
+                              : `Are you sure you want to increase presences by ${changeAmount} for students in ${selectedYearLevel || "all years"}, ${selectedDegreeProgram || "all programs"}?`
+                            : selectedYearLevels.length > 0 || selectedDegreePrograms.length > 0
+                              ? `Are you sure you want to decrease presences by ${changeAmount} for students in ${selectedYearLevels.length > 0 ? `selected year levels (${selectedYearLevels.length})` : selectedYearLevel || "all years"}, ${selectedDegreePrograms.length > 0 ? `selected programs (${selectedDegreePrograms.length})` : selectedDegreeProgram || "all programs"}?`
+                              : `Are you sure you want to decrease presences by ${changeAmount} for students in ${selectedYearLevel || "all years"}, ${selectedDegreeProgram || "all programs"}?`}
               This will affect their absences and penalties.
             </AlertDialogDescription>
           </AlertDialogHeader>
@@ -2466,10 +2748,11 @@ export default function SupplyFinesManagement() {
                             variant={
                               fine.status === "Cleared" || fine.status === "penaltyCleared" ? "secondary" : "outline"
                             }
-                            className={`text-xs ${fine.status === "Cleared" || fine.status === "penaltyCleared"
+                            className={`text-xs ${
+                              fine.status === "Cleared" || fine.status === "penaltyCleared"
                                 ? "bg-green-500 text-white"
                                 : ""
-                              }`}
+                            }`}
                           >
                             {fine.status === "penaltyCleared" ? "Cleared" : fine.status}
                           </Badge>
