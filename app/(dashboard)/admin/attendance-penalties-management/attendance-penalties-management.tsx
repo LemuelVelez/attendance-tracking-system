@@ -1930,7 +1930,6 @@ export default function SupplyFinesManagement() {
                         <TableHead>Name</TableHead>
                         <TableHead>Year Level</TableHead>
                         <TableHead>Degree Program</TableHead>
-                        <TableHead>Action</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -1947,18 +1946,6 @@ export default function SupplyFinesManagement() {
                           <TableCell>{user.name}</TableCell>
                           <TableCell>{user.yearLevel || "-"}</TableCell>
                           <TableCell>{user.degreeProgram || "-"}</TableCell>
-                          <TableCell>
-                            <Button
-                              size="sm"
-                              onClick={() => {
-                                setSelectedUser(user)
-                                setConfirmAddNewStudentDialog(true)
-                              }}
-                            >
-                              <Plus className="h-4 w-4 mr-1" />
-                              Add
-                            </Button>
-                          </TableCell>
                         </TableRow>
                       ))}
                     </TableBody>
