@@ -334,6 +334,42 @@ export const createFineDocument = async (fineData: FineDocumentData): Promise<Fi
       throw new Error("Missing Appwrite environment variables. Please check your .env file.")
     }
 
+    // Get total events
+    const totalEvents = await getTotalUniqueEvents()
+
+    // Get current penalties map
+    const penaltiesMap = await getPenaltiesMap()
+
+    // Ensure presences is a non-negative number
+    const presences = Math.max(0, Number.parseInt(fineData.presences) || 0)
+
+    // Calculate absences based on presences and total events
+    const absences = Math.max(0, totalEvents - presences)
+
+    // Update the fineData with calculated values
+    fineData.presences = presences.toString()
+    fineData.absences = absences.toString()
+
+    // Determine penalty based on absences
+    const penaltyLevels = Object.keys(penaltiesMap)
+      .map(Number)
+      .sort((a, b) => b - a)
+    const highestPenaltyLevel = penaltyLevels.length > 0 ? penaltyLevels[0] : 10
+
+    let penalty = "No penalty"
+    if (penaltiesMap[absences]) {
+      penalty = penaltiesMap[absences]
+    } else if (absences > 0) {
+      // Find the closest penalty level that's less than or equal to the absences
+      const closestLevel = penaltyLevels.find((level) => level <= absences) || highestPenaltyLevel
+      penalty = penaltiesMap[closestLevel] || penaltiesMap[highestPenaltyLevel] || "No penalty"
+    }
+
+    fineData.penalties = penalty
+
+    // Update status based on penalty
+    fineData.status = penalty === "No penalty" ? "Cleared" : "Pending"
+
     const existingDocuments = await retryOperation(() =>
       databases.listDocuments(DATABASE_ID, FINES_MANAGEMENT_COLLECTION_ID, [
         Query.equal("userId", fineData.userId),
