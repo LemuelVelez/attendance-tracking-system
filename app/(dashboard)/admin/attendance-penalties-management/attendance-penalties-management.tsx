@@ -2420,19 +2420,6 @@ export default function SupplyFinesManagement() {
 
           <div className="grid gap-4 py-4">
             <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="presences" className="text-right">
-                Presences
-              </Label>
-              <Input
-                id="presences"
-                type="number"
-                min="0"
-                value={editedPresences}
-                onChange={(e) => setEditedPresences(e.target.value)}
-                className="col-span-3"
-              />
-            </div>
-            <div className="grid grid-cols-4 items-center gap-4">
               <Label htmlFor="absences" className="text-right">
                 Absences
               </Label>
