@@ -196,7 +196,7 @@ export const updatePenaltiesMap = async (penaltiesMap: Record<number, string>): 
   }
 }
 
-// Enhanced function to update a fine document with automatic calculation of presences and absences
+// Enhanced function to update a fine document with automatic calculation for both presences and absences
 export const updateFineDocument = async (documentId: string, fineData: FineDocumentData): Promise<FineDocument> => {
   try {
     if (!DATABASE_ID || !FINES_MANAGEMENT_COLLECTION_ID) {
@@ -209,29 +209,22 @@ export const updateFineDocument = async (documentId: string, fineData: FineDocum
     // Get current penalties map
     const penaltiesMap = await getPenaltiesMap()
 
-    // Check which field was modified by the user
-    const absencesChanged = fineData.absences !== undefined && fineData.absences.trim() !== ""
-    const presencesChanged = fineData.presences !== undefined && fineData.presences.trim() !== ""
+    // Check if absences were manually edited
+    const absencesEdited = fineData.absences !== undefined && fineData.absences.trim() !== ""
+    const presencesEdited = fineData.presences !== undefined && fineData.presences.trim() !== ""
 
-    // Convert to numbers for calculations
+    // Parse the values as numbers
     let absences = Math.max(0, Number.parseInt(fineData.absences) || 0)
     let presences = Math.max(0, Number.parseInt(fineData.presences) || 0)
 
-    // If absences were changed, recalculate presences
-    if (absencesChanged) {
+    // If absences were edited, recalculate presences based on absences
+    if (absencesEdited) {
       presences = Math.max(0, totalEvents - absences)
       fineData.presences = presences.toString()
     }
-    // If presences were changed, recalculate absences
-    else if (presencesChanged) {
+    // If presences were edited, recalculate absences based on presences (existing logic)
+    else if (presencesEdited) {
       absences = Math.max(0, totalEvents - presences)
-      fineData.absences = absences.toString()
-    }
-    // If neither was explicitly changed, calculate both based on total events
-    else {
-      presences = Math.max(0, Number.parseInt(fineData.presences) || 0)
-      absences = Math.max(0, totalEvents - presences)
-      fineData.presences = presences.toString()
       fineData.absences = absences.toString()
     }
 
@@ -356,31 +349,15 @@ export const createFineDocument = async (fineData: FineDocumentData): Promise<Fi
     // Get current penalties map
     const penaltiesMap = await getPenaltiesMap()
 
-    // Check which field was modified by the user
-    const absencesChanged = fineData.absences !== undefined && fineData.absences.trim() !== ""
-    const presencesChanged = fineData.presences !== undefined && fineData.presences.trim() !== ""
+    // Ensure presences is a non-negative number
+    const presences = Math.max(0, Number.parseInt(fineData.presences) || 0)
 
-    // Convert to numbers for calculations
-    let absences = Math.max(0, Number.parseInt(fineData.absences) || 0)
-    let presences = Math.max(0, Number.parseInt(fineData.presences) || 0)
+    // Calculate absences based on presences and total events
+    const absences = Math.max(0, totalEvents - presences)
 
-    // If absences were changed, recalculate presences
-    if (absencesChanged) {
-      presences = Math.max(0, totalEvents - absences)
-      fineData.presences = presences.toString()
-    }
-    // If presences were changed, recalculate absences
-    else if (presencesChanged) {
-      absences = Math.max(0, totalEvents - presences)
-      fineData.absences = absences.toString()
-    }
-    // If neither was explicitly changed, calculate both based on total events
-    else {
-      presences = Math.max(0, Number.parseInt(fineData.presences) || 0)
-      absences = Math.max(0, totalEvents - presences)
-      fineData.presences = presences.toString()
-      fineData.absences = absences.toString()
-    }
+    // Update the fineData with calculated values
+    fineData.presences = presences.toString()
+    fineData.absences = absences.toString()
 
     // Determine penalty based on absences
     const penaltyLevels = Object.keys(penaltiesMap)
