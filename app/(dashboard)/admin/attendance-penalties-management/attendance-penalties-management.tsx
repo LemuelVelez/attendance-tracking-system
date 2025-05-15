@@ -20,8 +20,27 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
 import { useToast } from "@/hooks/use-toast"
-import { Toaster } from "@/components/ui/toaster"
-import { ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, Search, Check, Calendar, Users, Rows, Loader2, Trash2, RefreshCw, FileX, Edit, Plus, Settings, MinusCircle, UserMinus, X, PlusCircle, UserPlus, CheckSquare } from 'lucide-react'
+import {
+  Search,
+  Check,
+  Calendar,
+  Users,
+  Rows,
+  Loader2,
+  Trash2,
+  RefreshCw,
+  FileX,
+  Edit,
+  Plus,
+  Settings,
+  MinusCircle,
+  UserMinus,
+  X,
+  PlusCircle,
+  UserPlus,
+  CheckSquare,
+  Printer,
+} from "lucide-react"
 import {
   getFineDocuments,
   getTotalUniqueEvents,
@@ -51,6 +70,7 @@ import { Textarea } from "@/components/ui/textarea"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
+import { PrintDialog } from "./print-dialog"
 
 export default function SupplyFinesManagement() {
   const [fines, setFines] = useState<FineDocument[]>([])
@@ -164,6 +184,9 @@ export default function SupplyFinesManagement() {
   const [selectedDegreePrograms, setSelectedDegreePrograms] = useState<string[]>([])
   const [selectAllYearLevels, setSelectAllYearLevels] = useState(false)
   const [selectAllDegreePrograms, setSelectAllDegreePrograms] = useState(false)
+
+  // New state for print dialog
+  const [printDialogOpen, setPrintDialogOpen] = useState(false)
 
   const searchTimeoutRef = useRef<NodeJS.Timeout | null>(null)
 
@@ -1060,6 +1083,11 @@ export default function SupplyFinesManagement() {
     }
   }, [fines])
 
+  // Handle opening the print dialog
+  const handleOpenPrintDialog = () => {
+    setPrintDialogOpen(true)
+  }
+
   return (
     <div className="container mx-auto px-2 sm:px-4 py-4 sm:py-6">
       <h1 className="text-3xl font-bold mb-6 text-center">Attendance Penalties Management</h1>
@@ -1811,6 +1839,21 @@ export default function SupplyFinesManagement() {
             </AlertDialogFooter>
           </AlertDialogContent>
         </AlertDialog>
+
+        {/* Print button */}
+        <Button variant="outline" onClick={handleOpenPrintDialog}>
+          <Printer className="mr-2 h-4 w-4" />
+          Print Fines Table
+        </Button>
+
+        {/* Print Dialog */}
+        <PrintDialog
+          open={printDialogOpen}
+          onOpenChange={setPrintDialogOpen}
+          fines={fines}
+          yearLevels={yearLevels}
+          degreePrograms={degreePrograms}
+        />
 
         {/* Button for adding new students */}
         <AlertDialog open={newStudentsDialogOpen} onOpenChange={setNewStudentsDialogOpen}>
@@ -2618,165 +2661,149 @@ export default function SupplyFinesManagement() {
                 </Table>
               </div>
 
-              {/* Card view for small devices */}
-              <div className="md:hidden">
-                <div className="mb-4 flex items-center justify-between">
-                  <span className="text-sm font-medium">
-                    <span className="mr-2 ">
-                      <Checkbox checked={selectAll} onCheckedChange={handleSelectAll} />
-                    </span>
-                    Select All
-                  </span>
-                </div>
-                <div className="space-y-4 max-h-[60vh] overflow-y-auto pr-2">
-                  {paginatedFines.map((fine) => (
-                    <Card key={fine.$id} className="p-3">
-                      <div className="grid grid-cols-2 gap-2 text-sm">
-                        <div className="col-span-2 flex items-center justify-between mb-2">
-                          <Checkbox
-                            checked={selectedFines.includes(fine.$id)}
-                            onCheckedChange={(checked) => {
-                              setSelectedFines((prev) =>
-                                checked ? [...prev, fine.$id] : prev.filter((id) => id !== fine.$id),
-                              )
-                            }}
-                          />
+              {/* Card view for mobile devices */}
+              <div className="md:hidden space-y-4">
+                {paginatedFines.map((fine) => (
+                  <Card key={fine.$id} className="overflow-hidden">
+                    <CardHeader className="p-4 pb-2 flex flex-row items-start justify-between">
+                      <div>
+                        <CardTitle className="text-lg">{fine.name}</CardTitle>
+                        <p className="text-sm text-gray-500">{fine.studentId}</p>
+                      </div>
+                      <Checkbox
+                        checked={selectedFines.includes(fine.$id)}
+                        onCheckedChange={(checked) => {
+                          if (checked) {
+                            setSelectedFines([...selectedFines, fine.$id])
+                          } else {
+                            setSelectedFines(selectedFines.filter((id) => id !== fine.$id))
+                          }
+                        }}
+                      />
+                    </CardHeader>
+                    <CardContent className="p-4 pt-0">
+                      <div className="grid grid-cols-2 gap-2 mb-4">
+                        <div>
+                          <p className="text-xs text-gray-500">Year Level</p>
+                          <p className="text-sm">{fine.yearLevel || "-"}</p>
+                        </div>
+                        <div>
+                          <p className="text-xs text-gray-500">Degree Program</p>
+                          <p className="text-sm">{fine.degreeProgram || "-"}</p>
+                        </div>
+                        <div>
+                          <p className="text-xs text-gray-500">Presences</p>
+                          <p className="text-sm">{fine.presences}</p>
+                        </div>
+                        <div>
+                          <p className="text-xs text-gray-500">Absences</p>
+                          <p className="text-sm">{fine.absences}</p>
+                        </div>
+                        <div className="col-span-2">
+                          <p className="text-xs text-gray-500">Required Supplies</p>
+                          <p className="text-sm">{fine.penalties}</p>
+                        </div>
+                        <div>
+                          <p className="text-xs text-gray-500">Date Issued</p>
+                          <p className="text-sm">{fine.dateIssued}</p>
+                        </div>
+                        <div>
+                          <p className="text-xs text-gray-500">Status</p>
                           <Badge
                             variant={
                               fine.status === "Cleared" || fine.status === "penaltyCleared" ? "secondary" : "outline"
                             }
-                            className={`text-xs ${fine.status === "Cleared" || fine.status === "penaltyCleared"
-                              ? "bg-green-500 text-white"
-                              : ""
-                              }`}
+                            className={
+                              fine.status === "Cleared" || fine.status === "penaltyCleared"
+                                ? "bg-green-500 text-white"
+                                : ""
+                            }
                           >
                             {fine.status === "penaltyCleared" ? "Cleared" : fine.status}
                           </Badge>
                         </div>
-                        {[
-                          { label: "Student ID", value: fine.studentId },
-                          { label: "Name", value: fine.name },
-                          { label: "Year Level", value: fine.yearLevel || "-" },
-                          { label: "Degree Program", value: fine.degreeProgram || "-" },
-                          { label: "Presences", value: fine.presences },
-                          { label: "Absences", value: fine.absences },
-                          { label: "Required Supplies", value: fine.penalties },
-                          { label: "Date Issued", value: fine.dateIssued },
-                        ].map(({ label, value }) => (
-                          <div key={label} className="col-span-2 flex flex-col">
-                            <p className="font-semibold text-xs">{label}:</p>
-                            <p className="text-sm truncate">{value}</p>
-                          </div>
-                        ))}
-                        <div className="col-span-2 mt-2 flex space-x-2">
-                          {/* Edit button for mobile */}
-                          <Button size="sm" variant="outline" onClick={() => handleEditFine(fine)} className="flex-1">
-                            <Edit className="h-3 w-3 mr-1" />
-                            Edit
-                          </Button>
-
-                          {/* Mark as cleared button for mobile */}
-                          {fine.status === "Pending" ? (
-                            <AlertDialog open={dialogOpen} onOpenChange={setDialogOpen}>
-                              <AlertDialogTrigger asChild>
-                                <Button
-                                  onClick={() => setSelectedFineId(fine.$id)}
-                                  size="sm"
-                                  className="flex-1 text-xs"
-                                >
-                                  Mark as Cleared
-                                </Button>
-                              </AlertDialogTrigger>
-                              <AlertDialogContent className="max-w-[90vw] sm:max-w-[425px]">
-                                <AlertDialogHeader>
-                                  <AlertDialogTitle>Confirm Action</AlertDialogTitle>
-                                  <AlertDialogDescription>
-                                    Are you sure you want to mark this fine as cleared?
-                                  </AlertDialogDescription>
-                                </AlertDialogHeader>
-                                <AlertDialogFooter>
-                                  <AlertDialogCancel onClick={() => setDialogOpen(false)}>Cancel</AlertDialogCancel>
-                                  <AlertDialogAction
-                                    onClick={() => {
-                                      if (selectedFineId) {
-                                        handleSubmitSupplies(selectedFineId)
-                                        setDialogOpen(false)
-                                      }
-                                    }}
-                                  >
-                                    Confirm
-                                  </AlertDialogAction>
-                                </AlertDialogFooter>
-                              </AlertDialogContent>
-                            </AlertDialog>
-                          ) : (
-                            <Badge variant="outline" className="text-green-600 w-full justify-center text-xs">
-                              <Check className="w-3 h-3 mr-1" />
-                              Cleared
-                            </Badge>
-                          )}
-                        </div>
                       </div>
-                    </Card>
-                  ))}
+                      <div className="flex space-x-2">
+                        <Button size="sm" variant="outline" onClick={() => handleEditFine(fine)} className="flex-1">
+                          <Edit className="h-4 w-4 mr-2" />
+                          Edit
+                        </Button>
+
+                        {fine.status === "Pending" ? (
+                          <AlertDialog open={dialogOpen} onOpenChange={setDialogOpen}>
+                            <AlertDialogTrigger asChild>
+                              <Button
+                                onClick={() => setSelectedFineId(fine.$id)}
+                                size="sm"
+                                className="flex-1"
+                                variant="default"
+                              >
+                                Mark as Cleared
+                              </Button>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent>
+                              <AlertDialogHeader>
+                                <AlertDialogTitle>Confirm Action</AlertDialogTitle>
+                                <AlertDialogDescription>
+                                  Are you sure you want to mark this fine as cleared?
+                                </AlertDialogDescription>
+                              </AlertDialogHeader>
+                              <AlertDialogFooter>
+                                <AlertDialogCancel onClick={() => setDialogOpen(false)}>Cancel</AlertDialogCancel>
+                                <AlertDialogAction
+                                  onClick={() => {
+                                    if (selectedFineId) {
+                                      handleSubmitSupplies(selectedFineId)
+                                      setDialogOpen(false)
+                                    }
+                                  }}
+                                >
+                                  Confirm
+                                </AlertDialogAction>
+                              </AlertDialogFooter>
+                            </AlertDialogContent>
+                          </AlertDialog>
+                        ) : (
+                          <Badge variant="outline" className="text-green-600 flex items-center justify-center flex-1">
+                            <Check className="w-4 h-4 mr-1" />
+                            Cleared
+                          </Badge>
+                        )}
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+
+              {/* Pagination */}
+              <div className="flex items-center justify-between mt-4">
+                <div className="text-sm text-gray-500">
+                  Showing {(currentPage - 1) * rowsPerPage + 1} to{" "}
+                  {Math.min(currentPage * rowsPerPage, filteredFines.length)} of {filteredFines.length} entries
+                </div>
+                <div className="flex space-x-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
+                    disabled={currentPage === 1}
+                  >
+                    Previous
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setCurrentPage((prev) => Math.min(prev + 1, totalPages))}
+                    disabled={currentPage === totalPages}
+                  >
+                    Next
+                  </Button>
                 </div>
               </div>
             </>
           )}
-          <div className="flex flex-col sm:flex-row items-center justify-between mt-6 space-y-4 sm:space-y-0">
-            <div className="text-xs sm:text-sm text-gray-500 text-center sm:text-left w-full sm:w-auto">
-              Showing {(currentPage - 1) * rowsPerPage + 1} to{" "}
-              {Math.min(currentPage * rowsPerPage, filteredFines.length)} of {filteredFines.length} entries
-            </div>
-            <div className="flex items-center space-x-2">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setCurrentPage(1)}
-                disabled={currentPage === 1}
-                className="p-1 sm:p-2"
-              >
-                <ChevronsLeft className="w-4 h-4" />
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setCurrentPage((prev) => Math.max(1, prev - 1))}
-                disabled={currentPage === 1}
-                className="p-1 sm:p-2"
-              >
-                <ChevronLeft className="w-4 h-4" />
-              </Button>
-              <span className="text-xs sm:text-sm mx-2">
-                Page {currentPage} of {totalPages}
-              </span>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setCurrentPage((prev) => Math.min(totalPages, prev + 1))}
-                disabled={currentPage === totalPages}
-                className="p-1 sm:p-2"
-              >
-                <ChevronRight className="w-4 h-4" />
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setCurrentPage(totalPages)}
-                disabled={currentPage === totalPages}
-                className="p-1 sm:p-2"
-              >
-                <ChevronsRight className="w-4 h-4" />
-              </Button>
-            </div>
-          </div>
         </CardContent>
-        <footer className="py-4 text-center">
-          <p className="text-sm">JESUS BE ALL THE GLORY!</p>
-          <p className="text-xs mt-1">© SSG QR Attendance</p>
-        </footer>
       </Card>
-      <Toaster />
     </div>
   )
 }
