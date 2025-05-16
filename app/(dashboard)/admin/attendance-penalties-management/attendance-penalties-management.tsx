@@ -40,6 +40,7 @@ import {
   UserPlus,
   CheckSquare,
   Printer,
+  FileEdit,
 } from "lucide-react"
 import {
   getFineDocuments,
@@ -63,6 +64,7 @@ import {
   getAllUsers,
   increasePresencesByYearAndProgram,
   decreasePresencesByYearAndProgram,
+  bulkUpdateFineDocuments,
 } from "@/lib/GeneralAttendance/GeneralAttendance"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Label } from "@/components/ui/label"
@@ -71,6 +73,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { PrintDialog } from "./print-dialog"
+import { BulkEditDialog } from "./bulk-edit-dialog"
 
 export default function SupplyFinesManagement() {
   const [fines, setFines] = useState<FineDocument[]>([])
@@ -187,6 +190,13 @@ export default function SupplyFinesManagement() {
 
   // New state for print dialog
   const [printDialogOpen, setPrintDialogOpen] = useState(false)
+
+  // New state for controlling print mode
+  const [printSelectedOnly, setPrintSelectedOnly] = useState(false)
+
+  // New state for bulk edit dialog
+  const [bulkEditDialogOpen, setBulkEditDialogOpen] = useState(false)
+  const [isProcessingBulkEdit, setIsProcessingBulkEdit] = useState(false)
 
   const searchTimeoutRef = useRef<NodeJS.Timeout | null>(null)
 
@@ -1065,6 +1075,73 @@ export default function SupplyFinesManagement() {
     }
   }
 
+  // New function to handle bulk edit of absences
+  const handleBulkEdit = async (absences: string, presences: string) => {
+    setIsProcessingBulkEdit(true)
+    try {
+      // Get the selected fine documents
+      const selectedFineDocuments = fines.filter((fine) => selectedFines.includes(fine.$id))
+
+      if (selectedFineDocuments.length === 0) {
+        toast({
+          title: "Error",
+          description: "No students selected for editing.",
+          variant: "destructive",
+        })
+        return
+      }
+
+      // Show a processing toast
+      toast({
+        title: "Processing",
+        description: `Updating attendance for ${selectedFineDocuments.length} selected students. Please wait...`,
+        variant: "default",
+      })
+
+      // Prepare updates
+      const updates = selectedFineDocuments.map((fine) => ({
+        id: fine.$id,
+        data: {
+          userId: fine.userId,
+          studentId: fine.studentId,
+          name: fine.name,
+          absences: absences,
+          presences: presences,
+          penalties: fine.penalties, // Will be recalculated
+          dateIssued: fine.dateIssued,
+          status: fine.status, // Will be recalculated
+          yearLevel: fine.yearLevel || "",
+          degreeProgram: fine.degreeProgram || "",
+        },
+      }))
+
+      // Process updates in batches
+      await bulkUpdateFineDocuments(updates)
+
+      toast({
+        title: "Success",
+        description: `Updated attendance for ${selectedFineDocuments.length} students.`,
+        variant: "success",
+        className: "border-green-500 text-green-700 bg-green-50",
+      })
+
+      // Refresh data
+      await fetchData()
+
+      // Close dialog
+      setBulkEditDialogOpen(false)
+    } catch (error) {
+      console.error("Error performing bulk edit:", error)
+      toast({
+        title: "Error",
+        description: "Failed to update attendance. Please try again.",
+        variant: "destructive",
+      })
+    } finally {
+      setIsProcessingBulkEdit(false)
+    }
+  }
+
   const filteredFines = fines.filter((fine) =>
     Object.values(fine).some((value) => String(value).toLowerCase().includes(searchTerm.toLowerCase())),
   )
@@ -1083,9 +1160,9 @@ export default function SupplyFinesManagement() {
     }
   }, [fines])
 
-  // Handle opening the print dialog
-  const handleOpenPrintDialog = () => {
-    setPrintDialogOpen(true)
+  // Get the selected fine documents for printing or bulk editing
+  const getSelectedFineDocuments = () => {
+    return fines.filter((fine) => selectedFines.includes(fine.$id))
   }
 
   return (
@@ -1291,8 +1368,8 @@ export default function SupplyFinesManagement() {
                             >
                               <Check
                                 className={`mr-2 h-4 w-4 ${selectedStudents.some((s) => s.studentId === student.studentId)
-                                  ? "opacity-100"
-                                  : "opacity-0"
+                                    ? "opacity-100"
+                                    : "opacity-0"
                                   }`}
                               />
                               <div className="flex flex-col">
@@ -1722,57 +1799,6 @@ export default function SupplyFinesManagement() {
                               : `This will increase the presences count for students in ${selectedYearLevel || "all years"}, ${selectedDegreeProgram || "all programs"}.`
                             : selectedYearLevels.length > 0 || selectedDegreePrograms.length > 0
                               ? `This will decrease the presences count for students in ${selectedYearLevels.length > 0 ? `selected year levels (${selectedYearLevels.length})` : selectedYearLevel || "all years"}, ${selectedDegreePrograms.length > 0 ? `selected programs (${selectedDegreePrograms.length})` : selectedDegreeProgram || "all programs"}.`
-                              : `This will decrease the presences count for students in ${selectedYearLevel || "all years"}, ${selectedDegreeProgram || "all programs"}.`}
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <div className="py-4">
-            <div className="space-y-2">
-              <Label htmlFor="changeAmount">
-                {bulkOperationType.includes("decrease") ? "Decrease" : "Increase"} Amount
-              </Label>
-              <Input
-                id="changeAmount"
-                type="number"
-                min="1"
-                value={changeAmount}
-                onChange={(e) => setChangeAmount(e.target.value)}
-                placeholder={`Enter ${bulkOperationType.includes("decrease") ? "decrease" : "increase"} amount`}
-              />
-            </div>
-          </div>
-          <AlertDialogFooter>
-            <AlertDialogCancel onClick={() => setBulkOperationDialogOpen(false)}>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={() => setConfirmBulkOperationDialog(true)} disabled={isProcessingBulkOperation}>
-              Continue
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
-
-      {/* Confirmation dialog for Bulk Operation */}
-      <AlertDialog open={confirmBulkOperationDialog} onOpenChange={setConfirmBulkOperationDialog}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Confirm Operation</AlertDialogTitle>
-            <AlertDialogDescription>
-              {bulkOperationType === "decrease"
-                ? `Are you sure you want to decrease presences by ${changeAmount} for ${selectedStudents.length} selected students?`
-                : bulkOperationType === "exempt"
-                  ? `Are you sure you want to decrease presences by ${changeAmount} for all students EXCEPT the ${selectedStudents.length} selected students?`
-                  : bulkOperationType === "increase"
-                    ? `Are you sure you want to increase presences by ${changeAmount} for ${selectedStudents.length} selected students?`
-                    : bulkOperationType === "exempt-increase"
-                      ? `Are you sure you want to increase presences by ${changeAmount} for all students EXCEPT the ${selectedStudents.length} selected students?`
-                      : bulkOperationType === "increase-all"
-                        ? `Are you sure you want to increase presences by ${changeAmount} for ALL students?`
-                        : bulkOperationType === "decrease-all"
-                          ? `Are you sure you want to decrease presences by ${changeAmount} for ALL students?`
-                          : bulkOperationType === "increase-by-year-program"
-                            ? selectedYearLevels.length > 0 || selectedDegreePrograms.length > 0
-                              ? `Are you sure you want to increase presences by ${changeAmount} for students in ${selectedYearLevels.length > 0 ? `selected year levels (${selectedYearLevels.length})` : selectedYearLevel || "all years"}, ${selectedDegreePrograms.length > 0 ? `selected programs (${selectedDegreePrograms.length})` : selectedDegreeProgram || "all programs"}?`
-                              : `Are you sure you want to increase presences by ${changeAmount} for students in ${selectedYearLevel || "all years"}, ${selectedDegreeProgram || "all programs"}?`
-                            : selectedYearLevels.length > 0 || selectedDegreePrograms.length > 0
-                              ? `Are you sure you want to decrease presences by ${changeAmount} for students in ${selectedYearLevels.length > 0 ? `selected year levels (${selectedYearLevels.length})` : selectedYearLevel || "all years"}, ${selectedDegreePrograms.length > 0 ? `selected programs (${selectedDegreePrograms.length})` : selectedDegreeProgram || "all programs"}?`
                               : `Are you sure you want to decrease presences by ${changeAmount} for students in ${selectedYearLevel || "all years"}, ${selectedDegreeProgram || "all programs"}?`}
               This will affect their absences and penalties.
             </AlertDialogDescription>
@@ -1840,10 +1866,31 @@ export default function SupplyFinesManagement() {
           </AlertDialogContent>
         </AlertDialog>
 
-        {/* Print button */}
-        <Button variant="outline" onClick={handleOpenPrintDialog}>
+        {/* Print all fines button */}
+        <Button
+          variant="outline"
+          onClick={() => {
+            setPrintDialogOpen(true)
+            // Reset the print selected only flag to false for printing all
+            setPrintSelectedOnly(false)
+          }}
+        >
           <Printer className="mr-2 h-4 w-4" />
           Print Fines Table
+        </Button>
+
+        {/* Print selected students button */}
+        <Button
+          variant="outline"
+          onClick={() => {
+            setPrintDialogOpen(true)
+            // Set the print selected only flag to true
+            setPrintSelectedOnly(true)
+          }}
+          disabled={selectedFines.length === 0}
+        >
+          <Printer className="mr-2 h-4 w-4" />
+          Print Selected ({selectedFines.length})
         </Button>
 
         {/* Print Dialog */}
@@ -1853,6 +1900,23 @@ export default function SupplyFinesManagement() {
           fines={fines}
           yearLevels={yearLevels}
           degreePrograms={degreePrograms}
+          selectedFines={getSelectedFineDocuments()}
+          printSelectedOnly={printSelectedOnly}
+        />
+
+        {/* Bulk Edit button */}
+        <Button variant="outline" onClick={() => setBulkEditDialogOpen(true)} disabled={selectedFines.length === 0}>
+          <FileEdit className="mr-2 h-4 w-4" />
+          Bulk Edit Selected ({selectedFines.length})
+        </Button>
+
+        {/* Bulk Edit Dialog */}
+        <BulkEditDialog
+          open={bulkEditDialogOpen}
+          onOpenChange={setBulkEditDialogOpen}
+          selectedFines={getSelectedFineDocuments()}
+          onSave={handleBulkEdit}
+          isProcessing={isProcessingBulkEdit}
         />
 
         {/* Button for adding new students */}

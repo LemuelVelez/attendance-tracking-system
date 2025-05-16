@@ -1524,3 +1524,38 @@ export const decreasePresencesByYearAndProgram = async (
     throw error
   }
 }
+
+export async function bulkUpdateFineDocuments(updates: { id: string; data: Partial<FineDocumentData> }[]) {
+  try {
+    // Process updates in batches to avoid overwhelming the API
+    const batchSize = 10
+    const batches = []
+
+    for (let i = 0; i < updates.length; i += batchSize) {
+      batches.push(updates.slice(i, i + batchSize))
+    }
+
+    // Process each batch with a delay between batches
+    for (let batchIndex = 0; batchIndex < batches.length; batchIndex++) {
+      const batch = batches[batchIndex]
+
+      // Process each update in the batch
+      for (const update of batch) {
+        await updateFineDocument(update.id, update.data as FineDocumentData)
+
+        // Add a small delay between operations
+        await new Promise((resolve) => setTimeout(resolve, 100))
+      }
+
+      // Add a longer delay between batches
+      if (batchIndex < batches.length - 1) {
+        await new Promise((resolve) => setTimeout(resolve, 500))
+      }
+    }
+
+    return true
+  } catch (error) {
+    console.error("Error in bulk update:", error)
+    throw error
+  }
+}

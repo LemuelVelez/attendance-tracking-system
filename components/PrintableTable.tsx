@@ -4,7 +4,7 @@ import type React from "react"
 import { useRef, useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { Printer, Eye, Download, FileText } from "lucide-react"
+import { Printer, Eye, Download, FileText } from 'lucide-react'
 import type { FineDocument } from "@/lib/GeneralAttendance/GeneralAttendance"
 import {
     Dialog,
